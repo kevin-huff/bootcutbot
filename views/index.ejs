@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+<html>
+ 
+<head>
+    <title>The Bootcut Queue</title>
+      <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href=
+"https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity=
+"sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+        crossorigin="anonymous" />
+    <link href=
+"https://fonts.googleapis.com/css2?family=Poppins&display=swap"
+        rel="stylesheet" />
+</head>
+ 
+<body>
+<div class="container">
+  <img src="<%= banner_image %>" class="img-fluid">
+  <p class="text-center">The Queue is currently: 
+  <% if(queue_open){ %>
+  <span class="badge badge-success">Open</span>
+  <% }else{ %>
+  <span class="badge badge-danger">Closed</span>
+  <% } %>
+  </p>
+  <p class="text-center">First Turns First is currently: 
+  <% if(first_turn_first){ %>
+  <span class="badge badge-success">Enabled</span>
+  <% }else{ %>
+  <span class="badge badge-danger">Disabled</span>
+  <% } %>
+  </p>
+  <p><small>First turn first means users who haven't not had a turn will be chosen before players that have had a turn. Users who already had a turn already will stay in the Queue but 1st turn users will be picked before them.</small></p>
+  <h1 class="text-center">
+    The Queue
+  </h1>
+  <table class="table table-striped">
+  <thead>
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">User</th>
+      <th scope="col">Turn #</th>
+    </tr>
+  </thead>
+  <tbody>
+  <% queue.forEach(function(queue, index) { %>
+    <tr>
+      <th scope="row"><%= index+1 %></th>
+      <td><%= queue['display-name'] %></td>
+      <td><%= queue['turn_count']+1 %></td>
+    </tr>
+    <% }); %>
+  </tbody>
+</table>
+<h1 class="text-center">Previous Turns</h1>
+  <table class="table table-striped">
+  <thead>
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">User</th>
+      <th scope="col">Turn #</th>
+    </tr>
+  </thead>
+  <tbody>
+  <% turns.reverse(); %>
+  <% turns.forEach(function(turn, index) { %>
+    <tr>
+      <th scope="row"><%= turns.length - index %></th>
+      <td><%= turn['display-name'] %></td>
+      <td><%= turn['turn_count']+1 %></td>
+    </tr>
+    <% }); %>
+  </tbody>
+</table>
+<!-- Footer -->
+<footer class="page-footer font-small blue pt-4">
+
+  <!-- Footer Links -->
+  <div class="container-fluid text-center text-md-left">
+
+    <!-- Grid row -->
+    <div class="row">
+
+      <!-- Grid column -->
+      <div class="col-md-6 mt-md-0 mt-3">
+
+        <!-- Content -->
+        <h5 class="text-uppercase">Support Abbabox</h5>
+        <p>Help the streamer keep doing the things. Support him anyway you can.</p>
+
+      </div>
+      <!-- Grid column -->
+
+      <hr class="clearfix w-100 d-md-none pb-3">
+
+      <!-- Grid column -->
+      <div class="col-md-3 mb-md-0 mb-3">
+
+        <!-- Links -->
+        <h5 class="text-uppercase">Social</h5>
+
+        <ul class="list-unstyled">
+          <li>
+            <a href="https://twitter.com/abbabox1">Twitter</a>
+          </li>
+          <li>
+            <a href="https://www.youtube.com/c/Abbabox">YouTube</a>
+          </li>
+          <li>
+            <a href="https://discord.com/invite/vgB85mF">Discord</a>
+          </li>
+          <li>
+            <a href="https://www.tiktok.com/@abbabox?lang=en">TikTok</a>
+          </li>
+        </ul>
+
+      </div>
+      <!-- Grid column -->
+
+      <!-- Grid column -->
+      <div class="col-md-3 mb-md-0 mb-3">
+
+        <!-- Links -->
+        <h5 class="text-uppercase">Pay the Man</h5>
+
+        <ul class="list-unstyled">
+          <li>
+            <a href="https://streamlabs.com/abbabox/tip">Paypal</a>
+          </li>
+          <li>
+            <a href="https://www.streamloots.com/abbabox">StreamLoots</a>
+          </li>
+          <li>
+            <a href="https://jointhrone.com/u/abbabox">Throne</a>
+          </li>
+          <li>
+            <a href="https://streamlabs.com/abbabox/merch">Merch</a>
+          </li>
+        </ul>
+
+      </div>
+      <!-- Grid column -->
+
+    </div>
+    <!-- Grid row -->
+
+  </div>
+  <!-- Footer Links -->
+
+  <!-- Copyright -->
+  <div class="footer-copyright text-center py-3">© 2022 Designed by the
+    Citizens of the ABXCrew
+  </div>
+  <!-- Copyright -->
+
+</footer>
+<!-- Footer -->
+</div>
+</body>
+ 
+</html>

@@ -1,0 +1,27 @@
+{
+  "name": "glitch-mvp-node",
+  "version": "0.0.1",
+  "description": "BootcutBot for Bootcut on Twitch",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "tmi.js": "^1.8.5",
+    "request": "^2.88.2",
+    "express": "^4.17.2",
+    "ejs": "^3.1.6"
+  },
+  "engines": {
+    "node": "16"
+  },
+  "repository": {
+    "url": "https://glitch.com/edit/#!/glitch-mvp-node"
+  },
+  "license": "MIT",
+  "keywords": [
+    "node",
+    "glitch",
+    "express"
+  ]
+}

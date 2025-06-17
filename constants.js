@@ -1,16 +1,24 @@
 import dotenv from 'dotenv';
+import jsoning from 'jsoning';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { dirname, join } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 dotenv.config();
 
+const settings_db = new jsoning(join(__dirname, 'db/queue_settings.json'));
+let queueOpen = await settings_db.get('queue_open');
+if (queueOpen === undefined) {
+  queueOpen = false;
+  await settings_db.set('queue_open', queueOpen);
+}
+
 export const state = {
   current_turn: "None... yet",
   end_time: 1708317900,
-  queue_open: false,
+  queue_open: queueOpen,
   firsts_first: true,
   ai_enabled: true,
   death_count: 0,

@@ -50,15 +50,15 @@ input, textarea, button, select {
 @font-face {
 	font-family: 'Antonio';
 	font-weight: 400;
-	src: url('https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/Antonio-Regular.woff2?v=1691051289513') format('woff2'),
-			 url('https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/Antonio-Regular.woff?v=1691051297667') format('woff');
+	src: url('https://cdn.leantube.org/Antonio-Regular.woff2?v=1691051289513') format('woff2'),
+			 url('https://cdn.leantube.org/Antonio-Regular.woff?v=1691051297667') format('woff');
 }
 
 @font-face {
 	font-family: 'Antonio';
 	font-weight: 700;
-	src: url('https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/Antonio-Bold.woff2?v=1691051304315') format('woff2'),
-			 url('https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/Antonio-Bold.woff?v=1691051312524') format('woff')
+	src: url('https://cdn.leantube.org/Antonio-Bold.woff2?v=1691051304315') format('woff2'),
+			 url('https://cdn.leantube.org/Antonio-Bold.woff?v=1691051312524') format('woff')
 }
 
 body	{

@@ -4,12 +4,14 @@ import { state } from '../constants.js';
 
 async function handleOpenCommand(channel, tags, client, io) {
   state.queue_open = true;
+  await settings_db.set('queue_open', true);
   abbadabbabotSay(channel, client, tags, 'formally announce the opening of the queue to the chat');
   io.emit('new_turn', `Queue Just Opened`);
 }
 
 async function handleCloseCommand(channel, tags, client, io) {
   state.queue_open = false;
+  await settings_db.set('queue_open', false);
   abbadabbabotSay(channel, client, tags, 'formally announce the closing of the queue to the chat');
   io.emit('new_turn', `Queue Closed`);
 }

@@ -236,6 +236,13 @@ function initializeBotCommands(io) {
         io.emit('ash_spit', { 'display-name': tags['display-name'] });
         abbadabbabotSay(channel, client, tags, `Testing Ash Spit alert triggered by @${tags["display-name"]}`);
       }
+      // Test Commands for Fart Sounds
+      const fartTestMatch = message.toLowerCase().match(/^!test_fart(\d{1,2})$/);
+      if (fartTestMatch && isModUp) {
+        const fartId = `fart_${fartTestMatch[1]}`;
+        io.emit('play_sound', { type: fartId });
+        abbadabbabotSay(channel, client, tags, `Testing ${fartId} alert triggered by @${tags["display-name"]}`);
+      }
       // Crowd Sound Commands
       if (tags['display-name'].toLowerCase() !== bot_display_name.toLowerCase()) {
         if (state.clap_regex.test(message.toLowerCase())) {

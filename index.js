@@ -96,14 +96,19 @@ async function initialize() {
     console.error('EventSub initialization skipped');
   } else {
     try {
-      eventSubClient = await initializeEventSub(io);
-      if (eventSubClient && eventSubClient.needsAuth) {
-        console.log('Twitch authentication required. Please visit https://leantube.org/auth/ to authenticate.');
-      } else if (eventSubClient) {
-        console.log('EventSub initialized successfully');
-        // Store the client in the app
-        app.set('eventSubClient', eventSubClient);
-      }
+    eventSubClient = await initializeEventSub(io);
+
+    if (eventSubClient?.needsAuth) {
+      console.log('Twitch authentication required. Please visit https://leantube.org/auth/ to authenticate.');
+    } else if (eventSubClient?.warning === 'eventsub_disabled') {
+      console.warn('⚠️ EventSub was disabled due to connection issues. Bot is running in degraded mode.');
+    } else if (eventSubClient) {
+      console.log('EventSub initialized successfully');
+      app.set('eventSubClient', eventSubClient);
+    } else {
+      console.warn('⚠️ EventSub not initialized. Some features may not work.');
+    }
+
     } catch (error) {
       console.error('Failed to initialize EventSub:', error);
     }

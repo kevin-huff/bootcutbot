@@ -1,3 +1,7 @@
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🔥 UNHANDLED PROMISE REJECTION:', reason);
+});
+
 import express from 'express';
 import http from 'http';
 import path from 'path';

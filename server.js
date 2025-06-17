@@ -190,7 +190,7 @@ client.on("message", (channel, tags, message, self) => {
                 var turn_ordinal = ordinal_suffix_of(turn_count + 1);
                 client.say(
                   channel,
-                  `@${current_player["display-name"]} has been choosen again, this is your ${turn_ordinal} turn.`
+                  `@${current_player["display-name"]} has been chosen again, this is your ${turn_ordinal} turn.`
                 );
               } else {
                 client.say(
@@ -237,7 +237,7 @@ client.on("message", (channel, tags, message, self) => {
             0
           );
           //see if this a 0 turn player
-          if ((turn_count = 0)) {
+          if (turn_count === 0) {
             found_zero_turn = true;
             break;
           } else {

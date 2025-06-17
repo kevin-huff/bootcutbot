@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "dependencies": {
     "@twurple/api": "^7.2.1",
@@ -51,5 +52,8 @@
     "bootcut",
     "twitch",
     "openai"
-  ]
+  ],
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
 }

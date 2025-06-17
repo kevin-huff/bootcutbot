@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+ 
+<head>
+  <title>crowd sounds</title>
+  <!-- Bootstrap CSS -->
+  <!-- Dark mode CSS -->
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/js/all.min.js" integrity="sha512-rpLlll167T5LJHwp0waJCh3ZRf7pO6IT1+LZOhAyP6phAirwchClbTZV3iqL3BMrVxIYRbzGTpli4rfxsCK6Vw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://kit.fontawesome.com/5a69a86b05.js" crossorigin="anonymous"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+ <script>
+    var socket = io();
+    let queue = [];
+
+    function addToQueue(item) {
+        // For iframes, use the element ID directly
+        const itemId = item.tagName === "IFRAME" ? item.id : item.id;
+        queue.push(itemId);
+        console.log(`Added to queue: ${itemId}. Queue now:`, queue);
+        if (queue.length === 1) {
+            console.log("Queue has one item, initiating playNext.");
+            playNext();
+        }
+    }
+
+    function playNext() {
+        if (queue.length === 0) {
+            console.log("Queue empty, nothing to play.");
+            return;
+        }
+        let nextItem = queue[0]; // Peek at the next item without removing it yet
+        let mediaElement = document.getElementById(nextItem);
+        // Get the iff gif element
+        let gifElement = document.getElementById('iff');
+        console.log(`Attempting to play: ${nextItem}`);
+
+        if (!mediaElement) {
+            console.error(`Media element not found: ${nextItem}`);
+            return; // Early exit if the element doesn't exist
+        }
+
+        // Handle different types of media elements
+        if (mediaElement.tagName === "VIDEO") {
+            console.log("showing a video");
+            mediaElement.style.display = "block";
+            
+            mediaElement.onended = function() {
+                console.log(`Video playback ended for: ${nextItem}`);
+                mediaElement.style.display = "none";
+                queue.shift();
+                playNext();
+            };
+
+            mediaElement.play().then(() => {
+                console.log(`Playing video: ${nextItem}`);
+            }).catch(error => {
+                console.error(`Error playing video ${nextItem}:`, error);
+                queue.shift();
+                playNext();
+            });
+        } else if (mediaElement.tagName === "AUDIO") {
+            mediaElement.onended = function() {
+                console.log(`Audio playback ended for: ${nextItem}`);
+                if (nextItem.startsWith('fart')) {
+                    setTimeout(function() {
+                        gifElement.style.display = "none";
+                    }, 3000);
+                }
+                queue.shift();
+                playNext();
+            };
+
+            mediaElement.play().then(() => {
+                console.log(`Playing audio: ${nextItem}`);
+                if (nextItem.startsWith('fart')) {
+                    gifElement.style.display = "block";
+                }
+            }).catch(error => {
+                console.error(`Error playing audio ${nextItem}:`, error);
+                queue.shift();
+                playNext();
+            });
+        } else if (mediaElement.tagName === "IFRAME") {
+            console.log("showing iframe");
+            mediaElement.style.display = "block";
+            
+            // For iframes, we'll use a timeout to simulate "completion" after 60 seconds
+            setTimeout(function() {
+                console.log(`Iframe display completed for: ${nextItem}`);
+                mediaElement.style.display = "none";
+                mediaElement.src = ""; // Clear the iframe source
+                queue.shift();
+                playNext();
+            }, 60000); // 60 second timeout
+        }
+    }
+
+    socket.on("connect", () => {
+        console.log(socket.connected); // true
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        socket.on("play_random_vod", (data) => {
+            console.log("Playing random VOD:", data.url);
+            // Create iframe if it doesn't exist
+            let iframe = document.getElementById('vodPlayer');
+            if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.id = 'vodPlayer';
+                iframe.style.position = 'fixed';
+                iframe.style.top = '0';
+                iframe.style.left = '0';
+                iframe.style.width = '100vw';
+                iframe.style.height = '100vh';
+                iframe.style.border = 'none';
+                iframe.style.display = 'none';
+                iframe.style.zIndex = '9999';
+                iframe.style.backgroundColor = 'black';
+                document.body.appendChild(iframe);
+            }
+            iframe.src = data.url;
+            addToQueue(iframe);
+        });
+
+        socket.on('boo_threshold', function(boo_threshold){
+            console.log('boo_threshold met');
+            var audioElements = Array.from(document.querySelectorAll(`audio[id^='boo']`));
+
+            if (audioElements.length > 0) {
+                console.log('adding sound to queue.');
+                var randomAudioElement = audioElements[Math.floor(Math.random() * audioElements.length)];
+                // Correctly add the audio element to the queue
+                addToQueue(randomAudioElement);
+            }
+        });
+
+        // Play a random cheer from the cheer class
+        socket.on('clap_threshold', function(clap_threshold){
+            console.log('clap_threshold met');
+            var audioElements = Array.from(document.querySelectorAll(`audio[id^='cheer']`));
+
+            if (audioElements.length > 0) {
+                console.log('adding sound to queue.');
+                var randomAudioElement = audioElements[Math.floor(Math.random() * audioElements.length)];
+                // Correctly add the audio element to the queue
+                addToQueue(randomAudioElement);
+            }
+        });
+
+        // Play a random laugh from the lol class
+        socket.on('lol_threshold', function(lol_threshold){
+            console.log('lol_threshold met');
+            var audioElements = Array.from(document.querySelectorAll(`audio[id^='lol']`));
+
+            if (audioElements.length > 0) {
+                console.log('adding sound to queue.');
+                var randomAudioElement = audioElements[Math.floor(Math.random() * audioElements.length)];
+                // Correctly add the audio element to the queue
+                addToQueue(randomAudioElement);
+            }
+        });
+              // Play a random laugh from the lol class
+        socket.on('fart_threshold', function(lol_threshold){
+            console.log('fart_threshold met');
+            var audioElements = Array.from(document.querySelectorAll(`audio[id^='fart']`));
+
+            if (audioElements.length > 0) {
+                console.log('adding sound to queue.');
+                var randomAudioElement = audioElements[Math.floor(Math.random() * audioElements.length)];
+                // Correctly add the audio element to the queue
+                addToQueue(randomAudioElement);
+            }
+        });
+      // Existing event listener for 'jarjar'
+      socket.on('jarjar', function(){
+        console.log('jarjar');
+        var jarjarElement = document.getElementById('jarjar');
+        addToQueue(jarjarElement);
+      });
+
+      // New event listener for 'draculaAngel'
+      socket.on('draculaAngel', function(){
+        console.log('draculaAngel');
+        var draculaAngelElement = document.getElementById('draculaAngel');
+        addToQueue(draculaAngelElement);
+      });
+      // New event listener for 'draculaAngel'
+      socket.on('ash_spit', function(){
+        console.log('ash_spit');
+        var ashSpitElement = document.getElementById('ash_spit');
+        ashSpitElement.volume = 0.5;
+        addToQueue(ashSpitElement);
+      });
+      // New event listener for 'kermit_sex'
+      socket.on('kermit_sex', function(){
+        console.log('kermit_sex');
+        var kermit_sex = document.getElementById('kermit_sex');
+        kermit_sex.volume = 1;
+        addToQueue(kermit_sex);
+      });
+
+      socket.on('soundAlert', function(soundType) {
+        console.log('sound alert received');
+        var audioElements = Array.from(document.querySelectorAll(`audio[id^='${soundType}']`));
+
+        if (audioElements.length > 0) {
+            console.log('adding sound to queue.');
+            var randomAudioElement = audioElements[Math.floor(Math.random() * audioElements.length)];
+            // Correctly add the audio element to the queue
+            addToQueue(randomAudioElement);
+        }
+      });
+    });
+</script>
+  <style>
+    .btn-fixed-bottom {
+      position: absolute;
+      bottom: 0;
+      margin-bottom: 20px;
+    }
+    .hidden_vid {
+      display: none;
+    }
+    #vodPlayer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 9999;
+      background-color: black;
+      border: none;
+    }
+  </style>
+
+<body>
+    <audio id="boo" src="/boo.wav" preload="auto"></audio>
+    <audio id="cheer_1" class="cheer" src="/cheers/cheer_1.wav" preload="auto"></audio>
+    <audio id="cheer_2" class="cheer" src="/cheers/cheer_2.wav" preload="auto"></audio>
+    <audio id="cheer_3" class="cheer" src="/cheers/cheer_3.wav" preload="auto"></audio>
+    <audio id="cheer_4" class="cheer" src="/cheers/cheer_4.wav" preload="auto"></audio>
+    <audio id="cheer_5" class="cheer" src="/cheers/cheer_5.wav" preload="auto"></audio>
+    <audio id="cheer_6" class="cheer" src="/cheers/cheer_6.wav" preload="auto"></audio>
+    <audio id="lol_1" class="lol" src="/lols/laugh_1.mp3" preload="auto"></audio>
+    <audio id="lol_2" class="lol" src="/lols/laugh_2.mp3" preload="auto"></audio>
+    <audio id="lol_3" class="lol" src="/lols/laugh_3.mp3" preload="auto"></audio>
+    <audio id="lol_4" class="lol" src="/lols/laugh_4.mp3" preload="auto"></audio>
+    <audio id="lol_5" class="lol" src="/lols/laugh_5.mp3" preload="auto"></audio>
+    <audio id="lol_6" class="lol" src="/lols/laugh_6.mp3" preload="auto"></audio>
+    <video id="jarjar" clas="hidden_vid" style="display:none;" src="https://cdn.glitch.me/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/jarjar2.webm?v=1702458872143" preload="auto"></video>
+    <video id="draculaAngel" clas="hidden_vid" style="display:none;" src="https://cdn.glitch.me/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/dracula's%20angel.webm?v=1704191785268" preload="auto"></video>
+    <video id="ash_spit" clas="hidden_vid" style="display:none;" src="https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/ash_spit.webm?v=1710559434112" preload="auto"></video>
+    <video id="kermit_sex" clas="hidden_vid" style="display:none;" src="https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/outputvideo.webm?v=1713074748106" preload="auto"></video>
+    <audio id="tts" src="/tts"></audio>
+    <audio id="lockedin" src="https://cdn.glitch.global/38551651-fc87-4f60-b474-a27d424d372b/input_ok.mp3?v=1703768903507"></audio>
+    <audio id="fart_01" src="https://cdn.glitch.global/38551651-fc87-4f60-b474-a27d424d372b/dry-fart.mp3?v=1700004818800"></audio>
+    <audio id="fart_02" src="https://cdn.glitch.global/38551651-fc87-4f60-b474-a27d424d372b/fart_1.mp3?v=1700023345954"></audio>
+    <audio id="fart_03" src="https://cdn.glitch.global/38551651-fc87-4f60-b474-a27d424d372b/fart_03.mp3?v=1700023464386"></audio>  
+    <audio id="fart_04" src="https://cdn.glitch.global/38551651-fc87-4f60-b474-a27d424d372b/perfect-fart.mp3?v=1700023636828"></audio>
+    <audio id="fart_05" src="https://cdn.glitch.global/38551651-fc87-4f60-b474-a27d424d372b/fart-toot.mp3?v=1700023653624"></audio>
+    <audio id="fart_06" src="https://cdn.glitch.global/38551651-fc87-4f60-b474-a27d424d372b/fart-with-reverb_NcgStsA.mp3?v=1700023644773"></audio>
+    <audio id="fart_07" src="https://cdn.glitch.global/38551651-fc87-4f60-b474-a27d424d372b/fart3.mp3?v=1700023649738"></audio>
+    <audio id="moan_01" src="https://cdn.glitch.global/38551651-fc87-4f60-b474-a27d424d372b/moan-1.mp3?v=1706443774474"></audio>
+    <audio id="moan_02" src="https://cdn.glitch.global/38551651-fc87-4f60-b474-a27d424d372b/maon-2.mp3?v=1706443815977"></audio>
+    <audio id="moan_03" src="https://cdn.glitch.global/38551651-fc87-4f60-b474-a27d424d372b/maon-3.mp3?v=1706443854425"></audio>
+    <audio id="moan_04" src="https://cdn.glitch.global/38551651-fc87-4f60-b474-a27d424d372b/moan-4.mp3?v=1706443879906"></audio>
+    <audio id="moan_05" src="https://cdn.glitch.global/38551651-fc87-4f60-b474-a27d424d372b/moan_5.m4a?v=1706444485774"></audio>
+    <audio id="boo_01" src="https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/boo%20(1).mp3?v=1708155358672"></audio>
+    <audio id="boo_02" src="https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/boo%20(2).mp3?v=1708155358846"></audio>
+    <audio id="boo_03" src="https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/boo%20(3).mp3?v=1708155359060"></audio>
+    <audio id="boo_04" src="https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/boo%20(4).mp3?v=1708155359233"></audio>
+    <audio id="boo_05" src="https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/boo%20(5).mp3?v=1708155359406"></audio>
+    <audio id="lightening_01" src="https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/lightening%20(1).mp3?v=1708155707123"></audio>
+    <audio id="lightening_02" src="https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/lightening%20(2).mp3?v=1708155707454"></audio>
+    <audio id="lightening_03" src="https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/lightening%20(3).mp3?v=1708155707728"></audio>
+    <audio id="gavel" src="https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/gavel.mp3?v=1708155857036"></audio>
+    <audio id="law_and_order" src="https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/law_and_order.mp3?v=1708155852561"></audio>
+    <img id="iff" src="/iff.gif" style="display:none;">
+  </body>
+</html>

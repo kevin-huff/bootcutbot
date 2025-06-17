@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Subathon Timer Controls</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous" />
+    <link rel="stylesheet" href="../flipclock.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+    <script src="../flipclock.js"></script>
+    <script src="../timer.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script type="text/javascript">
+        $(document).ready(function() {
+            // Initialize the clock with initial time from server
+            var initialSeconds = parseInt("<%= initial_seconds || 0 %>");
+            window.clock = $('.clock').FlipClock(initialSeconds, {
+                clockFace: 'HourlyCounter',
+                countdown: true,
+                autoStart: false,
+                callbacks: {
+                    interval: function() {
+                        var time = this.factory.getTime().time;
+                        if (time <= 0) {
+                            this.factory.stop();
+                            window.clock.isPaused = true;
+                            
+                            // Update button state
+                            const toggleBtn = document.getElementById('toggleBtn');
+                            toggleBtn.textContent = 'Start Timer';
+                            toggleBtn.className = 'btn btn-success';
+                        }
+                    }
+                }
+            });
+
+            // Store initial state
+            window.clock.isPaused = true;
+
+            // Join timer room to get current state
+            window.socket.emit('join_subathon_timer');
+        });
+    </script>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+        
+        .timer-controls {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background-color: #2a2a2a;
+        }
+        
+        .timer-controls button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #333;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        h2, h4 {
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        
+        .input-group-text {
+            background-color: #444;
+            color: #e0e0e0;
+            border: 1px solid #555;
+        }
+        
+        .form-control {
+            background-color: #333;
+            border: 1px solid #555;
+            color: #e0e0e0;
+        }
+        
+        .form-control:focus {
+            background-color: #444;
+            border-color: #666;
+            color: #fff;
+            box-shadow: 0 0 0 0.2rem rgba(255,255,255,0.1);
+        }
+        
+        .text-muted {
+            color: #888 !important;
+        }
+        
+        .clock {
+            margin: 1em 0 !important;
+            background: #333;
+            padding: 1em;
+            border-radius: 8px;
+        }
+        
+        .log-section {
+            height: 600px;
+            overflow-y: auto;
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #333;
+        }
+        
+        .log-entry {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background: #333;
+            border-left: 4px solid;
+        }
+        
+        .log-entry.add_time { border-left-color: #28a745; }
+        .log-entry.subtract_time { border-left-color: #ffc107; }
+        .log-entry.pause { border-left-color: #dc3545; }
+        .log-entry.resume { border-left-color: #17a2b8; }
+        .log-entry.set_time { border-left-color: #007bff; }
+        .log-entry.multiplier_enabled { border-left-color: #6f42c1; }
+        .log-entry.multiplier_disabled { border-left-color: #6c757d; }
+        
+        .log-time {
+            color: #888;
+            font-size: 0.9em;
+        }
+        
+        .log-action {
+            color: #fff;
+            font-weight: bold;
+        }
+        
+        .log-details {
+            color: #bbb;
+            margin-top: 5px;
+        }
+        
+        /* Custom scrollbar for the log section */
+        .log-section::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .log-section::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        
+        .log-section::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+        
+        .log-section::-webkit-scrollbar-thumb:hover {
+            background: #666;
+        }
+        
+        /* Button hover effects */
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-7">
+                <h2>
+                    <i class="fas fa-clock mr-2"></i>
+                    Subathon Timer Controls
+                </h2>
+                <div class="clock"></div>
+                <div class="timer-controls">
+                    <div class="control-group">
+                        <h4>Timer Control</h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <button id="toggleBtn" class="btn btn-success btn-block" onclick="toggleTimer()">Start Timer</button>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="multiplier-controls">
+                                    <div class="input-group">
+                                        <input type="number" id="multiplierValue" class="form-control" value="2" min="1" step="0.5">
+                                        <div class="input-group-append">
+                                            <button id="multiplierBtn" class="btn btn-primary" onclick="toggleMultiplier()">Enable 2x</button>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">Multiplier applies to all time additions</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <h4>Bits</h4>
+                        <div class="input-group mb-3">
+                            <input type="number" id="bitsAmount" class="form-control" placeholder="Amount of bits">
+                            <div class="input-group-append">
+                                <button class="btn btn-success" onclick="addBits()">Add Bits</button>
+                            </div>
+                        </div>
+                        <small class="text-muted">100 bits = 1 minute</small>
+                    </div>
+
+                    <div class="control-group">
+                        <h4>Subscriptions</h4>
+                        <div class="row">
+                            <div class="col">
+                                <button class="btn btn-success btn-block mb-2" onclick="addSub(1)">Tier 1 Sub (5 min)</button>
+                                <button class="btn btn-success btn-block mb-2" onclick="addSub(2)">Tier 2 Sub (10 min)</button>
+                                <button class="btn btn-success btn-block" onclick="addSub(3)">Tier 3 Sub (25 min)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <h4>Gift Subs</h4>
+                        <div class="input-group mb-3">
+                            <select id="giftTier" class="form-control">
+                                <option value="1">Tier 1 (5 min each)</option>
+                                <option value="2">Tier 2 (10 min each)</option>
+                                <option value="3">Tier 3 (25 min each)</option>
+                            </select>
+                        </div>
+                        <div class="input-group mb-3">
+                            <input type="number" id="giftAmount" class="form-control" placeholder="Number of gifts">
+                            <div class="input-group-append">
+                                <button class="btn btn-success" onclick="addGiftSubs()">Add Gift Subs</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <h4>Direct Donations</h4>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">$</span>
+                            </div>
+                            <input type="number" id="donationAmount" class="form-control" placeholder="Amount">
+                            <div class="input-group-append">
+                                <button class="btn btn-success" onclick="addDonation()">Add Donation</button>
+                            </div>
+                        </div>
+                        <small class="text-muted">$1 = 1 minute</small>
+                    </div>
+
+                    <div class="control-group">
+                        <h4>Merch Purchase</h4>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">$</span>
+                            </div>
+                            <input type="number" id="merchAmount" class="form-control" placeholder="Purchase amount">
+                            <div class="input-group-append">
+                                <button class="btn btn-success" onclick="addMerch()">Add Merch</button>
+                            </div>
+                        </div>
+                        <small class="text-muted">$1 = 1 minute</small>
+                    </div>
+
+                    <div class="control-group">
+                        <h4>Random VOD Settings</h4>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <button id="vodsToggleBtn" class="btn btn-primary btn-block" onclick="toggleVods()">Enable VODs</button>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary btn-block" onclick="socket.emit('random_vod_redeem')">Test VOD (50 bits)</button>
+                        <small class="text-muted">When enabled, 50 bit cheers will trigger random clips from abbabox's channel</small>
+                    </div>
+
+                    <script>
+                        let vodsEnabled = false;
+                        
+                        function toggleVods() {
+                            vodsEnabled = !vodsEnabled;
+                            const btn = document.getElementById('vodsToggleBtn');
+                            
+                            if (vodsEnabled) {
+                                btn.textContent = 'Disable VODs';
+                                btn.classList.remove('btn-primary');
+                                btn.classList.add('btn-warning');
+                            } else {
+                                btn.textContent = 'Enable VODs';
+                                btn.classList.remove('btn-warning');
+                                btn.classList.add('btn-primary');
+                            }
+                            
+                            window.socket.emit('set_vods_enabled', vodsEnabled);
+                        }
+
+                        // Listen for vods state updates
+                        window.socket.on('vods_state', (enabled) => {
+                            vodsEnabled = enabled;
+                            const btn = document.getElementById('vodsToggleBtn');
+                            
+                            if (enabled) {
+                                btn.textContent = 'Disable VODs';
+                                btn.classList.remove('btn-primary');
+                                btn.classList.add('btn-warning');
+                            } else {
+                                btn.textContent = 'Enable VODs';
+                                btn.classList.remove('btn-warning');
+                                btn.classList.add('btn-primary');
+                            }
+                        });
+                    </script>
+
+                    <div class="control-group">
+                        <h4>Manual Time Control</h4>
+                        <div class="row">
+                            <div class="col">
+                                <button class="btn btn-primary btn-block mb-2" onclick="setTime(24)">Set 24h</button>
+                            </div>
+                            <div class="col">
+                                <button class="btn btn-primary btn-block mb-2" onclick="setTime(48)">Set 48h</button>
+                            </div>
+                            <div class="col">
+                                <button class="btn btn-primary btn-block" onclick="setTime(72)">Set 72h</button>
+                            </div>
+                        </div>
+                        <div class="input-group mt-3">
+                            <input type="number" id="manualMinutes" class="form-control" placeholder="Minutes">
+                            <div class="input-group-append">
+                                <button class="btn btn-success" onclick="addManualTime()">Add Time</button>
+                                <button class="btn btn-warning" onclick="subtractManualTime()">Remove Time</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <h2>
+                    <i class="fas fa-history mr-2"></i>
+                    Timer Log
+                </h2>
+                <div class="log-section" id="timerLog">
+                    <!-- Log entries will be added here dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize multiplier state
+        let multiplierEnabled = false;
+        
+        // Function to toggle multiplier
+        function toggleMultiplier() {
+            const multiplierValue = parseFloat(document.getElementById('multiplierValue').value) || 2;
+            multiplierEnabled = !multiplierEnabled;
+            const btn = document.getElementById('multiplierBtn');
+            
+            if (multiplierEnabled) {
+                btn.textContent = `Disable ${multiplierValue}x`;
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-warning');
+            } else {
+                btn.textContent = `Enable ${multiplierValue}x`;
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-primary');
+            }
+            
+            window.socket.emit('set_multiplier', {
+                enabled: multiplierEnabled,
+                value: multiplierValue
+            });
+        }
+        
+        // Listen for multiplier updates
+        window.socket.on('multiplier_state', (data) => {
+            multiplierEnabled = data.enabled;
+            document.getElementById('multiplierValue').value = data.value;
+            const btn = document.getElementById('multiplierBtn');
+            
+            if (multiplierEnabled) {
+                btn.textContent = `Disable ${data.value}x`;
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-warning');
+            } else {
+                btn.textContent = `Enable ${data.value}x`;
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-primary');
+            }
+        });
+        
+        // Update multiplier button text when value changes
+        document.getElementById('multiplierValue').addEventListener('change', function() {
+            const value = parseFloat(this.value) || 2;
+            const btn = document.getElementById('multiplierBtn');
+            btn.textContent = multiplierEnabled ? `Disable ${value}x` : `Enable ${value}x`;
+            
+            if (multiplierEnabled) {
+                window.socket.emit('set_multiplier', {
+                    enabled: true,
+                    value: value
+                });
+            }
+        });
+        
+        // Function to format time duration
+        function formatDuration(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            let result = '';
+            if (hours > 0) result += `${hours}h `;
+            if (minutes > 0) result += `${minutes}m `;
+            if (secs > 0 || (hours === 0 && minutes === 0)) result += `${secs}s`;
+            
+            return result.trim();
+        }
+
+        // Function to add a log entry
+        function addLogEntry(data) {
+            const logSection = document.getElementById('timerLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${data.action}`;
+            
+            const time = new Date(data.timestamp);
+            const timeStr = time.toLocaleTimeString();
+            
+            let details = '';
+            if (data.action === 'add_time') {
+                details = `${formatDuration(data.seconds)}`;
+                if (data.multiplier > 1) {
+                    details += ` (${formatDuration(data.originalSeconds)} × ${data.multiplier})`;
+                }
+                if (data.source && data.source !== 'manual') {
+                    details += ` from ${data.source}`;
+                }
+                details += `<br>Before: ${formatDuration(data.timeRemainingBefore)} → After: ${formatDuration(data.timeRemainingAfter)}`;
+            } else if (data.action === 'subtract_time') {
+                details = `${formatDuration(data.seconds)}`;
+                if (data.reason && data.reason !== 'manual') {
+                    details += ` (${data.reason})`;
+                }
+            } else if (data.action === 'set_time') {
+                details = `to ${formatDuration(data.seconds)}`;
+            } else if (data.action === 'pause') {
+                details = `at ${formatDuration(Math.floor(data.remainingTime))}`;
+            } else if (data.action === 'resume') {
+                details = `with ${formatDuration(Math.floor(data.remainingTime))} remaining`;
+            } else if (data.action === 'multiplier_enabled') {
+                details = `${data.value}x multiplier enabled`;
+            } else if (data.action === 'multiplier_disabled') {
+                details = `${data.value}x multiplier disabled`;
+            }
+            
+            entry.innerHTML = `
+                <div class="log-time">${timeStr}</div>
+                <div class="log-action">${data.action.replace(/_/g, ' ').toUpperCase()}</div>
+                <div class="log-details">${details}</div>
+            `;
+            
+            logSection.insertBefore(entry, logSection.firstChild);
+        }
+
+        // Listen for timer events to update log
+        window.socket.on('timer_log', (data) => {
+            addLogEntry(data);
+        });
+
+        // Load initial logs
+        window.socket.emit('get_timer_logs');
+    </script>
+</body>
+</html>

@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Angelic Game Interface</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300&display=swap" rel="stylesheet">
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+<script src="//code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        updateTurn('<%= current_turn %>');
+
+        var CountDown = (function ($) {
+        // Length ms 
+        var TimeOut = 10000;
+        // Interval ms
+        var TimeGap = 1000;
+        
+        var CurrentTime = ( new Date() ).getTime();
+        var EndTime = ( new Date() ).getTime() + TimeOut;
+        
+        var GuiTimer = $('#timer');
+        var GuiPause = $('#pause');
+        
+        var Running = false;
+        
+        var UpdateTimer = function() {
+        // Run till timeout
+        if( CurrentTime + TimeGap < EndTime && Running ) {
+            setTimeout( UpdateTimer, TimeGap );
+        }
+        // Countdown if running
+        if( Running ) {
+            CurrentTime += TimeGap;
+            if( CurrentTime >= EndTime ) {
+                Running = false;
+                $('#timer_display').html('00:00');
+                $('#timer_display').css('color','red');
+                $('#current_player').css('color','red');
+                $('#timer_display').addClass('blink_me');
+                $('#current_player').addClass('blink_me');
+            } else {
+                // Update Gui
+                var Time = new Date();
+                Time.setTime( EndTime - CurrentTime );
+                var Minutes = Time.getMinutes();
+                var Seconds = Time.getSeconds();
+                $('#timer_num').html( 
+                String(Minutes).padStart(2, '0') + ':' + 
+                String(Seconds).padStart(2, '0') );
+            }
+        }
+                
+        };
+        
+        var Pause = function() {
+            Running = false;
+        };
+        
+        var Resume = function() {
+            Running = true;
+            UpdateTimer();
+        };
+        
+        var Start = function( Timeout ) {
+        $('#timer_display').css('color','yellow');
+        $('#current_player').css('color','yellow');
+        $('#timer_display').removeClass('blink_me');
+        $('#current_player').removeClass('blink_me');
+        TimeOut = Timeout;
+        CurrentTime = ( new Date() ).getTime();
+        EndTime = ( new Date() ).getTime() + TimeOut;
+        UpdateTimer();
+        };
+
+        return {
+            Pause: Pause,
+            Resume: Resume,
+            Start: Start
+        };
+  })(jQuery);
+
+    let thisCountDown = CountDown
+    let socket = io();
+    socket.on("connect", () => {
+        console.log('socket connected: ',socket.connected); // true
+    });
+    socket.on('board_update', function(splot_data){
+        console.log('board_update')
+        updateBoard(splot_data);
+    });
+    socket.on('clear_board', function(msg){
+        console.log('clear_board')
+        clearBoard();
+    });
+    socket.on('new_turn', function(msg){
+        console.log('new_turn')
+        updateTurn(msg);
+    });
+    socket.on('timer_server', function(msg){
+        console.log('timer_admin:', msg)
+        $('#timer_num').html(msg.timer_display);
+        if(msg.action == 'start'){
+          thisCountDown.Start(msg.timer_value);
+        }
+        if(msg.action == 'pause'){
+          thisCountDown.Pause();
+        }
+        if(msg.action == 'resume'){
+          thisCountDown.Resume();
+        }
+    }); 
+    socket.on('ba_update', function(ba_data){
+        console.log('ba_update')
+        updateBreakaways(ba_data);
+    });
+    socket.on('dice_rolled', function(data){
+    var this_uuid = generateUUID();          
+    // Create HTML structure
+    var roll_animation = $('<div>')
+        .attr('class', 'dice-roll-popup').attr('id', 'roll-' + this_uuid)
+        .append($('<div>').attr('class', 'inner-lcars')
+            .append($('<div>').attr('class', 'die-name')
+                .append($('<p>').html(data.dice_name)))
+            .append($('<div>').attr('class', 'roll-value')
+                .append($('<p>').attr('class', 'roll').html(data.roll_value)))
+            .append($('<div>').attr('class', 'die-type')
+                .append($('<p>').html(data.dice_type))));
+    // add structure to body
+    $('body').append(roll_animation);
+    // randomly select a jquery ui effect
+    var effects = ['slide', 'clip', 'fade', 'blind', 'explode', 'puff', 'shake', 'fold'];
+    var effect = effects[Math.floor(Math.random()*effects.length)];
+    // apply effect when animation is shown
+    $('#roll-' + this_uuid).show(500);
+    // remove animation after 2 seconds
+    setTimeout(function(){
+        $('#roll-' + this_uuid).hide( 500, function(){
+            $('#roll-' + this_uuid).remove();
+        });
+    }, 5000);
+    //If its' a d8 then flash the border of the spot number and entry
+    if(data.dice_type == 'D8'){
+        flashBorder(data.roll_value);
+        if(data.roll_value == 6){
+            var audio = document.getElementById('hellfire');
+            audio.play();
+        }
+    }    
+});
+    function updateTurn(text) {
+      $('#timer_display').removeClass('blink_me');
+      $('#current_player').removeClass('blink_me');
+      document.getElementById("current_player").innerHTML = "Current Player: " + text;   
+    }
+    function getSplotData(splot_id){
+      let current_splot_dots = parseInt(document.getElementById("splot_dot_" + splot_id).innerHTML);
+      let current_splot_entry = document.getElementById("splotEntry_" + splot_id).innerHTML.trim();
+      let splot_data = {
+          id: splot_id,
+          entry: current_splot_entry,
+          splot_dot: current_splot_dots
+      }
+      console.log('getSplotData',splot_data)
+      return splot_data;
+    }
+    function updateBoard(splot_data){    
+        var innerHTML = 
+            '<h2>' +
+                '<span class="spot-number" id="splot_number_' + splot_data.id + '">' +
+                splot_data.id +
+                '</span>' +
+                '<span class="splotEntry" id="splotEntry_' + splot_data.id + '">' +
+                splot_data.entry +
+                '</span>' +
+            '</h2>' +
+            '<p class="use-count" id="splot_count_' + splot_data.id + '">' +
+                'Uses: ' + splot_data.splot_dot +
+            '</p>';
+
+        var this_splot = document.getElementById('splot_' + splot_data.id);
+
+        if (this_splot) {
+            $('#splot_' + splot_data.id).fadeOut("slow", function() {
+            this_splot.innerHTML = innerHTML;
+            $('#splot_' + splot_data.id).fadeIn();
+            }); 
+
+        } else {
+            var div = document.createElement("div");
+            div.className = "item";
+            div.id = 'splot_' + splot_data.id;
+            div.innerHTML = innerHTML;
+            document.getElementById("board").appendChild(div);
+            $('#splot_' + splot_data.id).fadeIn("slow");
+        }
+    }
+    function clearBoard(){
+      $('#board').fadeOut();
+      document.getElementById("board").innerHTML = "";
+      $('#board').fadeIn();
+    }
+    // Add the generateUUID function
+    function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+        });
+    }
+    function updateBreakaways(ba_data){    
+        var innerHTML = 
+            '<div class="breakaway-content">' +
+                '<div class="breakaway-header">' +
+                    '<h3><span id="breakawayName_' + ba_data.id + '">' + ba_data.name + '</span> Breakaways</h3>' +
+                '</div>' +
+                '<div class="breakaway-counter">' +
+                    '<div class="counter-circle">' +
+                        '<strong id="ba_dot_' + ba_data.id + '">' + ba_data.ba_dots + '</strong>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+
+        var this_ba = document.getElementById('breakaway_' + ba_data.id);
+
+        if (this_ba) {
+            this_ba.innerHTML = innerHTML;
+        } else {
+            var div = document.createElement("div");
+            div.className = "breakaway-col";
+            div.id = 'breakaway_' + ba_data.id;
+            div.innerHTML = innerHTML;
+            document.getElementById("breakaways").appendChild(div);
+        }
+    }
+    // Function to apply the hover effect to a spot div by id
+    function flashBorder(roll_value){
+        //remove any other spot highlighted
+        for (let i = 1; i < 9; i++) {
+            let spot = document.getElementById('splot_' + i);
+            spot.style.border = '1px solid var(--border-color)';
+        }
+        let spot_id = roll_value;
+        let spot = document.getElementById('splot_' + spot_id);
+        let mouseoverEvent = new Event('mouseover');
+        spot.dispatchEvent(mouseoverEvent);
+        spot.style.border = '2px solid #FF6347';
+    }
+
+    
+});
+
+
+</script>
+<style>
+    :root {
+        --main-color: #E0E0E0;
+        --background-color: #FFFFFF;
+        --container-color: #F8F8FF;
+        --border-color: #CCCCCC;
+        --highlight-color: #FFD700;
+        --contrast-color: #A9A9A9;
+        --spot-background: #FFFFFF; 
+        --font-color: #2E2E2E;
+    }
+
+    body {
+    font-family: 'Montserrat', sans-serif;
+    color: var(--main-color);
+    background-color: var(--background-color);
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    max-height: 1080px;
+    overflow-y: auto;
+}
+.container {
+    width: 640px;
+    height: 1080px;
+    margin: 0 auto;
+    background-color: var(--container-color);
+    background: url('angelic-background.jpg') no-repeat center center;
+    background-size: cover;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+header {
+    font-family: 'Great Vibes', cursive;
+    padding: 10px;
+    text-align: center;
+    border-bottom: 2px solid var(--border-color);
+    font-size: 2rem;
+    background: rgba(255, 255, 255, 0.8);
+    color: var(--highlight-color);
+}
+.current-turn {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 20px;
+    border-bottom: 2px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--highlight-color);
+    font-size: 1.5rem;
+}
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 15px;
+    padding: 20px;
+    flex-grow: 1;
+}
+.spot {
+    position: relative;
+    background-color: var(--spot-background);
+    border: 1px solid var(--border-color);
+    color: var(--font-color);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.3s ease;
+}
+.spot:hover {
+    background-color: #FAFAD2;
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+.spot h2 {
+    font-size: 1.5rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.spot-number {
+    font-family: 'Great Vibes', cursive;
+    color: var(--highlight-color);
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 2rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    background: none;
+    padding: 0;
+}
+#splot_6 {
+    background-image: url('heavenfire.webp');
+    color: #FFF; /* White text */
+     /* heavenly border */
+    border: 2px solid #FF6347;
+    /* center the background image */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.use-count {
+    position: absolute;
+    bottom: 3px;
+    right: 10px;
+    text-align: right;
+}
+.breakaways {
+    display: flex;
+    flex-wrap: wrap;
+    padding-top: 20px;
+    padding-left: 5px;
+    padding-right: 5px;
+    justify-content: space-between;
+    border-top: 1px solid var(--border-color);
+}
+.splotEntry {
+    padding-left: 15px;
+    padding-bottom: 10px;
+}
+.breakaway-col {
+    width: calc(50% - 10px);
+    margin-bottom: 20px;
+}
+.breakaway-content {
+    display: flex;
+    justify-content: space-between;
+}
+.breakaway-header h3 {
+    font-size: 1.6rem;
+    margin: 0 0 10px 0;
+    color: var(--font-color);
+}
+.breakaway-counter {
+    display: flex;
+    justify-content: flex-end;
+}
+.counter-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--highlight-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: var(--font-color);
+}
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0.1;
+}
+.dice-roll-popup {
+    position: fixed;
+    width: 200px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+    background-color: var(--container-color);
+    color: var(--font-color);
+    border: 2px solid var(--border-color);
+    box-shadow: 0 0 10px var(--highlight-color);
+    text-align: center;
+    border-radius: 10px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    font-family: 'Great Vibes', cursive;
+}
+.dice-roll-popup:hover {
+    box-shadow: 0 0 15px var(--highlight-color);
+    transform: translate(-50%, -50%) scale(1.05);
+}
+.dice-roll-popup .inner-lcars {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.dice-roll-popup .die-name,
+.dice-roll-popup .roll-value,
+.dice-roll-popup .die-type {
+    font-size: 1.5em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: rgba(255, 255, 255, 0.5);
+}
+.dice-roll-popup .roll-value {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: var(--highlight-color);
+}
+h1 {
+    font-family: 'Great Vibes', cursive;
+    color: var(--highlight-color);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+    margin: 0;
+    padding: 10px;
+}
+#current_player, #timer_display {
+    /* make sure the text is readable */
+    color: var(--highlight-color);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    font-weight: bolder;
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <audio id="hellfire" src="https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/angels-singing.mp3?v=1719185375876"></audio>
+    <header>
+        <h1 style="
+        margin-top: 2px;
+        margin-bottom: 2px;
+    ">Bootcut</h1>
+    </header>
+    <div class="current-turn">
+        <p id='current_player'>Current Turn: ZilchGnu</p>
+        <p id='timer_display'>Turn: <span id="timer_num">0:00</span></p>
+    </div>
+    <div class="grid" id="board">
+        <% board.forEach(function(dataRow, idxOfRow, orgnlAryObject) { %>
+            <div class="spot" id='splot_<%= dataRow.id %>'>
+                <h2> 
+                    <span class="spot-number" id="splot_number_<%= dataRow.id %>">
+                        <%= dataRow.id %>
+                    </span>
+                    <span class="splotEntry" id='splotEntry_<%= dataRow.id %>'><%= dataRow.entry %></span>
+                </h2>
+                <p class="use-count" id="splot_count_<%= dataRow.id %>">Uses: <%= dataRow.splot_dot %></p>
+            </div>
+        <% }); %>
+    </div>
+    <div class="breakaways" id="breakaways">
+    <% breakaways.forEach(function(dataRow) { %>
+        <div class="breakaway-col" id='breakaway_<%= dataRow.id %>'>
+            <div class="breakaway-content">
+                <div class="breakaway-header">
+                    <h3>
+                    <span id='breakawayName_<%= dataRow.id %>'><%= dataRow.name %></span> Breakaways
+                    </h3>
+                </div>
+                <div class="breakaway-counter">
+                    <div class="counter-circle">
+                    <strong id="ba_dot_<%= dataRow.id %>"><%= dataRow.ba_dots %></strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <% }); %>
+    </div>      
+</div>
+</body>
+</html>

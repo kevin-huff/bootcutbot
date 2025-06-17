@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+ 
+<head>
+  <title>crowd sounds</title>
+  <!-- Bootstrap CSS -->
+  <!-- Dark mode CSS -->
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/js/all.min.js" integrity="sha512-rpLlll167T5LJHwp0waJCh3ZRf7pO6IT1+LZOhAyP6phAirwchClbTZV3iqL3BMrVxIYRbzGTpli4rfxsCK6Vw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://kit.fontawesome.com/5a69a86b05.js" crossorigin="anonymous"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+ <script>
+    var socket = io();
+    let queue = [];
+
+    socket.on("connect", () => {
+        console.log(socket.connected); // true
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+      // Existing event listener for 'jarjar'
+      socket.on('jarjar', function(){
+        console.log('jarjar');
+        var jarjarElement = document.getElementById('jarjar');
+        addToQueue(jarjarElement);
+      });
+
+      // New event listener for 'draculaAngel'
+      socket.on('draculaAngel', function(){
+        console.log('draculaAngel');
+        var draculaAngelElement = document.getElementById('draculaAngel');
+        addToQueue(draculaAngelElement);
+      });
+      // New event listener for 'draculaAngel'
+      socket.on('ash_spit', function(){
+        console.log('ash_spit');
+        var ashSpitElement = document.getElementById('ash_spit');
+        ashSpitElement.volume = 0.5;
+        addToQueue(ashSpitElement);
+      });
+      // New event listener for 'kermit_sex'
+      socket.on('kermit_sex', function(){
+        console.log('kermit_sex');
+        var kermit_sex = document.getElementById('kermit_sex');
+        kermit_sex.volume = 1;
+        addToQueue(kermit_sex);
+      });
+
+    function addToQueue(item) {
+    queue.push(item.id); // Add item's ID, not the item itself
+    console.log(`Added to queue: ${item.id}. Queue now:`, queue);
+    if (queue.length === 1) {
+        console.log("Queue has one item, initiating playNext.");
+        playNext(); // Only call playNext if nothing is currently playing
+    }
+}
+
+function playNext() {
+    if (queue.length === 0) {
+        console.log("Queue empty, nothing to play.");
+        return;
+    }
+    let nextItem = queue[0]; // Peek at the next item without removing it yet
+    let mediaElement = document.getElementById(nextItem);
+    // Get the iff gif element
+    let gifElement = document.getElementById('iff');
+    console.log(`Attempting to play: ${nextItem}`);
+
+    if (!mediaElement) {
+        console.error(`Media element not found: ${nextItem}`);
+        return; // Early exit if the element doesn't exist
+    }
+    // See if it's hidden
+    if (mediaElement.tagName === "VIDEO") {
+      console.log("showing a video");
+      mediaElement.style.display = "block";
+    }
+
+    mediaElement.onended = function() {
+        console.log(`Playback ended for: ${nextItem}`);
+        // If it's a video hide it.
+        if (mediaElement.tagName === "VIDEO") {
+          console.log("hiding a video");
+          mediaElement.style.display = "none";
+        }
+        // If the ended item started with "fart", hide the gif
+        if (nextItem.startsWith('fart')) {
+            setTimeout(function() {
+                gifElement.style.display = "none";
+            }, 3000); // Delay of 3 seconds
+        }
+        queue.shift(); // Now remove the item from the queue
+        playNext(); // Then move to the next item
+    };
+
+    mediaElement.play().then(() => {
+        console.log(`Playing: ${nextItem}`);
+        // If the next item starts with "fart", show the gif
+        if (nextItem.startsWith('fart')) {
+            gifElement.style.display = "block";
+        }
+    }).catch(error => {
+        console.error(`Error playing ${nextItem}:`, error);
+        queue.shift(); // Remove the item if it couldn't play
+        playNext(); // Skip to the next item
+    });
+}
+
+    });
+</script>
+  <style>
+    .btn-fixed-bottom {
+      position: absolute;
+      bottom: 0;
+      margin-bottom: 20px;
+    }
+    .hidden_vid {
+      display: none;
+    }
+  </style>
+
+<body>
+    <video id="jarjar" clas="hidden_vid" style="display:none;" src="https://cdn.glitch.me/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/jarjar2.webm?v=1702458872143" preload="auto"></video>
+    <video id="draculaAngel" clas="hidden_vid" style="display:none;" src="https://cdn.glitch.me/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/dracula's%20angel.webm?v=1704191785268" preload="auto"></video>
+    <video id="ash_spit" clas="hidden_vid" style="display:none;" src="https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/ash_spit.webm?v=1710559434112" preload="auto"></video>
+    <video id="kermit_sex" clas="hidden_vid" style="display:none;" src="https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/outputvideo.webm?v=1713074748106" preload="auto"></video>
+    <audio id="tts" src="/tts"></audio>
+    <img id="iff" src="/iff.gif" style="display:none;">
+  </body>

@@ -1,0 +1,143 @@
+
+<!DOCTYPE html>
+<html>
+ 
+<head>
+  <title>Breakaways</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/5a69a86b05.js" crossorigin="anonymous"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+  <style>
+    .blink_me {
+      animation: blinker 1s linear infinite;
+    }
+
+    @keyframes blinker {
+      50% {
+        opacity: 0;
+      }
+    }
+  </style>
+  <script>
+  $(document).ready(function() {
+    $("#img1").attr("src", "portal.jpg");
+  });
+    var socket = io();
+    socket.on("connect", () => {
+      console.log(socket.connected); // true
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+      socket.on('ba_update', function(ba_data){
+        console.log('ba_update')
+        updateBreakaways(ba_data);
+      });
+    })
+   function updateBreakaways(ba_data){    
+    var innerHTML = '<div class="ba-title">' +
+      '<h3><span id="breakawayName_' + ba_data.id + '">' + ba_data.name + '</span> Breakaways</h3>' +
+    '</div>' +
+    '<div class="ba-count">' +
+      '<span class="fa-stack float-right fa-fade">' +
+        '<span class="fa-regular fa-circle fa-stack-2x"></span>' +
+        '<strong class="fa-stack-1x" id="ba_dot_' + ba_data.id + '">' +
+          ba_data.ba_dots +
+        '</strong>' +
+      '</span>' +
+    '</div>';
+
+    var this_ba = document.getElementById('breakaway_' + ba_data.id);
+
+    if (this_ba) {
+      this_ba.innerHTML = innerHTML;
+    } else {
+      var div = document.createElement("div");
+      div.className = "item";
+      div.id = 'breakaway_' + ba_data.id;
+      div.innerHTML = innerHTML;
+      document.getElementById("breakaways").appendChild(div);
+    }
+  }
+
+    function clearBoard(){
+      $('#board').fadeOut();
+      document.getElementById("board").innerHTML = "";
+      $('#board').fadeIn();
+    }
+  </script>
+  <style>
+
+body {
+      width: 1600px;
+      height: 125px;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 0;
+      font-family: 'Antonio', sans-serif;
+      background-color: #000000;
+      color:#f70; 
+    }
+      .lcars {
+        border-radius: 40px 0 0 0;
+        display: flex;
+        height: 100%;
+        background: linear-gradient(#cc88ff 70px, #000 70px, #000 75px, #7788ff 75px, #7788ff 125px);
+      }
+      .container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(1, 1fr);
+      width: 1600px;
+      margin-left: 60px;
+      padding-left: 60px;
+      background: #000;
+      border-radius: 60px 0 0 0;
+      margin-top: 20px;
+    }
+
+      .item {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-start;
+      align-items: center;
+      height: 100%;
+      padding: 2px;
+      box-sizing: border-box;
+      z-index: 3;
+        font-size: 2.5vh;
+    }
+    .ba-count {
+      margin-left: 10px;
+    }
+  h3 {
+    margin: 3px;
+  }
+  </style>
+</head> 
+<body>
+<div class="lcars">
+<div class="container" id="breakaways">
+    <% breakaways.forEach(function(dataRow, idxOfRow, orgnlAryObject) { %>
+      <div class="item" id='breakaway_<%= dataRow.id %>'>
+        <div class="ba-title">
+          <h3><span id='breakawayName_<%= dataRow.id %>'><%= dataRow.name %></span> Breakaways</h3>
+        </div>
+        <div class="ba-count">
+          <span class="fa-stack float-right fa-fade">
+            <span class="fa-regular fa-circle fa-stack-2x"></span>
+            <strong class="fa-stack-1x" id="ba_dot_<%= dataRow.id %>">
+            <%= dataRow.ba_dots %>
+            </strong>
+          </span>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+</div>
+</body>
+ 
+</html>

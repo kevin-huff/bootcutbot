@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>The Bootcut Board</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/5a69a86b05.js" crossorigin="anonymous"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7HibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  <script src="https://stephenlb.github.io/spoken/spoken.js"></script>
+  <style>
+    .blink_me {
+      animation: blinker 1s linear infinite;
+    }
+
+    @keyframes blinker {
+      50% {
+        opacity: 0;
+      }
+    }
+
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: #FFFFFF;
+      color: #2E2E2E;
+      overflow: hidden;
+    }
+
+    .container {
+      padding-top: 10px;
+      max-width: 1920px;
+      min-height: 1080px;
+      overflow: hidden;
+    }
+
+    .col-md-6 {
+      padding: 10px;
+    }
+
+    h2 {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 2rem;
+      color: #FFD700;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .fa-stack-2x {
+      color: #FFD700;
+      animation: rotate 2s linear infinite;
+    }
+
+    @keyframes rotate {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .fa-stack-1x {
+      color: #FFFFFF;
+    }
+
+    .fa-bounce {
+      animation: bounce 1s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+  </style>
+  <script>
+    $(document).ready(function() {
+      $("#img1").attr("src", "portal.jpg");
+    });
+
+    var socket = io();
+    socket.on("connect", () => {
+      console.log(socket.connected); // true
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      socket.on('board_update', function(splot_data){
+        console.log('board_update')
+        updateBoard(splot_data);
+      });
+      socket.on('clear_board', function(msg){
+        console.log('clear_board')
+        clearBoard();
+      });   
+    });
+
+    function getSplotData(splot_id){
+      let current_splot_dots = parseInt(document.getElementById("splot_dot_" + splot_id).innerHTML);
+      let current_splot_entry = document.getElementById("splotEntry_" + splot_id).innerHTML.trim();
+      let splot_data = {
+          id: splot_id,
+          entry: current_splot_entry,
+          splot_dot: current_splot_dots
+      }
+      console.log('getSplotData',splot_data)
+      return splot_data;
+    }
+
+    function updateBoard(splot_data){    
+      var splot_dots = '<span class="fa-stack"><span class="fa-regular fa-circle fa-stack-2x"></span><strong class="fa-stack-1x" id="splot_dot_' + splot_data.id + '">' + splot_data.splot_dot + '</strong></span>';
+      
+      var innerHTML = "<div class='row'>" +
+        '<div class="col-8">' +
+          '<h2> <span class="fa-stack float-left fa-beat">' +
+            '<span class="fa-regular fa-circle fa-stack-2x"></span>' +
+            '<strong class="fa-stack-1x" id="splot_number_' + splot_data.id + '">' + splot_data.id + '</strong>' +
+          '</span> ' + 
+          '<span id="splotEntry_' + splot_data.id + '">' + splot_data.entry + '</span></h2>' +
+        '</div>' +
+        '<div class="col-4">' +
+            '<span class="fa-stack float-right fa-bounce">' +
+              '<span class="fa fa-square-dashed fa-stack-2x"></span>' +
+              '<strong class="fa-stack-1x" id="splot_dot_' + splot_data.id + '">' + splot_data.splot_dot + '</strong>' +
+          '</span>' +
+        '</div>' +
+      '</div>';
+          
+      var this_splot = document.getElementById('splot_' + splot_data.id);
+
+      if (this_splot) {
+        $('#splot_' + splot_data.id).fadeOut( "slow", function() {
+          this_splot.innerHTML = innerHTML;
+        $('#splot_' + splot_data.id).fadeIn();
+        });	
+	
+      } else {
+        var div = document.createElement("div");
+        div.className = "col-md-6 mb-4";
+        div.id = 'splot_' + splot_data.id;
+        div.innerHTML = innerHTML;
+        document.getElementById("board").appendChild(div).fadeIn("slow");
+      }
+    }
+
+    function clearBoard(){
+      $('#board').fadeOut();
+      document.getElementById("board").innerHTML = "";
+      $('#board').fadeIn();
+    }
+  </script>
+</head> 
+<body>
+<div class="container bg-image container-fluid d-flex">
+  <div class="row flex-fill" id="board">
+    <% board.forEach(function(dataRow, idxOfRow, orgnlAryObject) { %>
+      <div class="col-6 d-flex flex-column flex-fill mb-4" id='splot_<%= dataRow.id %>'>
+        <div class="row">
+          <div class="col-8">
+            <h2> <span class="fa-stack float-left fa-beat">
+              <span class="fa-regular fa-circle fa-stack-2x"></span>
+              <strong class="fa-stack-1x" id="splot_number_<%= dataRow.id %>">
+                <%= dataRow.id %>
+              </strong>
+            </span>
+            <span id='splotEntry_<%= dataRow.id %>'><%= dataRow.entry %></span></h2>
+          </div>
+          <div class="col-4">
+            <span class="fa-stack float-right fa-bounce">
+              <span class="fa fa-square-dashed fa-stack-2x"></span>
+              <strong class="fa-stack-1x" id="splot_dot_<%= dataRow.id %>'">
+                <%= dataRow.splot_dot %>
+              </strong>
+            </span>
+          </div>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+</div>
+<script>
+  window.addEventListener("DOMContentLoaded", () => {});
+</script>
+</body> 
+</html>

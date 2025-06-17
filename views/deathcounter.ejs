@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baldur's Gate Death Counter</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.3/dist/tailwind.min.css" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const socket = io();
+            socket.on('updateDeathCount', (count) => {
+                document.getElementById('deathCount').textContent = count;
+            });
+        });
+    </script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: left;
+            align-items: center;
+            background-size: cover;
+            background-position: center;
+        }
+        .counter-container {
+            backdrop-filter: blur(5px);
+            border-radius: 0.5rem; /* TailwindCSS equivalent: rounded-md */
+            background-image: url('https://usagif.com/wp-content/uploads/gifs/fire-17.gif'); /* Change to your preferred BG themed background */
+            color: white; /* TailwindCSS equivalent: text-white */
+            /* background centered and stretched */
+            background-size: cover;
+            padding: 1rem; /* TailwindCSS equivalent: p-8 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .counter {
+            font-size: 2rem; /* TailwindCSS equivalent: text-2xl */
+            font-weight: bold; /* TailwindCSS equivalent: font-bold */
+            color: gold; /* TailwindCSS equivalent: text-white */
+            /* add a drop shadow */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+    /* Create a class that applies the animation */
+    .deathCountChange {
+        animation: deathCountChange 0.5s ease-in-out;
+    }
+    </style>
+</head>
+<body>
+    <div class="counter-container">
+        <p class="counter">Deaths:</p>
+        <p id="deathCount" class="counter"><%= death_count %></p>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const socket = io();
+            const deathCountElement = document.getElementById('deathCount');
+                socket.on("connect", () => {
+                console.log(socket.connected); // true
+            });
+            socket.on('updateDeathCount', (count) => {
+                // Add the animation class
+                deathCountElement.classList.add('deathCountChange');
+    
+                deathCountElement.textContent = count;
+            });
+    
+            // Remove the animation class when the animation ends
+            deathCountElement.addEventListener('animationend', () => {
+                deathCountElement.classList.remove('deathCountChange');
+            });
+        });
+    </script>
+</body>
+</html>

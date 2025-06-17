@@ -3,6 +3,8 @@ const request = require("request");
 const express = require("express");
 const app = express();
 const port = 3000;
+const jsoning = require("jsoning");
+const settings_db = new jsoning("db/queue_settings.json");
 
 const client = new tmi.Client({
   options: { debug: true },
@@ -14,8 +16,8 @@ const client = new tmi.Client({
 });
 
 client.connect();
-//Queue closed by default
-var queue_open = false;
+//Queue closed by default unless stored in db
+var queue_open = settings_db.get('queue_open') || false;
 var queue = [];
 var turn_counter = [];
 var firsts_first = false;
@@ -357,6 +359,7 @@ client.on("message", (channel, tags, message, self) => {
     if (isBroadcaster || tags.username == "zilchgnu") {
       //set queue_open to true
       queue_open = true;
+      settings_db.set('queue_open', true);
       //let the chat know what is up
       client.say(channel, `@${tags["display-name"]} has opened the queue!`);
     }
@@ -367,6 +370,7 @@ client.on("message", (channel, tags, message, self) => {
     if (isBroadcaster|| tags.username == "zilchgnu") {
       //set queue_open to true
       queue_open = false;
+      settings_db.set('queue_open', false);
       //let the chat know what is up
       client.say(channel, `@${tags["display-name"]} has closed the queue!`);
     }

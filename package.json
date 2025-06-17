@@ -1,0 +1,55 @@
+{
+  "name": "glitch-mvp-node",
+  "version": "0.0.1",
+  "description": "BootcutBot for Bootcut on Twitch",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "@twurple/api": "^7.2.1",
+    "@twurple/auth": "^7.2.1",
+    "@twurple/eventsub-ws": "^7.2.1",
+    "api": "^6.1.1",
+    "censor-sensor": "^1.0.6",
+    "dotenv": "^16.0.3",
+    "ejs": "^3.1.6",
+    "elevenlabs-node": "^2.0.3",
+    "express": "^4.17.2",
+    "express-basic-auth": "^1.2.1",
+    "fetch": "^1.1.0",
+    "fuse.js": "^6.6.2",
+    "googleapis": "^111.0.0",
+    "jsoning": "^0.13.23",
+    "moment-timezone": "^0.5.43",
+    "openai": "3.2.1",
+    "request": "^2.88.2",
+    "socket.io": "^4.5.0",
+    "socket.io-client": "^4.7.4",
+    "spoken": "^1.1.17",
+    "tmi.js": "^1.8.5",
+    "youtube-metadata-from-url": "^1.0.3"
+  },
+  "engines": {
+    "node": "16"
+  },
+  "repository": {
+    "url": "https://glitch.com/edit/#!/glitch-mvp-node"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "*.json"
+    ]
+  },
+  "license": "MIT",
+  "keywords": [
+    "node",
+    "glitch",
+    "express",
+    "bootcut",
+    "twitch",
+    "openai"
+  ]
+}

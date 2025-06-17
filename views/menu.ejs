@@ -1,0 +1,234 @@
+
+<!DOCTYPE html>
+<html>
+ 
+<head>
+    <title>Abbadabbabot Command Menu</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+      <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+        crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet" />
+    <!-- Dark mode CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@forevolve/bootstrap-dark@1.0.0/dist/css/bootstrap-dark.min.css" />
+    <style>
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+    <script src="https://kit.fontawesome.com/5a69a86b05.js" crossorigin="anonymous"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script src="/tmi.min.js"></script>
+    <script src="https://stephenlb.github.io/spoken/spoken.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $("pre").on("select", function() {
+                // Get the selected text
+                var selectedText = window.getSelection().toString();
+
+                // Check if there is any selected text
+                if (selectedText) {
+                    // Highlight the selected text
+                    document.execCommand("backColor", false, "yellow");
+                }
+            });
+            $("pre").click(function() {
+                // Get the text inside the <pre contenteditable="true"> element
+                var text = $(this).text();
+
+                // Create a new element to hold the text
+                var tempInput = $("<textarea>");
+                tempInput.val(text);
+
+                // Add the element to the page
+                $("body").append(tempInput);
+
+                // Select the text
+                tempInput.select();
+
+                // Copy the text to the clipboard
+                document.execCommand("copy");
+
+                // Remove the element
+                tempInput.remove();
+            });
+        });
+    </script>
+</head>
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5JXPYNCK9Q"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-5JXPYNCK9Q');
+</script>
+      <meta name="description" content="Find commands for Abbabox's twitch stream chatbot loving named Abbadabbabot">
+    <meta name="keywords" content="Bootcut Queue, Abbabox, Gaming, Queue, Turns, Twitch, Interactive Boardgame">
+<body>
+<div class="container-dark">
+  <img src="<%= banner_image %>" class="img-fluid">
+  <span class="text-center"><h3>Current Player: <%= current_turn %></h3></span>
+  <p class="text-center">The Queue is currently: 
+  <% if(queue_open){ %>
+  <span class="badge badge-success">Open</span>
+  <% }else{ %>
+  <span class="badge badge-danger">Closed</span>
+  <% } %>
+  </p>
+  <p class="text-center">First Turns First is currently: 
+  <% if(first_turn_first){ %>
+  <span class="badge badge-success">Enabled</span>
+  <% }else{ %>
+  <span class="badge badge-danger">Disabled</span>
+  <% } %>
+  </p>
+  <p><small>First turn first means users who haven't not had a turn will be chosen before players that have had a turn. Users who already had a turn already will stay in the Queue but 1st turn users will be picked before them.</small></p>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-4 col-sm-6 col-xs-12">
+            <ul class="list-group">
+                <li class="list-group-item active">Fun</li>
+                <li class="list-group-item"><pre contenteditable="true">!dn_count</pre>- Gives the count of Deez Nutz Jokes since 7/21/22</li>
+                <li class="list-group-item"><pre contenteditable="true">!wakeup</pre>- Urges abba to wake from his nap and start stream</li>
+                <li class="list-group-item"><pre contenteditable="true">!rise</pre>- Find out about abbadabbabots reinarnation</li>
+                <li class="list-group-item"><pre contenteditable="true">!deeznutz</pre>- Abbadabbabot tries to tell a deez nutz joke</li>
+                <li class="list-group-item"><pre contenteditable="true">!justice</pre>- Reminder of Abbabox's crimes, Abbadabbabot tries to defend him</li>
+                <li class="list-group-item"><pre contenteditable="true">!chesthair</pre>- Abbadabbabot says something nice about Abbabox's chesthair</li>
+                <li class="list-group-item"><pre contenteditable="true">!exercise</pre>- Abbadabbabot tries to convince Abbabox to exercise</li>
+                <li class="list-group-item"><pre contenteditable="true">!cherish</pre>- Abbadabbabot tells you how Abbabox Cherishes your butt</li>
+                <li class="list-group-item"><pre contenteditable="true">!backhair</pre>- Abbadabbabot says something nice about Abbabox's back hair</li>
+                <li class="list-group-item"><pre contenteditable="true">!butthair</pre>- Abbadabbabot says something nice about Abbabox's butt hair</li>
+                <li class="list-group-item"><pre contenteditable="true">!joeydoodah</pre>- Abbadabbabot tells a story about joeydooddah</li>
+          </ul>
+        </div>
+        <div class="col-md-4 col-sm-6 col-xs-12">
+            <ul class="list-group">
+                <li class="list-group-item active">Bootcut</li>
+                <li class="list-group-item"><pre contenteditable="true">!join</pre>- Join the queue, careful during the inital rush you may get bumped</li>
+                <li class="list-group-item"><pre contenteditable="true">!leave</pre>- Leaves the queue so you won't get picked. You'll lose your place if you rejoin</li>
+                <li class="list-group-item"><pre contenteditable="true">!position</pre>- Get your current position in the queue</li>
+                <li class="list-group-item"><pre contenteditable="true">!list</pre>- Get a link to a page that shows the queue</li>
+                <li class="list-group-item"><pre contenteditable="true">!splots_db</pre>- Get a link to a page that holds all the hisorical splots</li>
+                <li class="list-group-item"><pre contenteditable="true">!auto_splot</pre>- Only works during your turn. Abbadabbabot will pick a random splot from the splots database for you</li>
+            </ul>
+        </div>
+        <div class="col-md-4 col-sm-6 col-xs-12">
+            <ul class="list-group">
+                <li class="list-group-item active">Free Media Share</li>
+                <li class="list-group-item"><pre contenteditable="true">!myscore</pre>- Get your social media score, and current ranking.</li>
+                <li class="list-group-item"><pre contenteditable="true">!social_scores</pre>- View the full social score leaderboard.</li>
+                <li class="list-group-item"><pre contenteditable="true">!list_yt</pre>- View the vids currently in the youtube queue.</li>
+                <li class="list-group-item"><pre contenteditable="true">!check_abbacoin</pre>- Get your current abbacoin balance.</li>
+            </ul>
+        </div>
+        <div class="col-md-4 col-sm-12 col-xs-12">
+            <ul class="list-group">
+                <li class="list-group-item active">Info</li>
+                <li class="list-group-item"><pre contenteditable="true">!timeleft</pre>- Only during endurance streams (12 hours/24 hours) will tell you how much time is left</li>
+                <li class="list-group-item"><pre contenteditable="true">!log_roll</pre>- Log a roll, to help prove how buttered the dice are</li>
+                <li class="list-group-item"><pre contenteditable="true">!rating $thing_to_rate</pre>- Type this with a thing (movie, item, event) and if Abbabox has rated it you'll see what his rating was.</li>
+                <li class="list-group-item"><pre contenteditable="true">!ratings</pre>- Get a link to all of Abbabox's ratings.</li>
+                <li class="list-group-item"><pre contenteditable="true">!ded_count</pre>- Only during games where we are tracking deaths (or crashes), will tell you how many failures Abbabox has had.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="page-footer font-small blue pt-4">
+
+  <!-- Footer Links -->
+  <div class="container-fluid text-center text-md-left">
+
+    <!-- Grid row -->
+    <div class="row">
+
+      <!-- Grid column -->
+      <div class="col-md-6 mt-md-0 mt-3">
+
+        <!-- Content -->
+        <h5 class="text-uppercase">Support Abbabox</h5>
+        <p>Help the streamer keep doing the things. Support him anyway you can.</p>
+
+      </div>
+      <!-- Grid column -->
+
+      <hr class="clearfix w-100 d-md-none pb-3">
+
+      <!-- Grid column -->
+      <div class="col-md-3 mb-md-0 mb-3">
+
+        <!-- Links -->
+        <h5 class="text-uppercase">Social</h5>
+
+        <ul class="list-unstyled">
+          <li>
+            <a href="https://twitter.com/abbabox1">Twitter</a>
+          </li>
+          <li>
+            <a href="https://www.youtube.com/c/Abbabox">YouTube</a>
+          </li>
+          <li>
+            <a href="https://discord.com/invite/vgB85mF">Discord</a>
+          </li>
+          <li>
+            <a href="https://www.tiktok.com/@abbabox?lang=en">TikTok</a>
+          </li>
+        </ul>
+
+      </div>
+      <!-- Grid column -->
+
+      <!-- Grid column -->
+      <div class="col-md-3 mb-md-0 mb-3">
+
+        <!-- Links -->
+        <h5 class="text-uppercase">Pay the Man</h5>
+
+        <ul class="list-unstyled">
+          <li>
+            <a href="https://streamlabs.com/abbabox/tip">Paypal</a>
+          </li>
+          <li>
+            <a href="https://www.streamloots.com/abbabox">StreamLoots</a>
+          </li>
+          <li>
+            <a href="https://jointhrone.com/u/abbabox">Throne</a>
+          </li>
+          <li>
+            <a href="https://streamlabs.com/abbabox/merch">Merch</a>
+          </li>
+        </ul>
+
+      </div>
+      <!-- Grid column -->
+
+    </div>
+    <!-- Grid row -->
+
+  </div>
+  <!-- Footer Links -->
+
+  <!-- Copyright -->
+  <div class="footer-copyright text-center py-3">© 2022 Designed by the
+    Citizens of the ABXCrew
+  </div>
+  <!-- Copyright -->
+
+</footer>
+<!-- Footer -->
+</div>
+</body>
+ 
+</html>

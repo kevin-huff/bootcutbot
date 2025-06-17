@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Current Turn</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/5a69a86b05.js" crossorigin="anonymous"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+  <script>
+    var CountDown = (function ($) {
+      // Length ms 
+      var TimeOut = 10000;
+      // Interval ms
+      var TimeGap = 1000;
+      
+      var CurrentTime = ( new Date() ).getTime();
+      var EndTime = ( new Date() ).getTime() + TimeOut;
+      
+      var GuiTimer = $('#timer');
+      var GuiPause = $('#pause');
+      
+      var Running = false;
+      
+      var UpdateTimer = function() {
+        // Run till timeout
+        if( CurrentTime + TimeGap < EndTime && Running ) {
+          setTimeout( UpdateTimer, TimeGap );
+        }
+        // Countdown if running
+        if( Running ) {
+          CurrentTime += TimeGap;
+          if( CurrentTime >= EndTime ) {
+            Running = false;
+            $('#timer_num').html('00:00');
+            $('#timer_display').css('color','#ff2200');
+            $('#current_player').css('color','#ff2200');
+            $('#timer_display').addClass('blink_me');
+            $('#current_player').addClass('blink_me');
+            document.getElementById('round_bell').play();
+          } else {
+            // Update Gui
+            var Time = new Date();
+            Time.setTime( EndTime - CurrentTime );
+            var Minutes = Time.getMinutes();
+            var Seconds = Time.getSeconds();
+            $('#timer_num').html( 
+              String(Minutes).padStart(2, '0') + ':' + 
+              String(Seconds).padStart(2, '0') );
+          }
+        }
+      };
+      
+      var Pause = function() {
+        Running = false;
+      };
+      
+      var Resume = function() {
+        Running = true;
+        UpdateTimer();
+      };
+      
+      var Start = function( Timeout ) {
+        $('#timer_display').css('color','#f70');
+        $('#current_player').css('color','#f70');
+        $('#timer_display').removeClass('blink_me');
+        $('#current_player').removeClass('blink_me');
+        TimeOut = Timeout;
+        CurrentTime = ( new Date() ).getTime();
+        EndTime = ( new Date() ).getTime() + TimeOut;
+        UpdateTimer();
+      };
+  
+      var AddTime = function(seconds) {
+        let minutes = Math.floor(seconds / 60);
+        let remainingSeconds = seconds % 60;
+        incrementTime(minutes, remainingSeconds);
+      };
+  
+      var incrementTime = function(minutes, seconds) {
+        if (minutes > 0) {
+          showPlusOne("m");
+          setTimeout(() => {
+            EndTime += 60 * 1000; // Add 1 minute in milliseconds
+            updateTimerDisplay();
+            incrementTime(minutes - 1, seconds);
+          }, 1000); // Show the "+1 m" animation and then update the timer
+        } else if (seconds > 0) {
+          showPlusOne("s");
+          setTimeout(() => {
+            EndTime += 1000; // Add 1 second in milliseconds
+            updateTimerDisplay();
+            incrementTime(minutes, seconds - 1);
+          }, 1000); // Show the "+1 s" animation and then update the timer
+        }
+      };
+  
+      var updateTimerDisplay = function() {
+        var Time = new Date();
+        Time.setTime(EndTime - CurrentTime);
+        var Minutes = Time.getMinutes();
+        var Seconds = Time.getSeconds();
+        $('#timer_num').html(
+          String(Minutes).padStart(2, '0') + ':' +
+          String(Seconds).padStart(2, '0')
+        );
+      };
+  
+      var showPlusOne = function(type) {
+        let plusOne = document.createElement('div');
+        plusOne.className = 'plus-one';
+        plusOne.innerHTML = `+1 ${type}`;
+        document.querySelector('.item').appendChild(plusOne);
+        setTimeout(() => {
+          plusOne.remove();
+        }, 1000); // Remove the element after 1 second
+      };
+  
+      return {
+        Pause: Pause,
+        Resume: Resume,
+        Start: Start,
+        AddTime: AddTime
+      };
+    })(jQuery);
+  
+    let thisCountDown = CountDown;
+  
+    var socket = io();
+  
+    document.addEventListener('DOMContentLoaded', () => {
+      socket.on('timer_server', function(msg){
+        console.log('timer_admin:', msg)
+        $('#timer_num').html(msg.timer_display);
+        if(msg.action == 'start'){
+          thisCountDown.Pause();
+          thisCountDown.Start(msg.timer_value);
+        }
+        if(msg.action == 'pause'){
+          thisCountDown.Pause();
+        }
+        if(msg.action == 'resume'){
+          thisCountDown.Resume();
+        }
+      });
+  
+      socket.on('add_time', (additionalSeconds) => {
+        thisCountDown.AddTime(additionalSeconds);
+      });
+    });
+  </script>
+  
+  <style>
+    body {
+      font-family: 'Antonio', sans-serif; /* Antonio for headings */
+      background: #000; /* Dark bluish background */
+      color: #fff;
+      text-align: center;
+    }
+  
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      position: relative;
+    }
+  
+    h1 {
+      font-family: 'Press Start 2P', cursive; /* Retro gaming font */
+      font-size: 2rem;
+      color: #f7db4f; /* Retro yellow color */
+    }
+  
+    #timer_display {
+      background-color: rgba(0, 0, 0, 0.6);
+      border: 2px solid #f7db4f;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(247, 219, 79, 0.8);
+      position: relative;
+    }
+  
+    .blink_me {
+      animation: blinker 1s linear infinite;
+    }
+  
+    @keyframes blinker {
+      50% {
+        opacity: 0;
+      }
+    }
+  
+    .plus-one {
+      position: absolute;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 1.5rem;
+      color: #00ff00;
+      animation: moveUp 1s ease-in-out forwards, fadeOut 1s ease-in-out forwards;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  
+    @keyframes moveUp {
+      from {
+        transform: translateY(0);
+      }
+      to {
+        transform: translateY(-50px);
+      }
+    }
+  
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+  </style>  
+</head>
+ 
+<body>
+  <div class="body">
+    <div class="container"  id="turn_container">
+      <div class="item">
+        <span><h1 id='timer_display'>Timer: <span id="timer_num">0:00</span></h1></span>
+      </div>
+    </div>
+    <audio id="round_bell" src="round-bell.mp3" preload="auto"></audio>
+  </div>
+</body>
+</html>

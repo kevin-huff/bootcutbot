@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html>
+ 
+<head>
+    <title>Roll</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css">
+    <script src="https://kit.fontawesome.com/5a69a86b05.js" crossorigin="anonymous"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="//code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+  <script>  
+    var socket = io();
+
+    $(document).ready(function(){
+        socket.on('dice_rolled', function(data){
+            var this_uuid = generateUUID();          
+            // Create HTML structure
+            var roll_animation = $('<div>')
+                .attr('class', 'lcars').attr('id', 'roll-' + this_uuid)
+                .append($('<div>').attr('class', 'inner-lcars')
+                    .append($('<div>').attr('class', 'die-name')
+                        .append($('<p>').html(data.dice_name)))
+                    .append($('<div>').attr('class', 'roll-value')
+                        .append($('<p>').attr('class', 'roll').html(data.roll_value)))
+                    .append($('<div>').attr('class', 'die-type')
+                        .append($('<p>').html(data.dice_type))));
+            // add structure to body
+            $('body').append(roll_animation);
+            // randomly select a jquery ui effect
+            var effects = ['slide', 'clip', 'fade', 'blind', 'explode', 'puff', 'shake', 'fold'];
+            var effect = effects[Math.floor(Math.random()*effects.length)];
+            // apply effect when animation is shown
+            $('#roll-' + this_uuid).show(effect, {}, 500);
+            // remove animation after 2 seconds
+            setTimeout(function(){
+                $('#roll-' + this_uuid).hide(effect, {}, 500, function(){
+                    $('#roll-' + this_uuid).remove();
+                });
+            }, 5000);
+        });
+    });
+
+    // Add the generateUUID function
+    function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+        });
+    }
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IM+Fell+English&display=swap');
+  
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    font-family: 'IM Fell English', serif;
+    background-image: url('https://your-website.com/path-to-your-parchment-image.jpg');
+    background-size: cover;
+    color:#f70;
+  }
+  
+  .lcars {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 500px;
+    width: 500px;
+    border-radius: 40px;
+    background: rgba(0, 0, 0, 0.7);
+    box-shadow: 0px 0px 30px 5px rgba(255, 255, 255, 0.2);
+    border: 3px solid #f70; /* Add a border */
+  }
+  
+  .die-name, .roll-value, .die-type {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid #f70; /* Add a border */
+    box-shadow: 0px 0px 20px 3px rgba(255, 255, 255, 0.2); /* Add a glow effect */
+  }
+  
+  .roll {
+    font-size: 18em;
+    margin-bottom: -60px;
+    margin-top: -85px;
+    color: #f70;
+    text-shadow: 2px 2px 4px #000;
+  }
+  
+  .inner-lcars {
+    display: flex;
+    background-color: transparent;
+    height: 450px;
+    width: 450px;
+    border-radius: 40px;
+    flex-direction: column;
+    justify-content: space-around;
+  }
+  
+  .die-name p, .die-type p {
+    font-size: 6em;
+    margin: -20px;
+    color: #f70;
+    text-shadow: 2px 2px 4px #000;
+  }
+  </style>
+</head>
+<body>
+  <!--<div class="lcars">
+    <div class="inner-lcars">
+      <div class="die-name">
+        <p>Board Die</p>
+      </div>
+      <div class="roll-value">
+        <p class="roll">10</p>
+      </div>
+      <div class="die-type">
+        <p>D12</p>
+      </div>
+    </div>
+  </div>-->
+</body>
+</html>

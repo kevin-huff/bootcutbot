@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vote Results</title>
+    <link href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&display=swap" rel="stylesheet"> <!-- Add this line to import the font -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <style>
+        body {
+            font-family: 'Uncial Antiqua', cursive; /* Change the font */
+            background-color: #000; /* Change the background color to black */
+            color: #fff; /* Change the text color to white */
+        }
+        .vote-container {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .vote-label {
+            font-weight: bold;
+            font-size: 20px;
+            margin: 0 10px;
+        }
+        .progress {
+            width: 60%;
+            height: 30px; /* Adjust the height of the progress bar */
+            animation: AnimationName 3s ease infinite, throbbing 2s infinite;
+            background: rgb(131,58,180);
+            background: linear-gradient(to right, rgba(230, 30, 30,1) 50%, rgba(180, 180, 50, 1), rgba(131,58,180,1)); 
+            position: relative; /* Add this to position the marker */
+            box-shadow: 0 0 10px #551a8b; /* Add a glow effect */
+            overflow: visible; /* Show the tooltip outside the progress bar */
+        }
+        /* Make the god's progress bar golden */
+        #god-vote-progress {
+            animation: AnimationName 3s ease infinite, godThrobbing 1s infinite;
+        }
+        .progress-bar {
+            background-size: 400% 400%;
+            animation: AnimationName 3s ease infinite, throbbing 2s infinite;
+            transition: width 1s ease-in-out; /* Smooth transition for the progress bar change */
+            background: rgb(34,143,230);
+            background: linear-gradient(to left, rgba(50, 180, 50, 1), rgba(34,143,230,1) , rgba(131,58,180,1)); 
+            box-shadow: 0 0 10px #9370db; /* Add a glow effect */
+            animation: throbbing 2s infinite; /* Apply the throbbing animation */
+            transition: width 1s ease-in-out;
+            box-shadow: 0 0 10px #9370db; /* Consider adjusting this color to match the gradient */
+        }
+        /* Make the god's progress bar golden */
+        #god-vote-progress-bar {
+            animation: godThrobbing 1s infinite; /* Apply the godThrobbing animation */
+        }
+    @keyframes throbbing {
+            0% { box-shadow: 0 0 10px #9370db; }
+            50% { box-shadow: 0 0 20px #9370db, 0 0 30px #9370db; }
+            100% { box-shadow: 0 0 10px #9370db; }
+        }
+        /* Add the godThrobbing animation gold and stronger*/
+        @keyframes godThrobbing {
+            0% { box-shadow: 0 0 10px rgba(255,215,0,1); }
+            50% { box-shadow: 0 0 20px rgba(255,215,0,1), 0 0 30px rgba(255,215,0,1); }
+            100% { box-shadow: 0 0 10px rgba(255,215,0,1); }
+        }
+    @keyframes AnimationName {
+        0%{background-position: 0% 50%}
+        50%{background-position: 100% 50%}
+        100%{background-position: 0% 50%}
+        }
+        .progress-marker::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background-color: #fff; /* Change the marker color to white */
+            box-shadow: 0 0 10px #fff; /* Add a glow effect */
+        }
+        .count-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-left: 5px;
+            margin-right: 5px;
+        }
+        #notifications {
+            height: 50px; /* Reserve space for the alerts */
+            width: 60%; /* Adjust the width to match the progress bar */
+            margin: auto; /* Center the element */
+            text-align: center;
+            font-size: 1.25em;
+        }
+        .progress-tooltip {
+            position: absolute;
+            bottom: -30px; /* Position below the progress bar */
+            transform: translateX(-50%); /* Center the tooltip */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px; /* Adjust based on the icon size */
+            height: 20px; /* Adjust based on the icon size */
+            font-size: 20px; /* Adjust based on your needs */
+            color: #fff; /* Adjust based on your theme */
+        }
+        .progress-tooltip::before {
+            content: "";
+            position: absolute;
+            top: -40px; /* Position above the tooltip */
+            height: 40px; /* Height of the line */
+            width: 2px; /* Width of the line */
+            background-color: gold; /* Color of the line */
+        }
+        #chatMultiSpan {
+            font-size: 0.75em; /* Adjust the font size */
+            color: #fff; /* Adjust the color */
+            padding-left: 10px;
+        }
+    </style>
+</head>
+<body>
+<audio id="judgement" src="https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/judgement.mp3?v=1708070574536" preload="auto"></audio>
+<div class="container">
+    <div id="notifications"></div>
+    <div class="progress-section" id="god-vote">
+        <div class="vote-container" id="god-vote-container">
+            <div class="count-container">
+                <div class="vote-label" id="god-no-percentage">50%</div>
+                <div class="vote-count" id="god-no-count">Guilty: 0</div>
+            </div>
+            <div class="progress progress-marker" id="god-vote-progress">
+                <div class="progress-bar" role="progressbar" style="width: 50%;" id="god-vote-progress-bar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                <div id="god-progress-tooltip" class="progress-tooltip">⚖️</div>
+            </div>
+            <div class="count-container">
+                <div class="vote-label" id="god-yes-percentage">50%</div>
+                <div class="vote-count" id="god-yes-count">Not Guilty: 0</div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-center" style="margin-top: 15px;">
+            <h2>Celestial Judgement</h2>
+        </div>
+    </div>
+    <div class="progress-section" id="chat-vote">
+        <div class="vote-container">
+            <div class="count-container">
+                <div class="vote-label" id="no-percentage">50%</div>
+                <div class="vote-count" id="no-count">Guilty: 0</div>
+            </div>
+            <div class="progress progress-marker">
+                <div class="progress-bar" role="progressbar" style="width: 50%;" id="vote-progress" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                <div id="progress-tooltip" class="progress-tooltip">⚖️</div>
+                <span id="chatMultiSpan">&nbsp;x1</span>
+            </div>
+            <div class="count-container">
+                <div class="vote-label" id="yes-percentage">50%</div>
+                <div class="vote-count" id="yes-count">Not Guilty: 0</div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-center" style="margin-top: 15px;">
+            <h2>Chat Judgement</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    let votes = <%- JSON.stringify(votes) %>;
+    let godVotes = <%- JSON.stringify(godVotes) %>;
+    console.log('uservotes',votes);
+    let yesVotes = 0;
+    let noVotes = 0;
+    // Add this in your JavaScript
+    let godYesVotes = 0;
+    let godNoVotes = 0;
+    let chatMultiplier = 1;
+    var notificationQueue = []; // Queue to hold the notifications
+    var isNotificationShowing = false; // Flag to check if a notification is currently showing
+    let chatGodYesVotes = 0;
+    let chatGodNoVotes = 0;
+    let chatVote = null;
+    let displayedVote="god-vote";
+    let intervalID;
+    // Connect to the server
+    const socket = io();
+    $(document).ready(function() {
+    // Hide both chat and god vote sections
+    $('#god-vote').hide();
+    $('#chat-vote').hide();
+    // Initialize votes on page load
+    if (votes) {
+        votes.forEach(voteData => {
+            if (voteData.vote === 'not-guilty') {
+                yesVotes++;
+            } else if (voteData.vote === 'guilty') {
+                noVotes++;
+            }
+        });
+        // Update the progress bar and vote counts
+        updateProgressBar(yesVotes, noVotes);
+        updateVoteCount(yesVotes, noVotes);
+    } else {
+        // Set default percentages
+        $('#yes-percentage').text('50%');
+        $('#no-percentage').text('50%');
+        // Position the progress-tooltip in the middle
+        $('#progress-tooltip').css('left', '50%');
+    }
+
+    if (godVotes) {
+        console.log('godvotes',godVotes);
+        godVotes.forEach(voteData => {
+            if (voteData.vote === 'not-guilty') {
+                godYesVotes++;
+            } else if (voteData.vote === 'guilty') {
+                godNoVotes++;
+            } else if (voteData.vote === 'giveToChat') {
+                chatMultiplier ++;
+            }
+        });
+        toggleDisplayVote("god-vote");
+        // Update the progress bar and vote counts
+        updateGodProgressBar(godYesVotes, godNoVotes);
+    } else {
+        // Show the god vote section
+        toggleDisplayVote("god-vote");
+
+        // Set default percentages
+        $('#god-yes-percentage').text('50%');
+        $('#god-no-percentage').text('50%');
+        // Position the progress-tooltip in the middle
+        $('#god-progress-tooltip').css('left', '50%');
+    }
+    $('#chatMultiSpan').text(`x${chatMultiplier}`); // Update the chat multiplier span
+    manageInterval();
+});
+    // Handle the 'vote' event
+    socket.on('vote', (voteData) => {
+        // Show the god vote section
+        toggleDisplayVote("chat-vote")
+        if (voteData.vote === 'not-guilty') {
+            yesVotes++;
+        } else if (voteData.vote === 'guilty') {
+            noVotes++;
+        }
+        showNotification(voteData.vote, voteData.user);
+        updateProgressBar(yesVotes, noVotes, voteData);
+    });
+
+    function showNotification(message, user) {
+    notificationQueue.push({message: message, user: user}); // Add the new notification to the queue
+    if (!isNotificationShowing) { // If no notification is currently showing
+        displayNotification(); // Display the next notification
+    }
+    
+}
+
+    function displayNotification() {
+    if (notificationQueue.length > 0) { // If there are notifications in the queue
+        isNotificationShowing = true; // Set the flag to true
+        var notificationData = notificationQueue.shift(); // Get the next notification from the queue
+        var alertClass = notificationData.message === 'guilty' ? 'alert-danger' : 'alert-success'; // Determine the alert class based on the vote
+        const notification = $(`<div class="alert ${alertClass}">${notificationData.user} voted ${notificationData.message}</div>`);
+        $('#notifications').append(notification);
+        notification.fadeIn(200).delay(3000).fadeOut(200, function() {
+            $(this).remove();
+            isNotificationShowing = false; // Reset the flag
+            displayNotification(); // Display the next notification
+        });
+        }
+    }
+    function updateVoteCount(yesVotes, noVotes) {
+        $('#yes-count').text(`Not Guilty: ${yesVotes}`);
+        $('#no-count').text(`Guilty: ${noVotes}`);
+    }
+
+    function updateProgressBar(yesVotes, noVotes) {
+    const totalVotes = yesVotes + noVotes;
+    const currentYesPercentage = Math.round((yesVotes / totalVotes) * 100);
+    const currentNoPercentage = 100 - currentYesPercentage;
+    // Get the current progress bar width
+    const currentWidth = $('#vote-progress').width();
+    // Calculate the previous percentage
+    const previousPercentage = Math.round((currentWidth / $('#vote-progress').parent().width()) * 100);
+
+    // See if it will pass the 50% mark either way
+    if ((previousPercentage <= 50 && currentYesPercentage > 50) || (previousPercentage >= 50 && currentYesPercentage < 50)) {
+        // Play the judgement sound
+        document.getElementById('judgement').play();
+    }
+    // Update the progress bar width
+    $('#vote-progress').css('width', `${currentYesPercentage}%`).attr('aria-valuenow', currentYesPercentage);
+       // Save the previous chat vote
+       let previousChatVote = chatVote;
+
+        // Update tooltip position and icon
+        let tooltipIcon;
+        if (currentYesPercentage > 50) {
+            tooltipIcon = '🕊️'; // Icon for yes votes majority
+            chatVote = "not-guilty";
+        } else if (currentYesPercentage < 50) {
+            tooltipIcon = '💀'; // Icon for no votes majority
+            chatVote = "guilty";
+        } else {
+            tooltipIcon = '⚖️'; // Icon for evenly split votes
+            chatVote = "tie";
+        }
+
+        $('#progress-tooltip').css('left', `${currentYesPercentage}%`).text(tooltipIcon);
+        
+        // Update percentages and counts
+        $('#yes-percentage').text(`${currentYesPercentage}%`);
+        $('#no-percentage').text(`${currentNoPercentage}%`);
+        updateVoteCount(yesVotes, noVotes);
+        console.log(chatVote);
+        console.log('Update progressbar god changes',godYesVotes, godNoVotes);
+        updateGodProgressBar(godYesVotes, godNoVotes, {vote: chatVote, user: "Chat"});
+    }
+
+
+// Handle the 'god-vote' event
+socket.on('god-vote', (voteData) => {
+            // Show the god vote section
+            toggleDisplayVote("god-vote")
+    if (voteData.vote === 'not-guilty') {
+        godYesVotes++;
+    } else if (voteData.vote === 'guilty') {
+        godNoVotes++;
+    } else if (voteData.vote === 'giveToChat') {
+        chatMultiplier ++;
+    }
+    showNotification(voteData.vote, voteData.user);
+    updateGodProgressBar(godYesVotes, godNoVotes, voteData);
+
+});
+socket.on('change_god_vote', (voteData) => {
+        // Show the god vote section
+        toggleDisplayVote("god-vote")
+    console.log('change_god_vote',voteData);
+    console.log('current god votes',godYesVotes, godNoVotes);
+    let oldVote = voteData.oldVote;
+    let newVote = voteData.newVote;
+
+    if (oldVote === 'not-guilty') {
+        godYesVotes--;
+    } else if (oldVote === 'guilty') {
+        godNoVotes--;
+    } else if (oldVote === 'giveToChat') {
+        chatMultiplier --;
+    }
+
+    if (voteData.vote === 'not-guilty') {
+        godYesVotes ++;
+    } else if (voteData.vote === 'guilty') {
+        godNoVotes ++;
+    } else if(voteData.vote === 'giveToChat') {
+        chatMultiplier ++;
+    }
+    console.log('godvotes changed',godYesVotes, godNoVotes);
+    // Update the chatMultiplier span
+    $('#chatMultiSpan').text(`x${chatMultiplier}`);
+    updateGodProgressBar(godYesVotes, godNoVotes, voteData);
+});
+function updateGodProgressBar(godYesVotes, godNoVotes) {
+
+    console.log('updateGodProgressBar',godYesVotes, godNoVotes);
+    // Count the chat votes
+    if (chatVote === "not-guilty") {
+        godYesVotes += chatMultiplier;
+    } else if (chatVote === "guilty") {
+        console.log('chatMultiplier',chatMultiplier);
+        godNoVotes += chatMultiplier;
+    }
+    const totalVotes = godYesVotes + godNoVotes;
+    const currentYesPercentage = Math.round((godYesVotes / totalVotes) * 100);
+    const currentNoPercentage = 100 - currentYesPercentage;
+
+    // Update the progress bar width
+    $('#god-vote-progress-bar').css('width', `${currentYesPercentage}%`).attr('aria-valuenow', currentYesPercentage);
+
+    // Update tooltip position and icon
+    let tooltipIcon;
+    if (currentYesPercentage > 50) {
+        tooltipIcon = '🕊️'; // Icon for yes votes majority
+    } else if (currentYesPercentage < 50) {
+        tooltipIcon = '💀'; // Icon for no votes majority
+    } else {
+        tooltipIcon = '⚖️'; // Icon for evenly split votes
+    }
+
+    $('#god-progress-tooltip').css('left', `${currentYesPercentage}%`).text(tooltipIcon);
+    
+    // Update percentages and counts
+    $('#god-yes-percentage').text(`${currentYesPercentage}%`);
+    $('#god-no-percentage').text(`${currentNoPercentage}%`);
+    $('#god-yes-count').text(`Not Guilty: ${godYesVotes}`);
+    $('#god-no-count').text(`Guilty: ${godNoVotes}`);
+    console.log('updateGodProgressBar-end',godYesVotes, godNoVotes);    
+}
+function toggleDisplayVote(forcedDisplay = null) {
+    console.log('toggleDisplayVote called with:', forcedDisplay, 'Current displayedVote:', displayedVote);
+
+    // The heart of the decision remains unchanged, yet ever so critical.
+    if (forcedDisplay !== null && (forcedDisplay === "god-vote" || forcedDisplay === "chat-vote")) {
+        displayedVote = forcedDisplay;
+    } else {
+        displayedVote = (displayedVote === "god-vote") ? "chat-vote" : "god-vote";
+    }
+
+    console.log('New displayedVote:', displayedVote);
+
+    // The elements obey, as they always have, to the will of the displayedVote.
+    if (displayedVote === "god-vote") {
+        $('#god-vote').show();
+        $('#chat-vote').hide();
+    } else {
+        $('#god-vote').hide();
+        $('#chat-vote').show();
+    }
+    if(chatVote !== null) {
+        manageInterval();
+    }
+}
+
+function manageInterval() {
+    console.log('manageInterval called with chatVote:', chatVote, 'intervalID:', intervalID);
+    // As before, we dismiss the interval if it dares to outstay its welcome.
+    if (intervalID) {
+        clearInterval(intervalID);
+        intervalID = null;
+    }
+
+    // Here's the twist: chatVote must not only exist, but it must have a meaningful value.
+    if (chatVote !== null) {
+        console.log('Setting interval for chatVote:', chatVote);
+        intervalID = setInterval(toggleDisplayVote, 10000); // The clock ticks once more.
+    }
+}
+</script>
+
+</body>
+</html>

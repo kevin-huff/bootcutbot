@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Page</title>
+  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/5/tinymce.min.js" referrerpolicy="origin"></script>
+  <script>
+    tinymce.init({
+      selector: '#editor'
+    });
+  </script>
+</head>
+<body>
+  <h1>Admin Page</h1>
+  <textarea id="editor"><%= notification %></textarea>
+  <button onclick="updateNotification()">Update Notification</button>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    function updateNotification() {
+      const message = tinymce.get('editor').getContent();
+      socket.emit('updateNotification', message);
+    }
+  </script>
+</body>
+</html>

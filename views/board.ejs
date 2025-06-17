@@ -1,0 +1,485 @@
+
+<!DOCTYPE html>
+<html>
+ 
+<head>
+  <title>The Bootcut Board</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/5a69a86b05.js" crossorigin="anonymous"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+  <script src="https://stephenlb.github.io/spoken/spoken.js"></script>
+  <script>
+  $(document).ready(function() {
+    $("#img1").attr("src", "portal.jpg");
+
+    var CountDown = (function ($) {
+    // Length ms 
+    var TimeOut = 10000;
+    // Interval ms
+    var TimeGap = 1000;
+    
+    var CurrentTime = ( new Date() ).getTime();
+    var EndTime = ( new Date() ).getTime() + TimeOut;
+    
+    var GuiTimer = $('#timer');
+    var GuiPause = $('#pause');
+    
+    var Running = false;
+    
+    var UpdateTimer = function() {
+      // Run till timeout
+      if( CurrentTime + TimeGap < EndTime && Running ) {
+          setTimeout( UpdateTimer, TimeGap );
+      }
+      // Countdown if running
+      if( Running ) {
+          CurrentTime += TimeGap;
+          if( CurrentTime >= EndTime ) {
+            Running = false;
+            $('#timer_display').html('00:00');
+            $('#timer_display').css('color','red');
+            $('#current_player').css('color','red');
+            $('#timer_display').addClass('blink_me');
+            $('#current_player').addClass('blink_me');
+          } else {
+            // Update Gui
+            var Time = new Date();
+            Time.setTime( EndTime - CurrentTime );
+            var Minutes = Time.getMinutes();
+            var Seconds = Time.getSeconds();
+            $('#timer_num').html( 
+              String(Minutes).padStart(2, '0') + ':' + 
+              String(Seconds).padStart(2, '0') );
+          }
+      }
+            
+    };
+    
+    var Pause = function() {
+        Running = false;
+    };
+    
+    var Resume = function() {
+        Running = true;
+        UpdateTimer();
+    };
+    
+    var Start = function( Timeout ) {
+      $('#timer_display').css('color','yellow');
+      $('#current_player').css('color','yellow');
+      $('#timer_display').removeClass('blink_me');
+      $('#current_player').removeClass('blink_me');
+      TimeOut = Timeout;
+      CurrentTime = ( new Date() ).getTime();
+      EndTime = ( new Date() ).getTime() + TimeOut;
+      UpdateTimer();
+    };
+
+    return {
+        Pause: Pause,
+        Resume: Resume,
+        Start: Start
+    };
+  })(jQuery);
+    let thisCountDown = CountDown;
+    
+    var socket = io();
+    socket.on("connect", () => {
+      console.log('socket connected: ',socket.connected); // true
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+
+    })
+      socket.on('board_update', function(splot_data){
+        console.log('board_update')
+        updateBoard(splot_data);
+      });
+      socket.on('clear_board', function(msg){
+        console.log('clear_board')
+        clearBoard();
+      });
+    function getSplotData(splot_id){
+      let current_splot_dots = parseInt(document.getElementById("splot_dot_" + splot_id).innerHTML);
+      let current_splot_entry = document.getElementById("splotEntry_" + splot_id).innerHTML.trim();
+      let splot_data = {
+          id: splot_id,
+          entry: current_splot_entry,
+          splot_dot: current_splot_dots
+      }
+      console.log('getSplotData',splot_data)
+      return splot_data;
+    }
+    function updateBoard(splot_data){    
+      var innerHTML = '<div class="splot_number">' +
+        '<span class="fa-stack float-left fa-fade">' +
+          '<span class="fa-regular fa-circle fa-stack-2x"></span>' +
+          '<strong class="fa-stack-1x" id="splot_number_' + splot_data.id + '">' + splot_data.id + '</strong>' +
+        '</span>' +
+      '</div>' +
+      '<div class="splotEntry">' +
+        '<span id="splotEntry_' + splot_data.id + '">' + splot_data.entry + '</span>' +
+      '</div>' +
+      '<div class="splot_dot">' +
+        '<span class="fa-stack float-right fa-fade">' +
+          '<span class="fa fa-square-dashed fa-stack-2x"></span>' +
+          '<strong class="fa-stack-1x" id="splot_dot_' + splot_data.id + '">' + splot_data.splot_dot + '</strong>' +
+        '</span>' +
+      '</div>';
+
+      var this_splot = document.getElementById('splot_' + splot_data.id);
+
+      if (this_splot) {
+        $('#splot_' + splot_data.id).fadeOut( "slow", function() {
+          this_splot.innerHTML = innerHTML;
+          $('#splot_' + splot_data.id).fadeIn();
+        }); 
+
+      } else {
+        var div = document.createElement("div");
+        div.className = "item";
+        div.id = 'splot_' + splot_data.id;
+        div.innerHTML = innerHTML;
+        document.getElementById("board").appendChild(div);
+        $('#splot_' + splot_data.id).fadeIn("slow");
+      }
+    }
+
+    function clearBoard(){
+      $('#board').fadeOut();
+      document.getElementById("board").innerHTML = "";
+      $('#board').fadeIn();
+    }
+    let fallbackTimeout; // Declare the fallbackTimeout variable at a higher scope
+
+// Client-side code
+function toggleSplotAppearance(splotId, splotData) {
+  console.log('toggleSplotAppearance', splotId, splotData);
+  let splotElement = document.getElementById('splot_' + splotId);
+  let splotEntryElement = document.getElementById('splotEntry_' + splotId);
+  let splotDotElement = document.getElementById('splot_dot_' + splotId);
+
+  if (splotElement && splotEntryElement && splotDotElement) {
+    // Trigger the spin animation
+    splotElement.classList.add('spin');
+
+    // Define the update logic in a separate function
+    const updateContent = (isAlt) => {
+      let splotElement = document.getElementById('splot_' + splotId);
+      let splotNumberElement = document.getElementById('splot_number_' + splotId);
+      let splotDotElement = document.getElementById('splot_dot_' + splotId);
+
+    if (isAlt) { 
+      // Display alternate content and add glitch classes
+      // Save current styles
+      splotElement.setAttribute('data-saved-styles', splotElement.getAttribute('style'));
+      // Clear inline styles
+      splotElement.style = '';
+      splotEntryElement.innerHTML = splotData.alt_entry;
+      splotDotElement.innerHTML = splotData.alt_splot_dot;
+      splotNumberElement.classList.add('glitch-text');
+      splotDotElement.classList.add('glitch-text');
+      splotEntryElement.classList.add('glitch-text');
+      splotElement.classList.add('glitch-bg');
+      splotElement.style = '';
+    } else {
+      // Display original content and remove glitch classes
+      // Restore saved styles
+      let savedStyles = splotElement.getAttribute('data-saved-styles');
+      splotElement.setAttribute('style', savedStyles || ''); // Apply saved styles or empty string if none
+    
+      splotEntryElement.innerHTML = splotData.entry;
+      splotDotElement.innerHTML = splotData.splot_dot;
+      splotNumberElement.classList.remove('glitch-text');
+      splotDotElement.classList.remove('glitch-text');
+      splotEntryElement.classList.remove('glitch-text');
+      splotElement.classList.remove('glitch-bg');
+    }
+      // Update the state attribute
+      splotElement.dataset.isAlt = !isAlt;
+    };
+
+    // Listen for the end of the spin animation
+    splotElement.addEventListener('animationend', function() {
+      updateContent(splotData.isAlt);
+      splotElement.classList.remove('spin'); // Reset the spin state
+      clearTimeout(fallbackTimeout);
+    });
+
+    // Set a fallback timeout to update the content if the animation does not end
+    let fallbackTimeout = setTimeout(() => {
+      updateContent(splotData.isAlt);
+      // Ensure to remove the spin class if the animationend event did not fire
+      splotElement.classList.remove('spin');
+    }, 2100); // Set timeout slightly longer than the spin animation duration
+  }
+}
+
+  // Client-side code
+  socket.on('alt_splot_swap', function(data) {
+    console.log('alt_splot_swap', data);
+    // Pass the entire data object to the toggle function
+    toggleSplotAppearance(data.id, data);
+  });
+
+});
+  </script>
+  <style>
+    body {
+      height: 740px;
+      width: 800px;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 0;
+      font-family: 'Antonio', sans-serif;
+      color: #000;
+      background-color: #000000;
+    }
+
+    .lcars {
+      border-radius: 0 0 0 40px;
+      display: flex;
+      height: 100%;
+      background: linear-gradient(#cc6566 150px, #000 150px, #000 155px, #ff7701 155px, #ff7701 270px, #000 270px, #000 275px, #ff9966 275px);
+    }
+    .container {
+      display: grid;
+      height: 720px;
+      width: 800px;
+      margin-left: 60px;
+      box-sizing: border-box;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(6, 1fr);
+      grid-gap: 12px;
+      padding: 6px;
+      background: #000;
+      border-radius: 0 0 0 60px;
+      margin-bottom: 20px;
+    }
+
+    .item {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      height: 100%;
+      background: linear-gradient(#cc6566 40%, #ff7701 10%, #ff9966 50%);
+      border-radius: 100vmax;
+      padding: 2px;
+      box-sizing: border-box;
+      z-index: 3;
+      position: relative;
+
+    }
+    .splot_dot {
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      flex-direction: column;
+    }
+    .splot_number {
+      font-size: 2vh;
+    }
+    .splotEntry {
+      font-size: 2.25vh;
+      flex-grow: 1;
+      text-align: center;
+      font-weight: 700;
+    }
+    .splot_dot {
+      position: relative;
+    }
+
+.splot_dot::before {
+  content: "";
+  display: block;
+  height: 100%;
+  width: 3px;
+  background-color: black;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+  /* Ensure the splot has position relative for the 3D transform */
+  .item {
+    /* ... (existing styles) ... */
+    position: relative; /* Add this if not already present */
+  }
+
+  /* Add keyframes for the spin animation */
+  @keyframes spin {
+    from { transform: rotateY(0deg); }
+    to { transform: rotateY(360deg); }
+  }
+
+  /* Style for the spinning splot */
+  .spin {
+    animation: spin 2s forwards;
+  }
+
+  /* Add keyframes for the glitch animation */
+  @keyframes glitch {
+    0% {
+        opacity: 1;
+        transform: skew(0deg);
+      }
+      10% {
+        opacity: 0.8;
+        transform: skew(20deg);
+      }
+      20% {
+        opacity: 1;
+        transform: skew(-20deg);
+      }
+      30% {
+        opacity: 0.7;
+        transform: skew(10deg);
+      }
+      40%, 100% {
+        opacity: 1;
+        transform: skew(0deg);
+      }
+  }
+
+ /* Define the glitch effect for the text */
+ .glitch-text {
+    color: #0F0;
+    animation: glitch-text 1s infinite;
+  }
+
+  @keyframes glitch-text {
+    0% {
+      text-shadow: 0.5rem 0 red;
+      opacity: 1;
+    }
+    14% {
+      text-shadow: 0.5rem 0 red;
+      opacity: 0.75;
+    }
+    15% {
+      text-shadow: -0.5rem 0 blue;
+      opacity: 0.75;
+    }
+    49% {
+      text-shadow: -0.5rem 0 blue;
+      opacity: 0.75;
+    }
+    50% {
+      text-shadow: 0.5rem 0 red;
+      opacity: 1;
+    }
+    99% {
+      text-shadow: 0.5rem 0 red;
+      opacity: 1;
+    }
+    100% {
+      text-shadow: -0.5rem 0 blue;
+      opacity: 0.75;
+    }
+  }
+
+  /* Define the glitch effect for the background */
+  .glitch-bg {
+    animation: glitch-bg 1s infinite;
+    background-image: url('glitch.gif'); /* Replace with your actual background image */
+    background-size: cover;
+  }
+
+  @keyframes glitch-bg {
+    0%, 100% {
+      background-position: 0 0;
+    }
+    10% {
+      background-position: -5% 0;
+    }
+    20% {
+      background-position: 5% 0;
+    }
+    30% {
+      background-position: -5% 0;
+    }
+    40% {
+      background-position: 5% 0;
+    }
+    50% {
+      background-position: 0 0;
+    }
+  }
+  </style>
+</head> 
+<body>
+<div class='lcars'>
+  <div class="container">
+      <% board.forEach(function(dataRow, idxOfRow, orgnlAryObject) { %>
+        <div class="item" id='splot_<%= dataRow.id %>'>
+          <div class="splot_number">
+            <span class="fa-stack float-left fa-fade">
+            <span class="fa-regular fa-circle fa-stack-2x"></span>
+              <strong class="fa-stack-1x" id="splot_number_<%= dataRow.id %>">
+                <%= dataRow.id %>
+              </strong>
+            </span>
+          </div>
+          <div class="splotEntry">
+            <span id='splotEntry_<%= dataRow.id %>'><%= dataRow.entry %></span>
+          </div>
+          <div class="splot_dot">
+            <span class="fa-stack float-right fa-fade">
+              <span class="fa fa-square-dashed fa-stack-2x"></span>
+              <strong class="fa-stack-1x" id="splot_dot_<%= dataRow.id %>">
+                <%= dataRow.splot_dot %>
+              </strong>
+            </span>
+          </div>
+        </div>
+      <% }); %>
+  </div>
+</div>
+
+<script>
+const colors = [
+  "#33cc99",
+  "#cc4499",
+  "#4455ff",
+  "#ffcc33",
+  "#9944ff",
+  "#ff7700",
+  "#cc88ff",
+  "#dd4444",
+  "#ffcc66",
+  "#7788ff",
+  "#aaaaff",
+  "#88ccff",
+  "#ffaa00",
+  "#ff8866",
+  "#ff5555",
+  "#cc33ff"
+];
+
+window.addEventListener("DOMContentLoaded", () => {
+
+  let elements = document.getElementsByClassName('item');
+
+  // Shuffle the colors array to randomize color assignment
+  for(let i = colors.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [colors[i], colors[j]] = [colors[j], colors[i]];
+  }
+
+  // Ensure that there are not more elements than colors
+  if (elements.length > colors.length) {
+    console.error('Not enough unique colors for all elements.');
+    return;
+  }
+
+  for(let i = 0; i < elements.length; i++) {
+    elements[i].style.background = colors[i];
+  }
+});
+
+</script>
+</body> 
+</html>

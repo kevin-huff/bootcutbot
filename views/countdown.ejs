@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Star Trek Countdown Timer</title>
+<style>
+  body {
+    font-family: 'Orbitron', sans-serif;
+    background-color: black;
+    color: red;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.75; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes flash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  .countdown {
+    text-align: center;
+    font-size: 3rem;
+    border: 3px solid red;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px red;
+    animation: pulse 2s infinite;
+  }
+  .countdown.flash {
+    animation: flash 0.2s infinite;
+  }
+</style>
+</head>
+<body>
+<div class="countdown" id="countdown">
+  00:00:00
+</div>
+<audio id="endAudio" src="https://cdn.glitch.global/78c000ec-abb2-4b55-94ff-1daa4a8f6e18/ds9_red_alert2.mp3?v=1699216381816" type="audio/mp3"></audio> <!-- Audio element -->
+
+<script>
+  const endTimeString = '<%- endTime %>'; // 'YYYY-MM-DDTHH:mm:ss' format expected
+  const endTime = new Date(endTimeString).getTime();
+
+  const countdownElement = document.getElementById('countdown');
+  const endAudio = document.getElementById('endAudio'); // Get the audio element
+  let playCount = 0; // Initialize play count
+  // Function to play the audio file
+  function playAudio() {
+    if (playCount < 4) { // Check if the audio has been played less than four times
+      endAudio.play();
+      playCount++;
+    }
+  }
+  
+    // Event listener for when the audio ends
+  endAudio.addEventListener('ended', function() {
+    if (playCount < 4) {
+      // Timeout to give a slight delay before replaying, if desired
+      setTimeout(playAudio, 550); // Adjust the timeout as needed
+    }
+  });
+  
+  function updateCountdown() {
+    const now = new Date().getTime();
+    const distance = endTime - now;
+
+    if (distance < 0) {
+      clearInterval(interval);
+      countdownElement.innerText = '00:00:00';
+      countdownElement.classList.add('flash');
+      endAudio.play(); // Play the audio when countdown ends
+      return;
+    }
+
+
+    let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        let seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        hours = hours < 10 ? '0' + hours : hours;
+        minutes = minutes < 10 ? '0' + minutes : minutes;
+        seconds = seconds < 10 ? '0' + seconds : seconds;
+
+        countdownElement.innerText = `${hours}:${minutes}:${seconds}`;
+      }
+
+  const interval = setInterval(updateCountdown, 1000);
+</script>
+</body>
+</html>

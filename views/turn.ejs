@@ -1,0 +1,196 @@
+
+<!DOCTYPE html>
+<html>
+ 
+<head>
+    <title>Current Turn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/5a69a86b05.js" crossorigin="anonymous"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script>
+    // Preload background
+    $(document).ready(function() {
+    $("#img1").attr("src", "portal.jpg");
+  });
+    var CountDown = (function ($) {
+    // Length ms 
+    var TimeOut = 10000;
+    // Interval ms
+    var TimeGap = 1000;
+    
+    var CurrentTime = ( new Date() ).getTime();
+    var EndTime = ( new Date() ).getTime() + TimeOut;
+    
+    var GuiTimer = $('#timer');
+    var GuiPause = $('#pause');
+    
+    var Running = false;
+    
+    var UpdateTimer = function() {
+      // Run till timeout
+      if( CurrentTime + TimeGap < EndTime && Running ) {
+          setTimeout( UpdateTimer, TimeGap );
+      }
+      // Countdown if running
+      if( Running ) {
+          CurrentTime += TimeGap;
+          if( CurrentTime >= EndTime ) {
+            Running = false;
+            $('#timer_num').html('00:00');
+            $('#timer_display').css('color','#ff2200');
+            $('#current_player').css('color','#ff2200');
+            $('#timer_display').addClass('blink_me');
+            $('#current_player').addClass('blink_me');
+          } else {
+            // Update Gui
+            var Time = new Date();
+            Time.setTime( EndTime - CurrentTime );
+            var Minutes = Time.getMinutes();
+            var Seconds = Time.getSeconds();
+            $('#timer_num').html( 
+              String(Minutes).padStart(2, '0') + ':' + 
+              String(Seconds).padStart(2, '0') );
+          }
+      }
+            
+    };
+    
+    var Pause = function() {
+        Running = false;
+    };
+    
+    var Resume = function() {
+        Running = true;
+        UpdateTimer();
+    };
+    
+    var Start = function( Timeout ) {
+      $('#timer_display').css('color','#f70');
+      $('#current_player').css('color','#f70');
+      $('#timer_display').removeClass('blink_me');
+      $('#current_player').removeClass('blink_me');
+      TimeOut = Timeout;
+      CurrentTime = ( new Date() ).getTime();
+      EndTime = ( new Date() ).getTime() + TimeOut;
+      UpdateTimer();
+    };
+
+    return {
+        Pause: Pause,
+        Resume: Resume,
+        Start: Start
+    };
+  })(jQuery);
+
+  let thisCountDown = CountDown;
+
+  var socket = io();
+
+  document.addEventListener('DOMContentLoaded', () => {
+    socket.on('timer_server', function(msg){
+        console.log('timer_admin:', msg)
+        $('#timer_num').html(msg.timer_display);
+        if(msg.action == 'start'){
+          thisCountDown.Pause();
+          thisCountDown.Start(msg.timer_value);
+        }
+        if(msg.action == 'pause'){
+          thisCountDown.Pause();
+        }
+        if(msg.action == 'resume'){
+          thisCountDown.Resume();
+        }
+      });   
+      socket.on('new_turn', function(msg){
+          console.log('new_turn')
+          updateTurn(msg);
+        });   
+      updateTurn('<%= current_turn %>');
+  });
+  
+    function updateTurn(text) {
+      $('#timer_display').removeClass('blink_me');
+      $('#current_player').removeClass('blink_me');
+      document.getElementById("current_player").innerHTML = "Current Player: " + text;   
+    }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    updateTurn('<%= current_turn %>');
+  }, false);
+
+</script>
+
+<style>
+      body {
+      width: 1600px;
+      height: 125px;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 0;
+      font-family: 'Antonio', sans-serif;
+      background-color: #000000;
+            color:#f70;
+
+    }
+      .lcars {
+        border-radius: 0 0 0 40px;
+        display: flex;
+        height: 100%;
+        background: linear-gradient(#7788ff 70px, #000 70px, #000 75px, #cc88ff 75px, #cc88ff 125px);
+      }
+      .container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(1, 1fr);
+      width: 1600px;
+      margin-left: 60px;
+      padding-left: 60px;
+      background: #000;
+      border-radius: 0 0 0 60px;
+      margin-bottom: 20px;
+    }
+
+      .item {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      height: 100%;
+      padding: 2px;
+      box-sizing: border-box;
+      z-index: 3;
+        font-size: 2vh;
+    }
+  h1 {
+    margin: 3px;
+  }
+  .blink_me {
+      animation: blinker 1s linear infinite;
+    }
+
+    @keyframes blinker {
+      50% {
+        opacity: 0;
+      }
+    }
+</style>
+</head>
+ 
+<body>
+<div class="lcars">
+  <div class="container"  id="turn_container">
+    <div class="item">
+      <span><h1 id='current_player'></h1></span>
+    </div>
+    <div class="item">
+      <span><h1 id='timer_display'>Turn: <span id="timer_num">0:00</span></h1></span>
+    </div>
+</div>
+
+</body>
+ 
+</html>

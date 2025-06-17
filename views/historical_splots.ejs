@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>The Splot Database</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="lcars.css">
+  	<link rel="stylesheet" type="text/css" href="lcars-colors.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="//cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <meta name="description" content="The bootcut historical splot database is a place to find all splots previously used on bootcut">
+    <meta name="keywords" content="Bootcut Queue, Abbabox, Gaming, Queue, Turns, Twitch, Interactive Boardgame">
+</head>
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5JXPYNCK9Q"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-5JXPYNCK9Q');
+</script>
+<body>
+	<section class="wrap-standard" id="column-3">
+		<div class="wrap">
+			<div class="scroll-top"><a id="scroll-top" href=""><span class="hop">screen</span> top</a></div>
+			<div class="left-frame-top">
+				<div class="panel-1"><img src="<%= banner_image %>" alt="Abbabox twitch channel logo"></div>
+				<div class="panel-2">02<span class="hop">-262000</span></div>
+			</div>
+			<div class="right-frame-top">
+				<div class="banner">Abbabox &#149; 
+          <span class="blink">Splots DB</span>
+        </div>
+				<div class="data-cascade-button-group">
+					<div class="cascade-wrapper">
+						<div class="data-cascade" id="default">
+							<div class="row-1"><div class="dc1">101</div><div class="dc2">7109</div><div class="dc3">1966</div><div class="dc44">36</div><div class="dc55">880</div><div class="dc6">11.03</div><div class="dc77">1954</div><div class="dc8">03</div><div class="dc99">6.08</div><div class="dc100">241</div><div class="dc11">309</div><div class="dc12">7.08</div><div class="dc13">1935</div><div class="dc14">12.20</div><div class="dc150">53</div><div class="dc150">1961</div><div class="dc150">2.16</div></div><div class="row-2"><div class="dc1">102</div><div class="dc2">8102</div><div class="dc3">1987</div><div class="dc44">044</div><div class="dc55">0051</div><div class="dc6">1968</div><div class="dc77">704</div><div class="dc8">10.31</div><div class="dc99">1984</div><div class="dc100">1954</div><div class="dc11">764</div><div class="dc12">1940</div><div class="dc13">9.9</div><div class="dc14">1972</div><div class="dc150">815</div><div class="dc150">4.12</div><div class="dc150">2023</div></div><div class="row-3"><div class="dc1">103</div><div class="dc2">714</div><div class="dc3">1993</div><div class="dc44">0222</div><div class="dc55">4.4</div><div class="dc6">1969</div><div class="dc77">2450</div><div class="dc8">91</div><div class="dc99">56</div><div class="dc100">24</div><div class="dc11">716</div><div class="dc12">801</div><div class="dc13">417</div><div class="dc14">602</div><div class="dc150">5618</div><div class="dc150">238</div><div class="dc150">1443</div></div><div class="row-4"><div class="dc1">104</div><div class="dc2">6104</div><div class="dc3">1995</div><div class="dc44">3.22</div><div class="dc55">1931</div><div class="dc6">0.0</div><div class="dc77">0000</div><div class="dc8">1701</div><div class="dc99">1984</div><div class="dc100">218</div><div class="dc11">908</div><div class="dc12">10</div><div class="dc13">85</div><div class="dc14">1888</div><div class="dc150">27</div><div class="dc150">2879</div><div class="dc150">213</div></div><div class="row-5"><div class="dc1">105</div><div class="dc2">08</div><div class="dc3">2001</div><div class="dc44">713</div><div class="dc55">079</div><div class="dc6">1977</div><div class="dc77">LV</div><div class="dc8">426</div><div class="dc99">105</div><div class="dc100">10</div><div class="dc11">1642</div><div class="dc12">1979</div><div class="dc13">402</div><div class="dc14">795</div><div class="dc150">361</div><div class="dc150">0852</div><div class="dc150">984</div></div><div class="row-6"><div class="dc1">106</div><div class="dc2">31</div><div class="dc3">2017</div><div class="dc44">429</div><div class="dc55">65</div><div class="dc6">871</div><div class="dc77">24</div><div class="dc8">541</div><div class="dc99">656</div><div class="dc100">M</div><div class="dc11">113</div><div class="dc12">12.6</div><div class="dc13">27</div><div class="dc14">05</div><div class="dc150">85</div><div class="dc150">12.25</div><div class="dc150">7884</div></div><div class="row-7"><div class="dc1">107</div><div class="dc2">5</div><div class="dc3">2022</div><div class="dc44">784</div><div class="dc55">3304</div><div class="dc6">42</div><div class="dc77">733</div><div class="dc8">1224</div><div class="dc99">5801</div><div class="dc100">23</div><div class="dc11">1015</div><div class="dc12">84</div><div class="dc13">36</div><div class="dc14">029</div><div class="dc150">24</div><div class="dc150">318</div><div class="dc150">12.24</div></div><div class="row-8"><div class="dc1">108</div><div class="dc2">23</div><div class="dc3">174</div><div class="dc44">91</div><div class="dc55">947</div><div class="dc6">28</div><div class="dc77">527</div><div class="dc8">04</div><div class="dc99">0469</div><div class="dc100">2200</div><div class="dc11">88</div><div class="dc12">1985</div><div class="dc13">540</div><div class="dc14">3121</div><div class="dc150">308</div><div class="dc150">9571</div><div class="dc150">404</div></div>
+						</div>
+					</div>
+					<nav id="nav-standard"> 
+						<a href="/" id="b-one">The Queue</a>
+						<a href="/ratings" id="b-two">Ratings DB</a>
+						<a href="/diceData" id="b-three">Dice DB</a>
+						<a href="/menu" target="_BLANK" id="b-five">Command Menu</a>
+					</nav>
+				</div>
+				<div class="bar-panel first-bar-panel">
+					<div class="bar-1"></div>
+					<div class="bar-2"></div>
+					<div class="bar-3"></div>
+					<div class="bar-4"></div>
+					<div class="bar-5"></div>
+				</div>
+			</div>
+		</div>
+		<div class="wrap" id="gap">
+			<div class="left-frame">
+				<div>
+					<div class="panel-3">03<span class="hop">-USS Bootcut</span></div>
+					<div class="panel-4">04<span class="hop">-041969</span></div>
+					<div class="panel-5">05<span class="hop">-1701D</span></div>
+					<div class="panel-6">06<span class="hop">-071984</span></div>
+					<div class="panel-7">07<span class="hop">-081940</span></div>
+					<div class="panel-8">08<span class="hop">-47148</span></div>
+					<div class="panel-9">09<span class="hop">-081966</span></div>
+				</div>
+				<div>
+					<div class="panel-10">10<span class="hop">-31</span></div>
+				</div>
+			</div>
+			<div class="right-frame">
+				<div class="bar-panel">
+					<div class="bar-6"></div>
+					<div class="bar-7"></div>
+					<div class="bar-8"></div>
+					<div class="bar-9"></div>
+					<div class="bar-10"></div>
+				</div>
+				<main>
+
+					<!-- Start your content here. -->
+
+					<h1>The Splots DB</h1>
+          <h2>Total Splots  &#149; <span class="go-peach"><%= Object.keys(splots).length; %></span></h2>
+
+		      <p>
+            This page tracks all splots used in Bootcut since 2022-06-28. New splots will be added. You can use !auto_splot during your turn to pick a random splot.
+          </p>
+          <div class="lcars-text-bar">
+            <span>Historical Splots</span>
+          </div>
+
+          <table class="table splots_db" id="splots_db">
+  <thead>
+    <tr>
+      <th scope="col">Splot</th>
+      <th scope="col">First Date</th>
+    </tr>
+  </thead>
+  <tbody id="splots_db">
+  <% for (const [splot, date] of Object.entries(splots)) { %>
+    <tr>
+        <td>
+        <%= splot %>
+        </td>
+        <td>
+        <%= date %>
+        </td>
+    </tr>
+    <% } %>
+  </tbody>
+</table>
+					<footer>
+						<div class="footer-inside">
+							<div class="footer-text">
+    <div class="footer-grid">
+        <div class="footer-column">
+          <!-- Content -->
+          <h5 class="text-uppercase">Support Abbabox</h5>
+          <p>Help the streamer keep doing the things. Support him anyway you can.</p>
+        </div>
+        <div class="footer-column">
+         <!-- Links -->
+        <h5 class="text-uppercase">Social</h5>
+
+        <ul class="list-unstyled">
+          <ol>
+            <a href="https://twitch.com/abbabox">Twitch</a>
+          </ol>
+          <ol>
+            <a href="https://twitter.com/abbabox1">Twitter</a>
+          </ol>
+          <ol>
+            <a href="https://www.youtube.com/c/Abbabox">YouTube</a>
+          </ol>
+          <ol>
+            <a href="https://discord.com/invite/vgB85mF">Discord</a>
+          </ol>
+          <ol>
+            <a href="https://www.tiktok.com/@abbabox?lang=en">TikTok</a>
+          </ol>
+          <ol>
+            <a href="https://instagram.com/abbaboxtv/">Instagram</a>
+          </ol>
+        </ul>
+
+        </div>
+        <div class="footer-column">
+                  <!-- Links -->
+        <h5 class="text-uppercase">Pay the Man</h5>
+
+        <ul class="list-unstyled">
+          <ol>
+            <a href="https://streamlabs.com/abbabox/tip">Paypal</a>
+          </ol>
+          <ol>
+            <a href="https://www.streamloots.com/abbabox">StreamLoots</a>
+          </ol>
+          <ol>
+            <a href="https://jointhrone.com/u/abbabox">Throne</a>
+          </ol>
+          <ol>
+            <a href="https://streamlabs.com/abbabox/merch">Merch</a>
+          </ol>
+        </ul>
+      </div>
+    </div>
+					</div>
+						</div>
+						<div class="footer-panel"> <span class="hop">22</span>47 </div>
+					</footer>
+				</main>
+			</div>
+		</div>
+	</section>	
+	<script type="text/javascript" src="lcars.js"></script>
+      <script
+			  src="https://code.jquery.com/jquery-3.6.1.min.js"
+			  integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ="
+			  crossorigin="anonymous"></script>
+<script type="text/javascript" src='//cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js'></script>
+  
+  <script type="text/javascript">
+    $(document).ready( function () {
+      $('#splots_db').DataTable({
+          order: [[1, 'desc']],
+          scrollY: '100vh',
+          scrollCollapse: true,
+          paging: false,
+          columnDefs: [
+            {
+                targets: 1, // column index (start from 0)
+                render: function(data, type, row) {
+                  // extract date part
+                  var dateString = data.slice(0, 10);
+                  var date = new Date(dateString);
+                  return date.toISOString().slice(0, 10);
+                }
+            }
+          ]
+      });
+    });
+  </script>
+</body>
+
+</html>
+  
+  

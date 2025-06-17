@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Twitch Authentication</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .auth-button {
+            display: inline-block;
+            background-color: #9146FF;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .auth-button:hover {
+            background-color: #7126CC;
+        }
+        .instructions {
+            text-align: left;
+            margin-top: 40px;
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        .success-message {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <style>
+        .error-message {
+            background-color: #f44336;
+            color: white;
+            padding: 20px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .status.connecting {
+            background-color: #FFC107;
+            color: black;
+        }
+        .status.connected {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .status.error {
+            background-color: #f44336;
+            color: white;
+        }
+    </style>
+    <% if (typeof error !== 'undefined') { %>
+        <div class="error-message">
+            <h1>Authentication Error</h1>
+            <p><%= error %></p>
+            <a href="/auth/twitch" class="auth-button">Try Again</a>
+        </div>
+    <% } else if (typeof success !== 'undefined' && success) { %>
+        <div class="success-message">
+            <h1>Authentication Successful!</h1>
+            <p>Your Twitch account has been successfully connected.</p>
+            <div id="status" class="status connecting">
+                <p>Connecting to Twitch EventSub...</p>
+            </div>
+        </div>
+        <script>
+            // Poll the EventSub status
+            let attempts = 0;
+            const maxAttempts = 10;
+            
+            function checkStatus() {
+                if (attempts >= maxAttempts) {
+                    document.getElementById('status').className = 'status error';
+                    document.getElementById('status').innerHTML = `
+                        <p>Failed to connect to Twitch EventSub after multiple attempts.</p>
+                        <p>Please try refreshing the page or contact support if the issue persists.</p>
+                    `;
+                    return;
+                }
+                
+                fetch('/auth/status')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.connected) {
+                            document.getElementById('status').className = 'status connected';
+                            document.getElementById('status').innerHTML = `
+                                <p>Successfully connected to Twitch EventSub!</p>
+                                <p>You can now close this window. The subathon timer will automatically add time for bits (1 minute per 100 bits).</p>
+                            `;
+                        } else {
+                            attempts++;
+                            setTimeout(checkStatus, 2000);
+                        }
+                    })
+                    .catch(error => {
+                        attempts++;
+                        setTimeout(checkStatus, 2000);
+                    });
+            }
+            
+            checkStatus();
+        </script>
+    <% } else { %>
+        <h1>Twitch Authentication Required</h1>
+        <p>To enable bit events for the subathon timer, you need to authenticate with Twitch.</p>
+        
+        <a href="/auth/twitch" class="auth-button">Authenticate with Twitch</a>
+
+        <div class="instructions">
+            <h2>Setup Instructions:</h2>
+            <ol>
+                <li>Click the "Authenticate with Twitch" button above</li>
+                <li>Log in to Twitch if needed</li>
+                <li>Authorize the application to access your channel's bits and subscription information</li>
+                <li>After successful authentication, you can close this window</li>
+                <li>The subathon timer will now automatically add time for bits (1 minute per 100 bits)</li>
+            </ol>
+
+            <h3>Required Environment Variables:</h3>
+            <ul>
+                <li>EVENTSUB_CLIENT_ID - Your Twitch application client ID</li>
+                <li>EVENTSUB_CLIENT_SECRET - Your Twitch application client secret</li>
+                <li>TWITCH_CHANNEL_ID - Your channel's numeric ID</li>
+                <li>TEST_CHANNEL_ID - (Optional) For testing in development mode</li>
+            </ul>
+        </div>
+    <% } %>
+</body>
+</html>

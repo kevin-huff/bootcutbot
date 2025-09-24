@@ -157,7 +157,7 @@
     function updateTurn(text) {
       $('#timer_display').removeClass('blink_me');
       $('#current_player').removeClass('blink_me');
-      document.getElementById("current_player").innerHTML = "Current Player: " + text;   
+      document.getElementById("current_player").textContent = text;
     }
     function getSplotData(splot_id){
       let current_splot_dots = parseInt(document.getElementById("splot_dot_" + splot_id).innerHTML);
@@ -217,7 +217,8 @@
         var innerHTML = 
             '<div class="breakaway-content">' +
                 '<div class="breakaway-header">' +
-                    '<h3><span id="breakawayName_' + ba_data.id + '">' + ba_data.name + '</span> Breakaways</h3>' +
+                    '<span class="breakaway-label">Breakaways</span>' +
+                    '<h3><span id="breakawayName_' + ba_data.id + '">' + ba_data.name + '</span></h3>' +
                 '</div>' +
                 '<div class="breakaway-counter">' +
                     '<div class="counter-circle">' +
@@ -371,9 +372,9 @@
 
         .top-bar {
             position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) auto minmax(0, 1.65fr);
+            align-items: stretch;
             gap: 18px;
             padding: 12px 20px;
             border-radius: 14px;
@@ -392,6 +393,20 @@
             color: var(--ash);
         }
 
+        .status-label {
+            font-size: 0.55rem;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: rgba(243, 198, 35, 0.75);
+            opacity: 0.8;
+        }
+
+        .timer-cluster {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .status-line {
             margin: 0;
             font-size: 0.75rem;
@@ -402,7 +417,7 @@
         .timer-shell {
             display: flex;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: center;
         }
 
         #timer_display {
@@ -682,72 +697,104 @@
             display: none;
         }
 
-        .breakaways {
+        .breakaway-ribbon {
+            position: relative;
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 18px;
-            padding-top: 24px;
-            border-top: 1px solid rgba(243, 198, 35, 0.18);
-            flex: 1 1 auto;
-            overflow-y: auto;
-            padding-bottom: 8px;
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(150px, 1fr);
+            gap: 12px;
+            align-items: stretch;
+            padding: 4px 0;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: thin;
+        }
+
+        .breakaway-ribbon::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .breakaway-ribbon::-webkit-scrollbar-track {
+            background: rgba(12, 11, 11, 0.4);
+        }
+
+        .breakaway-ribbon::-webkit-scrollbar-thumb {
+            background: rgba(243, 198, 35, 0.35);
+            border-radius: 999px;
         }
 
         .breakaway-col {
             position: relative;
-            padding: 18px 20px;
-            border-radius: 18px;
-            background: linear-gradient(180deg, rgba(19, 18, 23, 0.92), rgba(12, 11, 11, 0.94));
-            border: 1px solid rgba(210, 34, 34, 0.28);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), 0 16px 30px -24px rgba(0, 0, 0, 0.85);
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: linear-gradient(180deg, rgba(25, 24, 30, 0.95), rgba(12, 11, 11, 0.9));
+            border: 1px solid rgba(210, 34, 34, 0.35);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), 0 12px 24px -18px rgba(0, 0, 0, 0.85);
             overflow: hidden;
+            min-width: 150px;
         }
 
         .breakaway-col::before {
             content: '';
             position: absolute;
             inset: 0;
-            background: radial-gradient(100% 140% at 0% 0%, rgba(255, 106, 0, 0.22), transparent 60%);
-            opacity: 0.4;
+            background: radial-gradient(120% 160% at 0% 0%, rgba(255, 106, 0, 0.22), transparent 65%);
+            opacity: 0.45;
             pointer-events: none;
         }
 
         .breakaway-content {
             position: relative;
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
             align-items: center;
-            gap: 18px;
             z-index: 1;
+        }
+
+        .breakaway-header {
+            display: grid;
+            gap: 2px;
+        }
+
+        .breakaway-label {
+            font-size: 0.55rem;
+            letter-spacing: 0.26em;
+            text-transform: uppercase;
+            color: rgba(243, 198, 35, 0.72);
+            opacity: 0.9;
         }
 
         .breakaway-header h3 {
             margin: 0;
             font-family: var(--font-display);
-            font-size: 1.1rem;
-            letter-spacing: 0.12em;
+            font-size: 0.95rem;
+            letter-spacing: 0.14em;
             text-transform: uppercase;
+            color: var(--bone);
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
         }
 
         .breakaway-counter {
-            display: flex;
-            justify-content: flex-end;
+            display: grid;
+            gap: 4px;
+            justify-items: center;
         }
 
         .counter-circle {
-            width: 54px;
-            height: 54px;
+            width: 46px;
+            height: 46px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(243, 198, 35, 0.86), rgba(210, 34, 34, 0.35));
+            background: radial-gradient(circle, rgba(243, 198, 35, 0.86), rgba(210, 34, 34, 0.32));
             border: 2px solid rgba(243, 198, 35, 0.35);
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: var(--font-display);
-            font-size: 1.35rem;
+            font-size: 1.18rem;
             color: var(--char);
-            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.2);
-            box-shadow: 0 0 18px rgba(243, 198, 35, 0.35);
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.18);
+            box-shadow: 0 0 14px rgba(243, 198, 35, 0.32);
         }
 
         .dice-roll-popup {
@@ -855,8 +902,16 @@
             }
 
             .top-bar {
-                flex-direction: column;
-                align-items: flex-start;
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .timer-cluster {
+                justify-content: flex-start;
+            }
+
+            .breakaway-ribbon {
+                grid-auto-columns: minmax(160px, 1fr);
             }
         }
 
@@ -890,13 +945,35 @@
         </header>
         <div class="top-bar">
             <div class="status-cluster" aria-live="polite" aria-atomic="true">
-                <p id="current_player" class="status-line">Current Player: ZilchGnu</p>
+                <span class="status-label">Current Player</span>
+                <p id="current_player" class="status-line">ZilchGnu</p>
+            </div>
+            <div class="timer-cluster">
                 <div class="timer-shell">
                     <div id="timer_display" class="timer-ring" role="timer" aria-live="off" aria-atomic="true">
                         <span class="timer-label">Turn</span>
                         <span id="timer_num">0:00</span>
                     </div>
                 </div>
+            </div>
+            <div class="breakaway-ribbon" id="breakaways">
+                <% breakaways.forEach(function(dataRow) { %>
+                    <div class="breakaway-col" id='breakaway_<%= dataRow.id %>'>
+                        <div class="breakaway-content">
+                            <div class="breakaway-header">
+                                <span class="breakaway-label">Breakaways</span>
+                                <h3>
+                                    <span id='breakawayName_<%= dataRow.id %>'><%= dataRow.name %></span>
+                                </h3>
+                            </div>
+                            <div class="breakaway-counter">
+                                <div class="counter-circle">
+                                    <strong id="ba_dot_<%= dataRow.id %>"><%= dataRow.ba_dots %></strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <% }); %>
             </div>
         </div>
         <div class="board-frame">
@@ -925,24 +1002,6 @@
                     </div>
                 <% }); %>
             </div>
-        </div>
-        <div class="breakaways" id="breakaways">
-            <% breakaways.forEach(function(dataRow) { %>
-                <div class="breakaway-col" id='breakaway_<%= dataRow.id %>'>
-                    <div class="breakaway-content">
-                        <div class="breakaway-header">
-                            <h3>
-                                <span id='breakawayName_<%= dataRow.id %>'><%= dataRow.name %></span> Breakaways
-                            </h3>
-                        </div>
-                        <div class="breakaway-counter">
-                            <div class="counter-circle">
-                                <strong id="ba_dot_<%= dataRow.id %>"><%= dataRow.ba_dots %></strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            <% }); %>
         </div>
     </div>
 </body>

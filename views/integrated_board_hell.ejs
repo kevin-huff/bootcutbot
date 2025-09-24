@@ -274,7 +274,6 @@
             --gutter: 24px;
             --font-display: 'Cinzel Decorative', 'UnifrakturCook', serif;
             --font-body: 'Inter', 'Rubik', sans-serif;
-            --torment-level: 46%;
         }
 
         *, *::before, *::after {
@@ -286,11 +285,12 @@
             min-height: 100vh;
             display: flex;
             justify-content: center;
+            align-items: center;
             background: linear-gradient(180deg, var(--base-coal) 0%, var(--basalt) 55%, var(--char) 100%);
             color: var(--bone);
             font-family: var(--font-body);
             letter-spacing: 0.02em;
-            overflow-x: hidden;
+            overflow: hidden;
         }
 
         body::before {
@@ -311,11 +311,13 @@
         .container {
             position: relative;
             z-index: 1;
-            width: min(100%, 760px);
-            padding: 40px 36px 48px;
+            width: 760px;
+            height: 1080px;
+            padding: 40px 36px;
             display: flex;
             flex-direction: column;
-            gap: 32px;
+            justify-content: flex-start;
+            gap: 28px;
             isolation: isolate;
         }
 
@@ -378,9 +380,8 @@
         .top-bar {
             position: relative;
             display: flex;
-            flex-wrap: wrap;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start;
             gap: 20px 32px;
             padding: 20px 28px;
             border-radius: 20px;
@@ -389,21 +390,11 @@
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 18px 32px -28px rgba(0, 0, 0, 0.9);
         }
 
-        .top-bar::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            background: radial-gradient(90% 120% at 10% 20%, rgba(255, 106, 0, 0.16), transparent 70%);
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
         .status-cluster {
             display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 14px 24px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
             text-transform: uppercase;
             letter-spacing: 0.08em;
             color: var(--ash);
@@ -418,7 +409,7 @@
         .timer-shell {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
         }
 
         #timer_display {
@@ -472,96 +463,17 @@
             letter-spacing: 0.1em;
         }
 
-        .torment-gauge {
-            position: relative;
-            display: grid;
-            gap: 12px;
-            min-width: 220px;
-            padding: 16px 20px 20px;
-            border-radius: 18px;
-            background: linear-gradient(160deg, rgba(19, 18, 23, 0.95), rgba(12, 11, 11, 0.86));
-            border: 1px solid rgba(243, 198, 35, 0.2);
-            box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.6);
-            color: var(--bone);
-        }
-
-        .torment-gauge::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            background: repeating-linear-gradient(90deg, transparent 0 38px, rgba(138, 17, 17, 0.12) 38px 42px);
-            opacity: 0.25;
-            pointer-events: none;
-        }
-
-        .gauge-label {
-            font-size: 0.78rem;
-            letter-spacing: 0.32em;
-            text-transform: uppercase;
-            color: var(--ash);
-            z-index: 1;
-        }
-
-        .gauge-track {
-            position: relative;
-            height: 20px;
-            border-radius: 999px;
-            background: linear-gradient(180deg, rgba(19, 18, 23, 0.8), rgba(12, 11, 11, 0.95));
-            border: 1px solid rgba(243, 198, 35, 0.28);
-            overflow: hidden;
-            box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.75);
-        }
-
-        .gauge-track::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image: repeating-linear-gradient(to right, transparent 0 26px, rgba(243, 198, 35, 0.35) 26px 28px);
-            opacity: 0.3;
-        }
-
-        .gauge-fill {
-            position: absolute;
-            inset: 0;
-            width: var(--torment-level, 0%);
-            background: linear-gradient(90deg, var(--blood) 0%, var(--ember) 50%, var(--furnace) 82%, var(--sulfur) 100%);
-            box-shadow: 0 0 18px rgba(255, 106, 0, 0.36);
-            transition: width 400ms ease, filter 400ms ease;
-        }
-
-        .gauge-glow {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, rgba(255, 106, 0, 0.4), rgba(243, 198, 35, 0.2), rgba(255, 106, 0, 0.35));
-            mix-blend-mode: screen;
-            opacity: 0.65;
-            pointer-events: none;
-            animation: lava-flow 8s ease-in-out infinite;
-        }
-
-        .gauge-ticks {
-            display: flex;
-            justify-content: space-between;
-            gap: 18px;
-            height: 6px;
-        }
-
-        .gauge-ticks::before {
-            content: '';
-            flex: 1;
-            background-image: repeating-linear-gradient(to right, rgba(243, 198, 35, 0.28) 0 2px, transparent 2px 16px);
-            opacity: 0.4;
-        }
-
         .board-frame {
             position: relative;
+            flex: 0 0 640px;
             padding: 32px;
             border-radius: 28px;
             background: linear-gradient(180deg, rgba(19, 18, 23, 0.88), rgba(12, 11, 11, 0.95));
             border: 1px solid rgba(138, 17, 17, 0.28);
             box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.85), 0 32px 60px -48px rgba(0, 0, 0, 0.9);
             overflow: hidden;
+            display: flex;
+            align-items: stretch;
         }
 
         .board-frame::before {
@@ -617,7 +529,9 @@
             z-index: 2;
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-rows: repeat(4, minmax(0, 1fr));
             gap: var(--gutter);
+            width: 100%;
         }
 
         .spot {
@@ -632,7 +546,6 @@
             border: 1px solid rgba(243, 198, 35, 0.12);
             box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.85), 0 16px 32px -28px rgba(0, 0, 0, 0.8);
             color: var(--bone);
-            aspect-ratio: 5 / 4;
             overflow: hidden;
             transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease, filter 220ms ease;
         }
@@ -778,10 +691,13 @@
 
         .breakaways {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 18px;
             padding-top: 24px;
             border-top: 1px solid rgba(243, 198, 35, 0.18);
+            flex: 1 1 auto;
+            overflow-y: auto;
+            padding-bottom: 8px;
         }
 
         .breakaway-col {
@@ -900,12 +816,6 @@
             to { filter: drop-shadow(0 0 20px rgba(243, 198, 35, 0.65)); }
         }
 
-        @keyframes lava-flow {
-            0% { opacity: 0.4; transform: translateX(-5%); }
-            50% { opacity: 0.75; transform: translateX(5%); }
-            100% { opacity: 0.4; transform: translateX(-5%); }
-        }
-
         @keyframes timer-pulse {
             0%, 100% { opacity: 0.65; transform: scale(0.98); }
             50% { opacity: 0.95; transform: scale(1.05); }
@@ -927,7 +837,6 @@
             .spot,
             .dice-roll-popup,
             #timer_display,
-            .gauge-glow,
             .ember-field span {
                 transition-duration: 0.01ms !important;
                 animation-duration: 0.01ms !important;
@@ -935,11 +844,6 @@
 
             .ember-field {
                 display: none;
-            }
-
-            #timer_display::after,
-            .gauge-glow {
-                animation: none;
             }
 
             .blink_me {
@@ -959,11 +863,7 @@
 
             .top-bar {
                 flex-direction: column;
-                align-items: stretch;
-            }
-
-            .torment-gauge {
-                width: 100%;
+                align-items: flex-start;
             }
         }
 
@@ -1004,14 +904,6 @@
                         <span id="timer_num">0:00</span>
                     </div>
                 </div>
-            </div>
-            <div class="torment-gauge" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="46" aria-label="Torment gauge">
-                <span class="gauge-label">Torment Gauge</span>
-                <div class="gauge-track">
-                    <div class="gauge-fill"></div>
-                    <div class="gauge-glow"></div>
-                </div>
-                <div class="gauge-ticks" aria-hidden="true"></div>
             </div>
         </div>
         <div class="board-frame">

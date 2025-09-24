@@ -1,16 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Angelic Game Interface</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300&display=swap" rel="stylesheet">
-<script src="/socket.io/socket.io.js"></script>
-<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-<script src="//code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-<script type="text/javascript">
+    <!-- Existing Head Content -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bootcut Game Interface</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@800&family=Fredericka+the+Great&display=swap" rel="stylesheet">    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="//code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <!-- JavaScript code remains unchanged -->
+    <script type="text/javascript">
     $(document).ready(function() {
         updateTurn('<%= current_turn %>');
 
@@ -253,268 +254,264 @@
     
 });
 
+    </script>
+    <style>
+        /* Updated CSS */
 
-</script>
-<style>
-    :root {
-        --main-color: #E0E0E0;
-        --background-color: #FFFFFF;
-        --container-color: #F8F8FF;
-        --border-color: #CCCCCC;
-        --highlight-color: #FFD700;
-        --contrast-color: #A9A9A9;
-        --spot-background: #FFFFFF; 
-        --font-color: #2E2E2E;
-    }
+        :root {
+            --main-color: #EAE0D5; /* Light Beige */
+            --background-color: #1B1B1E; /* Dark Gray */
+            --container-color: #2D2D34; /* Medium Gray */
+            --border-color: #4E4E50; /* Gray */
+            --highlight-color: #DAA520; /* Golden Rod */
+            --contrast-color: #778899;
+            --spot-background: #3A3A40; /* Darker Gray */
+            --font-color: #F5F5F5; /* White Smoke */
+            --shadow-color: rgba(0, 0, 0, 0.7);
+        }
 
-    body {
-    font-family: 'Montserrat', sans-serif;
-    color: var(--main-color);
-    background-color: var(--background-color);
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden;
-    max-height: 1080px;
-    overflow-y: auto;
-}
-.container {
-    width: 640px;
-    height: 1080px;
-    margin: 0 auto;
-    background-color: var(--container-color);
-    background: url('angelic-background.jpg') no-repeat center center;
-    background-size: cover;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-header {
-    font-family: 'Great Vibes', cursive;
-    padding: 10px;
-    text-align: center;
-    border-bottom: 2px solid var(--border-color);
-    font-size: 2rem;
-    background: rgba(255, 255, 255, 0.8);
-    color: var(--highlight-color);
-}
-.current-turn {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 20px;
-    border-bottom: 2px solid var(--border-color);
-    background: rgba(255, 255, 255, 0.9);
-    color: var(--highlight-color);
-    font-size: 1.5rem;
-}
-.grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-gap: 15px;
-    padding: 20px;
-    flex-grow: 1;
-}
-.spot {
-    position: relative;
-    background-color: var(--spot-background);
-    border: 1px solid var(--border-color);
-    color: var(--font-color);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    transition: all 0.3s ease;
-}
-.spot:hover {
-    background-color: #FAFAD2;
-    transform: translateY(-5px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-.spot h2 {
-    font-size: 1.5rem;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-.spot-number {
-    font-family: 'Great Vibes', cursive;
-    color: var(--highlight-color);
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    font-size: 2rem;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-    background: none;
-    padding: 0;
-}
-#splot_6 {
-    background-image: url('heavenfire.webp');
-    color: #FFF; /* White text */
-     /* heavenly border */
-    border: 2px solid #FF6347;
-    /* center the background image */
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-.use-count {
-    position: absolute;
-    bottom: 3px;
-    right: 10px;
-    text-align: right;
-}
-.breakaways {
-    display: flex;
-    flex-wrap: wrap;
-    padding-top: 20px;
-    padding-left: 5px;
-    padding-right: 5px;
-    justify-content: space-between;
-    border-top: 1px solid var(--border-color);
-}
-.splotEntry {
-    padding-left: 15px;
-    padding-bottom: 10px;
-}
-.breakaway-col {
-    width: calc(50% - 10px);
-    margin-bottom: 20px;
-}
-.breakaway-content {
-    display: flex;
-    justify-content: space-between;
-}
-.breakaway-header h3 {
-    font-size: 1.6rem;
-    margin: 0 0 10px 0;
-    color: var(--font-color);
-}
-.breakaway-counter {
-    display: flex;
-    justify-content: flex-end;
-}
-.counter-circle {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--highlight-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    color: var(--font-color);
-}
-body::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    opacity: 0.1;
-}
-.dice-roll-popup {
-    position: fixed;
-    width: 200px;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 9999;
-    background-color: var(--container-color);
-    color: var(--font-color);
-    border: 2px solid var(--border-color);
-    box-shadow: 0 0 10px var(--highlight-color);
-    text-align: center;
-    border-radius: 10px;
-    padding: 20px;
-    transition: all 0.3s ease;
-    font-family: 'Great Vibes', cursive;
-}
-.dice-roll-popup:hover {
-    box-shadow: 0 0 15px var(--highlight-color);
-    transform: translate(-50%, -50%) scale(1.05);
-}
-.dice-roll-popup .inner-lcars {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-.dice-roll-popup .die-name,
-.dice-roll-popup .roll-value,
-.dice-roll-popup .die-type {
-    font-size: 1.5em;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 10px;
-    border-radius: 5px;
-    background-color: rgba(255, 255, 255, 0.5);
-}
-.dice-roll-popup .roll-value {
-    font-size: 2.5em;
-    font-weight: bold;
-    color: var(--highlight-color);
-}
-h1 {
-    font-family: 'Great Vibes', cursive;
-    color: var(--highlight-color);
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
-    margin: 0;
-    padding: 10px;
-}
-#current_player, #timer_display {
-    /* make sure the text is readable */
-    color: var(--highlight-color);
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-    font-weight: bolder;
-}
-</style>
+        body {
+            font-family: "Fredericka the Great", cursive;
+            color: var(--main-color);
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            max-height: 1080px;
+            overflow-y: auto;
+        }
+
+        .container {
+            width: 640px;
+            height: 1080px;
+            margin: 0 auto;
+            background: url('portal.png') no-repeat center center;
+            background-size: cover;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        header {
+            font-family: "Fredericka the Great", cursive;
+            padding: 10px;
+            text-align: center;
+            border-bottom: 2px solid var(--border-color);
+            font-size: 2.5rem;
+            background: rgba(0, 0, 0, 0.6);
+            color: var(--highlight-color);
+        }
+
+        header h1 {
+            margin-top: 2px;
+            margin-bottom: 2px;
+            text-decoration: none;
+        }
+
+        .current-turn {
+            display: flex;
+            font-family: "Fredericka the Great", cursive;
+            justify-content: space-between;
+            padding: 10px 20px;
+            border-bottom: 2px solid var(--border-color);
+            background: rgba(0, 0, 0, 0.7);
+            color: var(--highlight-color);
+            font-size: 1.5rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-gap: 15px;
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        .spot {
+            position: relative;
+            background-color: var(--spot-background);
+            border: 1px solid var(--border-color);
+            color: var(--font-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+
+        .spot:hover {
+            background-color: #444;
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+
+        .spot h2 {
+            font-size: 1.5rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .spot-number {
+            font-family: "Fredericka the Great", cursive;
+            color: var(--highlight-color);
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 2rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            background: none;
+            padding: 0;
+        }
+
+        .use-count {
+            position: absolute;
+            bottom: 3px;
+            right: 10px;
+            text-align: right;
+        }
+
+        .breakaways {
+            font-family: "Fredericka the Great", cursive;
+            display: flex;
+            flex-wrap: wrap;
+            padding-top: 20px;
+            padding-left: 5px;
+            padding-right: 5px;
+            justify-content: space-between;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .splotEntry {
+                      font-family: "Fredericka the Great", cursive;
+
+            padding-left: 15px;
+            padding-bottom: 10px;
+        }
+
+        .breakaway-col {
+            width: calc(50% - 10px);
+            margin-bottom: 20px;
+        }
+
+        .breakaway-content {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .breakaway-header h3 {
+            font-size: 1.6rem;
+            margin: 0 0 10px 0;
+        }
+
+        .breakaway-counter {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .counter-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--highlight-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: var(--background-color);
+        }
+
+        /* Additional Styles for Dice Roll Popup */
+        .dice-roll-popup {
+            position: fixed;
+            width: 200px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            background-color: var(--container-color);
+            color: var(--font-color);
+            border: 2px solid var(--border-color);
+            box-shadow: 0 0 10px var(--shadow-color);
+            font-family: "Fredericka the Great", cursive;
+            text-align: center;
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .dice-roll-popup:hover {
+            box-shadow: 0 0 15px var(--shadow-color);
+            transform: translate(-50%, -50%) scale(1.05);
+        }
+
+        .dice-roll-popup .inner-lcars {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .dice-roll-popup .die-name,
+        .dice-roll-popup .roll-value,
+        .dice-roll-popup .die-type {
+            font-size: 1.5em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .dice-roll-popup .roll-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--highlight-color);
+        }
+    </style>
 </head>
 <body>
-<div class="container">
-    <audio id="hellfire" src="https://cdn.leantube.org/angels-singing.mp3?v=1719185375876"></audio>
-    <header>
-        <h1 style="
-        margin-top: 2px;
-        margin-bottom: 2px;
-    ">Bootcut</h1>
-    </header>
-    <div class="current-turn">
-        <p id='current_player'>Current Turn: ZilchGnu</p>
-        <p id='timer_display'>Turn: <span id="timer_num">0:00</span></p>
-    </div>
-    <div class="grid" id="board">
-        <% board.forEach(function(dataRow, idxOfRow, orgnlAryObject) { %>
-            <div class="spot" id='splot_<%= dataRow.id %>'>
-                <h2> 
-                    <span class="spot-number" id="splot_number_<%= dataRow.id %>">
-                        <%= dataRow.id %>
-                    </span>
-                    <span class="splotEntry" id='splotEntry_<%= dataRow.id %>'><%= dataRow.entry %></span>
-                </h2>
-                <p class="use-count" id="splot_count_<%= dataRow.id %>">Uses: <%= dataRow.splot_dot %></p>
-            </div>
-        <% }); %>
-    </div>
-    <div class="breakaways" id="breakaways">
-    <% breakaways.forEach(function(dataRow) { %>
-        <div class="breakaway-col" id='breakaway_<%= dataRow.id %>'>
-            <div class="breakaway-content">
-                <div class="breakaway-header">
-                    <h3>
-                    <span id='breakawayName_<%= dataRow.id %>'><%= dataRow.name %></span> Breakaways
-                    </h3>
+    <div class="container">
+        <audio id="hellfire" src="https://cdn.leantube.org/hellfire.mp3?v=1714958299269"></audio>
+        <header>
+            <h1>Bootcut</h1>
+        </header>
+        <div class="current-turn">
+            <p id='current_player'>Current Turn: ZilchGnu</p>
+            <p id='timer_display'>Turn: <span id="timer_num">0:00</span></p>
+        </div>
+        <div class="grid" id="board">
+            <% board.forEach(function(dataRow, idxOfRow, orgnlAryObject) { %>
+                <div class="spot" id='splot_<%= dataRow.id %>'>
+                    <h2>
+                        <span class="spot-number" id="splot_number_<%= dataRow.id %>">
+                            <%= dataRow.id %>
+                        </span>
+                        <span class="splotEntry" id='splotEntry_<%= dataRow.id %>'><%= dataRow.entry %></span>
+                    </h2>
+                    <p class="use-count" id="splot_count_<%= dataRow.id %>">Uses: <%= dataRow.splot_dot %></p>
                 </div>
-                <div class="breakaway-counter">
-                    <div class="counter-circle">
-                    <strong id="ba_dot_<%= dataRow.id %>"><%= dataRow.ba_dots %></strong>
+            <% }); %>
+        </div>
+        <div class="breakaways" id="breakaways">
+            <% breakaways.forEach(function(dataRow) { %>
+                <div class="breakaway-col" id='breakaway_<%= dataRow.id %>'>
+                    <div class="breakaway-content">
+                        <div class="breakaway-header">
+                            <h3>
+                                <span id='breakawayName_<%= dataRow.id %>'><%= dataRow.name %></span> Breakaways
+                            </h3>
+                        </div>
+                        <div class="breakaway-counter">
+                            <div class="counter-circle">
+                                <strong id="ba_dot_<%= dataRow.id %>"><%= dataRow.ba_dots %></strong>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            <% }); %>
         </div>
-    <% }); %>
-    </div>      
-</div>
+    </div>
 </body>
 </html>

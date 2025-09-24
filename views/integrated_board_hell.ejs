@@ -801,27 +801,6 @@
             scrollbar-width: thin;
         }
 
-        .breakaway-ribbon::before,
-        .breakaway-ribbon::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 32px;
-            pointer-events: none;
-            z-index: 2;
-        }
-
-        .breakaway-ribbon::before {
-            left: 0;
-            background: linear-gradient(90deg, rgba(12, 11, 11, 0.95), transparent);
-        }
-
-        .breakaway-ribbon::after {
-            right: 0;
-            background: linear-gradient(270deg, rgba(12, 11, 11, 0.95), transparent);
-        }
-
         .breakaway-ribbon::-webkit-scrollbar {
             height: 6px;
         }

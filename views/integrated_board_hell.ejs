@@ -11,15 +11,143 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script src="//code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script crossorigin src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
     <!-- JavaScript code remains unchanged -->
     <script type="text/javascript">
-    const initialBreakaways = <%- JSON.stringify(breakaways || []) %>;
+    const normalizeBreakawayId = (rawId) => {
+        if (rawId === undefined || rawId === null) { return ''; }
+        const maybeNumber = Number(rawId);
+        return Number.isNaN(maybeNumber) ? String(rawId) : String(maybeNumber);
+    };
+
+    const toBreakawayRecord = (raw = {}) => {
+        const id = normalizeBreakawayId(raw.id);
+        const dotsSource = raw.ba_dots ?? raw.ba_dot ?? 0;
+        const dots = Number(dotsSource);
+        return {
+            id,
+            name: raw.name ?? '',
+            ba_dots: Number.isNaN(dots) ? 0 : dots
+        };
+    };
+
+    const initialBreakaways = (<%- JSON.stringify(breakaways || []) %>).map(toBreakawayRecord);
     window.breakawayDataMap = new Map(initialBreakaways.map(item => [item.id, item]));
+    window.__BREAKAWAYS__ = initialBreakaways;
+
+    const CURRENT_PLAYER_MAX_FONT = 46; // px
+    const CURRENT_PLAYER_MIN_FONT = 20; // px
+    const SPLOT_ENTRY_MAX_FONT = 22; // px
+    const SPLOT_ENTRY_MIN_FONT = 6; // px
+    let currentPlayerFrame = null;
+    let splotFitFrame = null;
+
+    function setCurrentPlayerFont(px) {
+        const el = document.getElementById('current_player');
+        if (!el) { return; }
+        el.style.setProperty('--current-player-font-size', `${px}px`);
+    }
+
+    function getTopBarAvailableWidth() {
+        const topBar = document.querySelector('.top-bar');
+        if (!topBar) { return 0; }
+        const timerCluster = topBar.querySelector('.timer-cluster');
+        const ribbon = topBar.querySelector('.breakaway-ribbon');
+        if (!timerCluster || !ribbon) { return 0; }
+        const style = window.getComputedStyle(topBar);
+        const padding = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
+        const gap = parseFloat(style.columnGap || style.gridColumnGap || style.gap || 0) || 0;
+        const available = topBar.clientWidth - padding - (gap * 2) - timerCluster.offsetWidth - ribbon.offsetWidth;
+        return Math.max(0, available);
+    }
+
+    function fitCurrentPlayer() {
+        const el = document.getElementById('current_player');
+        if (!el) { return; }
+        const availableWidth = getTopBarAvailableWidth();
+        if (!availableWidth) {
+            setCurrentPlayerFont(CURRENT_PLAYER_MIN_FONT);
+            return;
+        }
+        setCurrentPlayerFont(CURRENT_PLAYER_MAX_FONT);
+        requestAnimationFrame(() => {
+            const textWidth = el.scrollWidth;
+            if (textWidth <= availableWidth) { return; }
+            const ratio = availableWidth / textWidth;
+            const target = Math.max(CURRENT_PLAYER_MIN_FONT, Math.floor(CURRENT_PLAYER_MAX_FONT * ratio * 100) / 100);
+            setCurrentPlayerFont(target);
+        });
+    }
+
+    function queueFitCurrentPlayer() {
+        if (currentPlayerFrame) {
+            cancelAnimationFrame(currentPlayerFrame);
+        }
+        currentPlayerFrame = requestAnimationFrame(() => {
+            currentPlayerFrame = null;
+            fitCurrentPlayer();
+        });
+    }
+
+    function setSplotEntryFont(el, px) {
+        el.style.setProperty('--splot-entry-font-size', `${px}px`);
+    }
+
+    function fitSplotEntryElement(el) {
+        if (!el) { return; }
+        let fontSize = SPLOT_ENTRY_MAX_FONT;
+        setSplotEntryFont(el, fontSize);
+        let maxHeight = el.dataset.maxHeight ? Number(el.dataset.maxHeight) : el.offsetHeight;
+        let iterations = 0;
+        while (fontSize > SPLOT_ENTRY_MIN_FONT && iterations < 40) {
+            const scrollHeight = el.scrollHeight;
+            const scrollWidth = el.scrollWidth;
+            const boxWidth = el.offsetWidth;
+            if (scrollHeight <= maxHeight + 1 && scrollWidth <= boxWidth + 1) {
+                break;
+            }
+            fontSize = Math.max(SPLOT_ENTRY_MIN_FONT, fontSize - 1);
+            setSplotEntryFont(el, fontSize);
+            iterations += 1;
+        }
+    }
+
+    function fitAllSplotEntries() {
+        if (splotFitFrame) {
+            cancelAnimationFrame(splotFitFrame);
+        }
+        splotFitFrame = requestAnimationFrame(() => {
+            splotFitFrame = null;
+            document.querySelectorAll('.splotEntry').forEach((el) => {
+                const computed = window.getComputedStyle(el);
+                const lineHeight = parseFloat(computed.lineHeight) || 18;
+                el.dataset.maxHeight = lineHeight * 2;
+                fitSplotEntryElement(el);
+            });
+        });
+    }
+
+    function fitSingleSplotEntry(id) {
+        if (!id) { return; }
+        const el = document.getElementById(`splotEntry_${id}`);
+        if (!el) { return; }
+        if (splotFitFrame) {
+            cancelAnimationFrame(splotFitFrame);
+        }
+        splotFitFrame = requestAnimationFrame(() => {
+            splotFitFrame = null;
+            const computed = window.getComputedStyle(el);
+            const lineHeight = parseFloat(computed.lineHeight) || 18;
+            el.dataset.maxHeight = lineHeight * 2;
+            fitSplotEntryElement(el);
+        });
+    }
+
+    window.fitCurrentPlayer = queueFitCurrentPlayer;
+    window.fitSplotEntries = fitAllSplotEntries;
     $(document).ready(function() {
         updateTurn('<%= current_turn %>');
+        queueFitCurrentPlayer();
+        fitAllSplotEntries();
 
         var CountDown = (function ($) {
         // Length ms 
@@ -163,6 +291,7 @@
       $('#timer_display').removeClass('blink_me');
       $('#current_player').removeClass('blink_me');
       document.getElementById("current_player").textContent = text;
+      queueFitCurrentPlayer();
     }
     function getSplotData(splot_id){
       let current_splot_dots = parseInt(document.getElementById("splot_dot_" + splot_id).innerHTML);
@@ -211,6 +340,8 @@
                 attachTiltHandlers(div);
             });
         }
+        queueFitCurrentPlayer();
+        fitSingleSplotEntry(splot_data.id);
     }
     function clearBoard(){
       $('#board').fadeOut();
@@ -228,14 +359,17 @@
         if (!window.breakawayDataMap) {
             window.breakawayDataMap = new Map();
         }
-        window.breakawayDataMap.set(ba_data.id, {
-            id: ba_data.id,
-            name: ba_data.name,
-            ba_dots: ba_data.ba_dots
-        });
+        const record = toBreakawayRecord(ba_data);
+        if (!record.id) { return; }
+        const numericKey = Number(record.id);
+        if (!Number.isNaN(numericKey)) {
+            window.breakawayDataMap.delete(numericKey);
+        }
+        window.breakawayDataMap.set(record.id, record);
         if (typeof window.renderBreakawayRibbon === 'function') {
             window.renderBreakawayRibbon(Array.from(window.breakawayDataMap.values()));
         }
+        queueFitCurrentPlayer();
     }
     // Function to apply the hover effect to a spot div by id
     function flashBorder(roll_value){
@@ -312,70 +446,12 @@
     }
 
     attachTiltHandlers();
+    window.addEventListener('resize', () => {
+        queueFitCurrentPlayer();
+        fitAllSplotEntries();
+    });
 });
 
-    </script>
-    <script type="text/babel">
-    const BreakawayLabel = ({ children }) => (
-        <span className="breakaway-label">{children}</span>
-    );
-
-    const BreakawayCard = ({ item }) => (
-        <div className="breakaway-col" id={`breakaway_${item.id}`}>
-            <div className="breakaway-content">
-                <div className="breakaway-header">
-                    <BreakawayLabel>Breakaways</BreakawayLabel>
-                    <h3>
-                        <span id={`breakawayName_${item.id}`}>{item.name}</span>
-                    </h3>
-                </div>
-                <div className="breakaway-counter">
-                    <div className="counter-circle">
-                        <strong id={`ba_dot_${item.id}`}>{item.ba_dots}</strong>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-
-    const BreakawayEmpty = () => (
-        <div className="breakaway-empty" role="status">No breakaways yet</div>
-    );
-
-    const BreakawayRibbon = ({ items }) => {
-        if (!items || items.length === 0) {
-            return <BreakawayEmpty />;
-        }
-        return (
-            <React.Fragment>
-                {items.map(item => (
-                    <BreakawayCard item={item} key={item.id} />
-                ))}
-            </React.Fragment>
-        );
-    };
-
-    const breakawayRootElement = document.getElementById('breakaway-react-root');
-    let breakawayRoot = null;
-
-    function ensureBreakawayRoot() {
-        if (!breakawayRoot && breakawayRootElement) {
-            breakawayRoot = ReactDOM.createRoot(breakawayRootElement);
-        }
-        return breakawayRoot;
-    }
-
-    function renderBreakawayRibbon(items) {
-        const root = ensureBreakawayRoot();
-        if (!root) { return; }
-        const safeItems = Array.isArray(items) ? items.slice() : [];
-        root.render(<BreakawayRibbon items={safeItems} />);
-    }
-
-    window.renderBreakawayRibbon = renderBreakawayRibbon;
-
-    const initialRibbonItems = window.breakawayDataMap ? Array.from(window.breakawayDataMap.values()) : [];
-    renderBreakawayRibbon(initialRibbonItems);
     </script>
     <style>
         :root {
@@ -455,13 +531,15 @@
 
         header.brand-lockup {
             position: relative;
-            padding: 12px 20px 10px;
+            padding: 24px 24px 20px;
             text-align: center;
-            background: radial-gradient(120% 140% at 50% 0%, rgba(138, 17, 17, 0.2) 0%, rgba(12, 11, 11, 0.92) 60%);
+            background: rgba(12, 11, 11, 0.82);
             border-radius: 16px;
-            border: 1px solid rgba(243, 198, 35, 0.2);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), 0 18px 32px -26px rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(243, 198, 35, 0.22);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03), 0 18px 32px -26px rgba(0, 0, 0, 0.8);
             text-transform: uppercase;
+            overflow: hidden;
+            min-height: 120px;
         }
 
         header.brand-lockup::before {
@@ -469,9 +547,39 @@
             position: absolute;
             inset: 6px;
             border-radius: 12px;
-            border: 1px solid rgba(255, 106, 0, 0.18);
+            border: 1px solid rgba(255, 106, 0, 0.25);
             pointer-events: none;
-            opacity: 0.45;
+            opacity: 0.35;
+            z-index: 1;
+        }
+
+        .brand-lockup-flames {
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+            opacity: 0.9;
+            mix-blend-mode: screen;
+        }
+
+        .brand-lockup-flames canvas,
+        .brand-lockup-flames-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .brand-lockup-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 100%;
         }
 
         header.brand-lockup h1 {
@@ -511,6 +619,7 @@
             text-transform: uppercase;
             letter-spacing: 0.08em;
             color: var(--ash);
+            min-width: 0;
         }
 
         .status-label {
@@ -529,9 +638,17 @@
 
         .status-line {
             margin: 0;
-            font-size: 0.75rem;
+            width: 100%;
+            font-family: var(--font-display);
+            font-size: var(--current-player-font-size, 1.85rem);
+            line-height: 1.05;
             color: var(--bone);
-            letter-spacing: 0.18em;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-shadow: 0 0 16px rgba(0, 0, 0, 0.45);
         }
 
         .timer-shell {
@@ -622,39 +739,12 @@
             pointer-events: none;
         }
 
-        .prism-bg {
+        .board-background-root {
             position: absolute;
-            inset: -35%;
+            inset: 0;
             pointer-events: none;
             z-index: 1;
-            background: radial-gradient(circle at 20% 20%, rgba(255, 106, 0, 0.15), transparent 55%),
-                        radial-gradient(circle at 80% 25%, rgba(243, 198, 35, 0.18), transparent 50%),
-                        radial-gradient(circle at 50% 80%, rgba(138, 17, 17, 0.22), transparent 55%),
-                        radial-gradient(circle at 10% 85%, rgba(0, 215, 161, 0.12), transparent 45%);
-            filter: blur(50px);
-            opacity: 0.7;
-            animation: prism-pan 18s ease-in-out infinite alternate;
-            mix-blend-mode: screen;
-        }
-
-        .prism-bg::before,
-        .prism-bg::after {
-            content: '';
-            position: absolute;
-            inset: -25%;
-            background: conic-gradient(from 90deg at 50% 50%, rgba(255, 106, 0, 0.22), rgba(243, 198, 35, 0.12), rgba(138, 17, 17, 0.16), rgba(0, 215, 161, 0.14), rgba(255, 106, 0, 0.22));
-            opacity: 0.5;
-            filter: blur(90px);
-            mix-blend-mode: screen;
-        }
-
-        .prism-bg::before {
-            animation: prism-rotate 28s linear infinite;
-        }
-
-        .prism-bg::after {
-            animation: prism-rotate 34s linear infinite reverse;
-            opacity: 0.35;
+            overflow: hidden;
         }
 
         .grid {
@@ -713,7 +803,7 @@
         .spot h2 {
             position: relative;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 18px;
             margin: 0;
             font-size: 1.05rem;
@@ -737,6 +827,9 @@
             border: 2px solid rgba(243, 198, 35, 0.3);
             box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.7), 0 0 12px rgba(210, 34, 34, 0.38);
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.65);
+            flex: 0 0 58px;
+            min-width: 58px;
+            margin-top: 2px;
         }
 
         .spot-number::after {
@@ -750,7 +843,10 @@
 
         .splotEntry {
             display: block;
-            font-size: 1rem;
+            flex: 1 1 auto;
+            min-width: 0;
+            font-size: var(--splot-entry-font-size, 1rem);
+            line-height: 1.2;
             font-weight: 600;
             color: var(--bone);
             text-shadow: 0 0 12px rgba(0, 0, 0, 0.55);
@@ -859,16 +955,6 @@
             z-index: 2;
         }
 
-        .breakaway-ribbon::before {
-            left: 0;
-            background: linear-gradient(90deg, rgba(12, 11, 11, 0.95), transparent);
-        }
-
-        .breakaway-ribbon::after {
-            right: 0;
-            background: linear-gradient(270deg, rgba(12, 11, 11, 0.95), transparent);
-        }
-
         .breakaway-empty {
             display: flex;
             align-items: center;
@@ -967,9 +1053,11 @@
             align-items: center;
             justify-content: center;
             font-family: var(--font-display);
-            font-size: 1.18rem;
+            font-size: 1.24rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
             color: var(--char);
-            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.18);
+            text-shadow: 0 1px 3px rgba(255, 255, 255, 0.28);
             box-shadow: 0 0 14px rgba(243, 198, 35, 0.32);
         }
 
@@ -1037,38 +1125,23 @@
             50% { opacity: 0.95; transform: scale(1.05); }
         }
 
-        @keyframes prism-pan {
-            0% { transform: translate3d(-4%, -6%, 0) scale(1); }
-            50% { transform: translate3d(6%, 4%, 0) scale(1.05); }
-            100% { transform: translate3d(-3%, 5%, 0) scale(0.98); }
-        }
-
-        @keyframes prism-rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
 
         @media (prefers-reduced-motion: reduce) {
             .spot,
             .dice-roll-popup,
             #timer_display,
-            .prism-bg {
+            .board-background-root,
+            .board-background-root * {
                 transition-duration: 0.01ms !important;
                 animation-duration: 0.01ms !important;
             }
 
-            .prism-bg {
+            .board-background-root {
                 display: none;
             }
 
             .tilt-card {
                 transform: none !important;
-            }
-
-            .tilt-card::after,
-            .top-bar::before {
-                animation: none;
-                display: none;
             }
 
             .counter-circle {
@@ -1129,8 +1202,11 @@
     <div class="container">
         <audio id="hellfire" src="https://cdn.leantube.org/hellfire.mp3?v=1714958299269"></audio>
         <header class="brand-lockup" aria-label="Bootcut Hellfire edition">
-            <h1>Bootcut</h1>
-            <span class="tagline">Hellfire Campaign Board</span>
+            <div id="brand-lockup-flames" class="brand-lockup-flames" aria-hidden="true"></div>
+            <div class="brand-lockup-content">
+                <h1>Hellfire Bootcut</h1>
+                <span class="tagline">24 Hours of Tourment</span>
+            </div>
         </header>
         <div class="top-bar">
             <div class="status-cluster" aria-live="polite" aria-atomic="true">
@@ -1148,7 +1224,7 @@
             <div class="breakaway-ribbon" id="breakaway-react-root"></div>
         </div>
         <div class="board-frame">
-            <div class="prism-bg" aria-hidden="true"></div>
+            <div class="board-background-root" id="board-background-root" aria-hidden="true"></div>
             <div class="grid" id="board">
                 <% board.forEach(function(dataRow, idxOfRow, orgnlAryObject) { %>
                     <div class="spot tilt-card" id='splot_<%= dataRow.id %>'>
@@ -1164,5 +1240,6 @@
             </div>
         </div>
     </div>
+    <script type="module" src="/board-assets/board.js"></script>
 </body>
 </html>

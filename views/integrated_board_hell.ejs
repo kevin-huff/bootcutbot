@@ -187,18 +187,24 @@
         var this_splot = document.getElementById('splot_' + splot_data.id);
 
         if (this_splot) {
+            this_splot.classList.add('tilt-card');
             $('#splot_' + splot_data.id).fadeOut("slow", function() {
             this_splot.innerHTML = innerHTML;
+            this_splot.style.setProperty('--tiltX', '0deg');
+            this_splot.style.setProperty('--tiltY', '0deg');
             $('#splot_' + splot_data.id).fadeIn();
+            attachTiltHandlers(this_splot);
             }); 
 
         } else {
             var div = document.createElement("div");
-            div.className = "spot item";
+            div.className = "spot tilt-card item";
             div.id = 'splot_' + splot_data.id;
             div.innerHTML = innerHTML;
             document.getElementById("board").appendChild(div);
-            $('#splot_' + splot_data.id).fadeIn("slow");
+            $('#splot_' + splot_data.id).fadeIn("slow", function(){
+                attachTiltHandlers(div);
+            });
         }
     }
     function clearBoard(){
@@ -245,15 +251,73 @@
         for (let i = 1; i < 9; i++) {
             let spot = document.getElementById('splot_' + i);
             spot.style.border = '1px solid rgba(243, 198, 35, 0.24)';
+            spot.style.removeProperty('--glowX');
+            spot.style.removeProperty('--glowY');
         }
         let spot_id = roll_value;
         let spot = document.getElementById('splot_' + spot_id);
         let mouseoverEvent = new Event('mouseover');
         spot.dispatchEvent(mouseoverEvent);
         spot.style.border = '2px solid #FF6A00';
+        spot.style.setProperty('--glowX', '50%');
+        spot.style.setProperty('--glowY', '35%');
     }
 
-    
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function attachTiltHandlers(target){
+        if (prefersReducedMotion) { return; }
+        let cards = [];
+        if (!target) {
+            cards = document.querySelectorAll('.tilt-card');
+        } else if (target instanceof Element && target.classList.contains('tilt-card')) {
+            cards = [target];
+        } else if (target instanceof Element) {
+            cards = target.querySelectorAll('.tilt-card');
+        }
+        cards.forEach(card => {
+            if (card.dataset.tiltBound) { return; }
+            card.dataset.tiltBound = 'true';
+            card.style.setProperty('--tiltX', '0deg');
+            card.style.setProperty('--tiltY', '0deg');
+            card.style.setProperty('--glowX', '50%');
+            card.style.setProperty('--glowY', '50%');
+            card.style.setProperty('--tiltElev', '0px');
+            card.addEventListener('mousemove', handleTiltMove);
+            card.addEventListener('mouseleave', resetTiltMove);
+            card.addEventListener('touchstart', () => card.classList.add('is-touching'), { passive: true });
+            card.addEventListener('touchmove', handleTiltMove, { passive: true });
+            card.addEventListener('touchend', resetTiltMove, { passive: true });
+        });
+    }
+
+    function handleTiltMove(event){
+        const card = event.currentTarget;
+        const rect = card.getBoundingClientRect();
+        const point = event.touches ? event.touches[0] : event;
+        const x = point.clientX - rect.left;
+        const y = point.clientY - rect.top;
+        const percentX = (x / rect.width) - 0.5;
+        const percentY = (y / rect.height) - 0.5;
+        const maxTilt = 10;
+        const tiltY = (percentX * maxTilt * -1).toFixed(2);
+        const tiltX = (percentY * maxTilt).toFixed(2);
+        card.style.setProperty('--tiltX', tiltX + 'deg');
+        card.style.setProperty('--tiltY', tiltY + 'deg');
+        card.style.setProperty('--glowX', (percentX * 60 + 50).toFixed(2) + '%');
+        card.style.setProperty('--glowY', (percentY * 60 + 50).toFixed(2) + '%');
+    }
+
+    function resetTiltMove(event){
+        const card = event.currentTarget;
+        card.style.setProperty('--tiltX', '0deg');
+        card.style.setProperty('--tiltY', '0deg');
+        card.style.setProperty('--glowX', '50%');
+        card.style.setProperty('--glowY', '50%');
+        card.classList.remove('is-touching');
+    }
+
+    attachTiltHandlers();
 });
 
     </script>
@@ -381,6 +445,18 @@
             border: 1px solid rgba(243, 198, 35, 0.16);
             background: linear-gradient(180deg, rgba(19, 18, 23, 0.9), rgba(12, 11, 11, 0.88));
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 26px -22px rgba(0, 0, 0, 0.85);
+        }
+
+        .top-bar::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(120deg, rgba(243, 198, 35, 0.18) 0%, transparent 40%, rgba(255, 106, 0, 0.2) 65%, transparent 85%);
+            opacity: 0.6;
+            pointer-events: none;
+            mix-blend-mode: screen;
+            animation: top-bar-sheen 7s ease-in-out infinite;
         }
 
         .status-cluster {
@@ -550,12 +626,24 @@
             gap: 16px;
             padding: 24px 24px 20px;
             border-radius: 18px;
-            background: linear-gradient(180deg, rgba(29, 27, 32, 0.94), rgba(12, 11, 11, 0.9));
+            background:
+                radial-gradient(circle at var(--glowX, 50%) var(--glowY, 50%), rgba(255, 106, 0, 0.22), transparent 55%),
+                linear-gradient(180deg, rgba(29, 27, 32, 0.94), rgba(12, 11, 0, 0.9));
             border: 1px solid rgba(243, 198, 35, 0.12);
             box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.85), 0 16px 32px -28px rgba(0, 0, 0, 0.8);
             color: var(--bone);
             overflow: hidden;
-            transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease, filter 220ms ease;
+            transition: transform 200ms ease, box-shadow 220ms ease, border-color 220ms ease, filter 220ms ease, background-position 120ms ease;
+        }
+
+        .tilt-card {
+            --tiltX: 0deg;
+            --tiltY: 0deg;
+            --tiltElev: 0px;
+            --glowX: 50%;
+            --glowY: 50%;
+            transform-style: preserve-3d;
+            transform: perspective(900px) rotateX(var(--tiltX)) rotateY(var(--tiltY)) translate3d(0, var(--tiltElev), 0px);
         }
 
         .spot::before {
@@ -573,14 +661,17 @@
             position: absolute;
             inset: 0;
             border-radius: inherit;
+            background: radial-gradient(circle at var(--glowX, 50%) var(--glowY, 50%), rgba(255, 106, 0, 0.18), transparent 65%);
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
-            opacity: 0.6;
+            opacity: 0.55;
+            mix-blend-mode: screen;
             pointer-events: none;
+            transition: opacity 200ms ease;
         }
 
         .spot:hover,
         .spot:focus-within {
-            transform: translateY(-4px);
+            --tiltElev: -8px;
             border-color: rgba(255, 106, 0, 0.45);
             box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.75), 0 24px 45px -34px rgba(255, 106, 0, 0.35);
         }
@@ -710,6 +801,27 @@
             scrollbar-width: thin;
         }
 
+        .breakaway-ribbon::before,
+        .breakaway-ribbon::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 32px;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .breakaway-ribbon::before {
+            left: 0;
+            background: linear-gradient(90deg, rgba(12, 11, 11, 0.95), transparent);
+        }
+
+        .breakaway-ribbon::after {
+            right: 0;
+            background: linear-gradient(270deg, rgba(12, 11, 11, 0.95), transparent);
+        }
+
         .breakaway-ribbon::-webkit-scrollbar {
             height: 6px;
         }
@@ -734,12 +846,28 @@
             min-width: 150px;
         }
 
+        .breakaway-col:hover,
+        .breakaway-col:focus-within {
+            border-color: rgba(243, 198, 35, 0.45);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 18px 32px -20px rgba(255, 106, 0, 0.45);
+        }
+
         .breakaway-col::before {
             content: '';
             position: absolute;
             inset: 0;
             background: radial-gradient(120% 160% at 0% 0%, rgba(255, 106, 0, 0.22), transparent 65%);
             opacity: 0.45;
+            pointer-events: none;
+        }
+
+        .breakaway-col::after {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            border-radius: 14px;
+            border: 1px solid rgba(243, 198, 35, 0.18);
+            opacity: 0.25;
             pointer-events: none;
         }
 
@@ -795,6 +923,7 @@
             color: var(--char);
             text-shadow: 0 1px 2px rgba(255, 255, 255, 0.18);
             box-shadow: 0 0 14px rgba(243, 198, 35, 0.32);
+            animation: ribbon-pulse 3.6s ease-in-out infinite;
         }
 
         .dice-roll-popup {
@@ -856,9 +985,21 @@
             to { filter: drop-shadow(0 0 20px rgba(243, 198, 35, 0.65)); }
         }
 
+        @keyframes top-bar-sheen {
+            0%, 100% { opacity: 0.25; transform: translateX(-8%); }
+            45% { opacity: 0.65; transform: translateX(6%); }
+            60% { opacity: 0.45; transform: translateX(12%); }
+        }
+
         @keyframes timer-pulse {
             0%, 100% { opacity: 0.65; transform: scale(0.98); }
             50% { opacity: 0.95; transform: scale(1.05); }
+        }
+
+        @keyframes ribbon-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(243, 198, 35, 0.25); transform: scale(0.98); }
+            40% { box-shadow: 0 0 22px rgba(255, 106, 0, 0.45); transform: scale(1.02); }
+            60% { box-shadow: 0 0 12px rgba(243, 198, 35, 0.28); }
         }
 
         @keyframes ember-drift {
@@ -884,6 +1025,20 @@
 
             .ember-field {
                 display: none;
+            }
+
+            .tilt-card {
+                transform: none !important;
+            }
+
+            .tilt-card::after,
+            .top-bar::before {
+                animation: none;
+                display: none;
+            }
+
+            .counter-circle {
+                animation: none;
             }
 
             .blink_me {
@@ -946,7 +1101,7 @@
         <div class="top-bar">
             <div class="status-cluster" aria-live="polite" aria-atomic="true">
                 <span class="status-label">Current Player</span>
-                <p id="current_player" class="status-line">ZilchGnu</p>
+                <p id="current_player" class="status-line"><%= current_turn %></p>
             </div>
             <div class="timer-cluster">
                 <div class="timer-shell">
@@ -991,7 +1146,7 @@
             </div>
             <div class="grid" id="board">
                 <% board.forEach(function(dataRow, idxOfRow, orgnlAryObject) { %>
-                    <div class="spot" id='splot_<%= dataRow.id %>'>
+                    <div class="spot tilt-card" id='splot_<%= dataRow.id %>'>
                         <h2>
                             <span class="spot-number" id="splot_number_<%= dataRow.id %>">
                                 <%= dataRow.id %>

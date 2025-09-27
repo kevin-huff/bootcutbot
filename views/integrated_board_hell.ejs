@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
+<% const hellfireSpotIds = [6];
+   const hellfireSpotIdsStrings = hellfireSpotIds.map(function(id) { return String(id); }); %>
 <head>
     <!-- Existing Head Content -->
     <meta charset="UTF-8">
@@ -40,6 +42,196 @@
     const SPLOT_ENTRY_MIN_FONT = 6; // px
     let currentPlayerFrame = null;
     let splotFitFrame = null;
+    const HELLFIRE_SPOT_IDS = new Set(<%- JSON.stringify(hellfireSpotIdsStrings) %>);
+    window.hellfireSpotIds = HELLFIRE_SPOT_IDS;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const hellfireEmberGenerators = [
+        { center: 0.32, spread: 0.08 },
+        { center: 0.5, spread: 0.12 },
+        { center: 0.68, spread: 0.08 }
+    ];
+    const HELLFIRE_MAX_SPARKS = 42;
+    const HELLFIRE_SPAWN_PROBABILITY = 0.28;
+    const hellfireEmberControllers = new Map();
+
+    function hellfireRandomBetween(min, max) {
+        return min + Math.random() * (max - min);
+    }
+
+    function createHellfireSpark(center = 0.5, spread = 0.02) {
+        return {
+            x: hellfireRandomBetween(center - spread, center + spread),
+            y: 1,
+            vx: hellfireRandomBetween(-0.05, 0.05),
+            vy: hellfireRandomBetween(0.8, 1.2),
+            size: hellfireRandomBetween(0.8, 1.8),
+            life: 0,
+            maxLife: hellfireRandomBetween(0.5, 1.0)
+        };
+    }
+
+    function stopHellfireEmbers(normalizedId) {
+        const key = normalizedId ? normalizeBreakawayId(normalizedId) : '';
+        if (!key) { return; }
+        const controller = hellfireEmberControllers.get(key);
+        if (!controller) { return; }
+        cancelAnimationFrame(controller.frameId);
+        if (controller.pendingResize) {
+            cancelAnimationFrame(controller.pendingResize);
+        }
+        window.removeEventListener('resize', controller.resize);
+        controller.sparks.length = 0;
+        hellfireEmberControllers.delete(key);
+    }
+
+    function stopAllHellfireEmbers() {
+        Array.from(hellfireEmberControllers.keys()).forEach(stopHellfireEmbers);
+    }
+
+    function startHellfireEmbers(element, normalizedId) {
+        if (prefersReducedMotion) { return; }
+        if (!element) { return; }
+        const key = normalizedId ? normalizeBreakawayId(normalizedId) : normalizeBreakawayId(element.dataset.spotId);
+        if (!key) { return; }
+        stopHellfireEmbers(key);
+
+        const canvas = element.querySelector('.hellfire-embers-canvas');
+        if (!canvas) { return; }
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { return; }
+
+        const controller = {
+            id: key,
+            canvas,
+            ctx,
+            sparks: [],
+            frameId: null,
+            lastTime: performance.now(),
+            resize: null,
+            pendingResize: null
+        };
+
+        controller.resize = () => {
+            const { clientWidth, clientHeight } = canvas;
+            if (!clientWidth || !clientHeight) {
+                if (!controller.pendingResize) {
+                    controller.pendingResize = requestAnimationFrame(() => {
+                        controller.pendingResize = null;
+                        controller.resize();
+                    });
+                }
+                return;
+            }
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = clientWidth * dpr;
+            canvas.height = clientHeight * dpr;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
+        };
+
+        controller.resize();
+        window.addEventListener('resize', controller.resize);
+
+        const render = (time) => {
+            const dt = Math.min(0.05, (time - controller.lastTime) / 1000 || 0.016);
+            controller.lastTime = time;
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+
+            if (!width || !height) {
+                controller.frameId = requestAnimationFrame(render);
+                return;
+            }
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.clearRect(0, 0, width, height);
+
+            const baseGradient = ctx.createLinearGradient(0, height, 0, height * 0.35);
+            baseGradient.addColorStop(0, 'rgba(26, 4, 0, 0.45)');
+            baseGradient.addColorStop(0.4, 'rgba(80, 16, 0, 0.12)');
+            baseGradient.addColorStop(1, 'rgba(80, 16, 0, 0)');
+            ctx.fillStyle = baseGradient;
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.globalCompositeOperation = 'lighter';
+
+            const sparks = controller.sparks;
+
+            hellfireEmberGenerators.forEach(({ center, spread }) => {
+                if (sparks.length < HELLFIRE_MAX_SPARKS && Math.random() < HELLFIRE_SPAWN_PROBABILITY) {
+                    sparks.push(createHellfireSpark(center, spread));
+                }
+            });
+
+            for (let i = sparks.length - 1; i >= 0; i -= 1) {
+                const spark = sparks[i];
+                spark.life += dt;
+                spark.y -= spark.vy * dt;
+                spark.x += spark.vx * dt;
+                spark.vy *= 0.98;
+
+                const lifeRatio = spark.life / spark.maxLife;
+                if (lifeRatio >= 1 || spark.y < -0.1) {
+                    sparks.splice(i, 1);
+                    continue;
+                }
+
+                const radius = spark.size * (1 - lifeRatio * 0.8);
+                ctx.beginPath();
+                ctx.fillStyle = `rgba(255, ${Math.floor(200 + 50 * (1 - lifeRatio))}, ${Math.floor(150 + 80 * (1 - lifeRatio))}, ${0.8 - lifeRatio * 0.7})`;
+                ctx.shadowColor = 'rgba(255, 180, 100, 0.5)';
+                ctx.shadowBlur = 6;
+                ctx.arc(spark.x * width, spark.y * height, radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.shadowBlur = 0;
+            controller.frameId = requestAnimationFrame(render);
+        };
+
+        controller.frameId = requestAnimationFrame(render);
+        hellfireEmberControllers.set(key, controller);
+    }
+
+    function isHellfireSpot(id) {
+        if (id === undefined || id === null) { return false; }
+        return HELLFIRE_SPOT_IDS.has(normalizeBreakawayId(id));
+    }
+
+    function applyHellfireState(element, id) {
+        if (!element) { return; }
+        const normalizedId = normalizeBreakawayId(id || element.dataset.spotId || (element.id || '').replace('splot_', ''));
+        if (normalizedId) {
+            element.dataset.spotId = normalizedId;
+        }
+        const shouldMark = isHellfireSpot(normalizedId);
+        if (shouldMark) {
+            element.classList.add('is-hellfire');
+            element.dataset.hellfire = 'true';
+            if (!element.dataset.hellfireAriaSaved && element.hasAttribute('aria-label')) {
+                element.dataset.hellfireAriaSaved = element.getAttribute('aria-label') || '';
+            }
+            const entryNode = element.querySelector('.splotEntry');
+            const entryText = entryNode ? entryNode.textContent.trim() : '';
+            const labelText = entryText ? `Hellfire spot ${normalizedId}: ${entryText}` : `Hellfire spot ${normalizedId}`;
+            element.setAttribute('aria-label', labelText);
+            element.dataset.hellfireLabelApplied = 'true';
+            startHellfireEmbers(element, normalizedId);
+        } else {
+            element.classList.remove('is-hellfire');
+            delete element.dataset.hellfire;
+            if (element.dataset.hellfireLabelApplied) {
+                if (element.dataset.hellfireAriaSaved) {
+                    element.setAttribute('aria-label', element.dataset.hellfireAriaSaved);
+                } else {
+                    element.removeAttribute('aria-label');
+                }
+                delete element.dataset.hellfireAriaSaved;
+                delete element.dataset.hellfireLabelApplied;
+            }
+            stopHellfireEmbers(normalizedId);
+        }
+    }
 
     function setCurrentPlayerFont(px) {
         const el = document.getElementById('current_player');
@@ -304,30 +496,41 @@
       console.log('getSplotData',splot_data)
       return splot_data;
     }
+    function renderSpotInnerHTML(splot_data = {}) {
+        const normalizedId = normalizeBreakawayId(splot_data.id || '');
+        const entry = splot_data.entry === undefined || splot_data.entry === null ? '' : splot_data.entry;
+        const uses = (splot_data.splot_dot === undefined || splot_data.splot_dot === null) ? 0 : splot_data.splot_dot;
+        return `
+            <div class="hellfire-aura" aria-hidden="true"></div>
+            <div class="hellfire-embers" aria-hidden="true">
+                <canvas class="hellfire-embers-canvas" aria-hidden="true"></canvas>
+            </div>
+            <div class="hellfire-tag" aria-hidden="true">Hellfire</div>
+            <h2>
+                <span class="spot-number" id="splot_number_${normalizedId}">
+                    ${normalizedId}
+                </span>
+                <span class="splotEntry" id="splotEntry_${normalizedId}">${entry}</span>
+            </h2>
+            <p class="use-count" id="splot_count_${normalizedId}">Uses: ${uses}</p>
+        `;
+    }
     function updateBoard(splot_data){    
-        var innerHTML = 
-            '<h2>' +
-                '<span class="spot-number" id="splot_number_' + splot_data.id + '">' +
-                splot_data.id +
-                '</span>' +
-                '<span class="splotEntry" id="splotEntry_' + splot_data.id + '">' +
-                splot_data.entry +
-                '</span>' +
-            '</h2>' +
-            '<p class="use-count" id="splot_count_' + splot_data.id + '">' +
-                'Uses: ' + splot_data.splot_dot +
-            '</p>';
-
+        const normalizedId = normalizeBreakawayId(splot_data.id || '');
+        stopHellfireEmbers(normalizedId);
+        var innerHTML = renderSpotInnerHTML(splot_data);
         var this_splot = document.getElementById('splot_' + splot_data.id);
 
         if (this_splot) {
             this_splot.classList.add('tilt-card');
             $('#splot_' + splot_data.id).fadeOut("slow", function() {
                 this_splot.innerHTML = innerHTML;
+                applyHellfireState(this_splot, splot_data.id);
                 this_splot.style.setProperty('--tiltX', '0deg');
                 this_splot.style.setProperty('--tiltY', '0deg');
                 $('#splot_' + splot_data.id).fadeIn();
                 attachTiltHandlers(this_splot);
+                if (window.refreshElectricBorderSpots) { window.refreshElectricBorderSpots(); }
             }); 
 
         } else {
@@ -336,14 +539,17 @@
             div.id = 'splot_' + splot_data.id;
             div.innerHTML = innerHTML;
             document.getElementById("board").appendChild(div);
+            applyHellfireState(div, splot_data.id);
             $('#splot_' + splot_data.id).fadeIn("slow", function(){
                 attachTiltHandlers(div);
+                if (window.refreshElectricBorderSpots) { window.refreshElectricBorderSpots(); }
             });
         }
         queueFitCurrentPlayer();
         fitSingleSplotEntry(splot_data.id);
     }
     function clearBoard(){
+      stopAllHellfireEmbers();
       $('#board').fadeOut();
       document.getElementById("board").innerHTML = "";
       $('#board').fadeIn();
@@ -373,25 +579,45 @@
     }
     // Function to apply the hover effect to a spot div by id
     function flashBorder(roll_value){
-        //remove any other spot highlighted
+        const highlightId = normalizeBreakawayId(roll_value);
+        // remove any other spot highlighted
         for (let i = 1; i < 9; i++) {
-            let spot = document.getElementById('splot_' + i);
+            const spot = document.getElementById('splot_' + i);
             if (!spot) { continue; }
-            spot.style.border = '1px solid rgba(243, 198, 35, 0.24)';
-            spot.style.removeProperty('--glowX');
-            spot.style.removeProperty('--glowY');
+            const hellfire = isHellfireSpot(i);
+            spot.classList.remove('is-hellfire-highlight');
+            if (spot.classList.contains('electric-border-spot')) {
+                spot.classList.remove('is-highlighted');
+                spot.style.removeProperty('border');
+                spot.style.removeProperty('--glowX');
+                spot.style.removeProperty('--glowY');
+            } else if (!hellfire) {
+                spot.style.border = '1px solid rgba(243, 198, 35, 0.24)';
+                spot.style.removeProperty('--glowX');
+                spot.style.removeProperty('--glowY');
+            } else {
+                spot.style.removeProperty('border');
+                spot.style.removeProperty('--glowX');
+                spot.style.removeProperty('--glowY');
+            }
         }
-        let spot_id = roll_value;
-        let spot = document.getElementById('splot_' + spot_id);
-        if (!spot) { return; }
+        const spotId = highlightId || roll_value;
+        const targetSpot = document.getElementById('splot_' + spotId);
+        if (!targetSpot) { return; }
+        const targetIsHellfire = isHellfireSpot(spotId);
         let mouseoverEvent = new Event('mouseover');
-        spot.dispatchEvent(mouseoverEvent);
-        spot.style.border = '2px solid #FF6A00';
-        spot.style.setProperty('--glowX', '50%');
-        spot.style.setProperty('--glowY', '35%');
+        targetSpot.dispatchEvent(mouseoverEvent);
+        if (targetSpot.classList.contains('electric-border-spot')) {
+            targetSpot.classList.add('is-highlighted');
+            targetSpot.style.removeProperty('border');
+        } else if (targetIsHellfire) {
+            targetSpot.classList.add('is-hellfire-highlight');
+        } else {
+            targetSpot.style.border = '2px solid #FF6A00';
+            targetSpot.style.setProperty('--glowX', '50%');
+            targetSpot.style.setProperty('--glowY', '35%');
+        }
     }
-
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     function attachTiltHandlers(target){
         if (prefersReducedMotion) { return; }
@@ -445,6 +671,7 @@
         card.classList.remove('is-touching');
     }
 
+    document.querySelectorAll('.spot').forEach((spot) => applyHellfireState(spot));
     attachTiltHandlers();
     window.addEventListener('resize', () => {
         queueFitCurrentPlayer();
@@ -471,6 +698,10 @@
             --gutter: 24px;
             --font-display: 'Cinzel Decorative', 'UnifrakturCook', serif;
             --font-body: 'Inter', 'Rubik', sans-serif;
+            --electric-border-color: #dd8448;
+            --electric-border-light: #f6c29a;
+            --electric-gradient-accent: rgba(221, 132, 72, 0.45);
+            --electric-neutral-900: #1f1510;
         }
 
         *, *::before, *::after {
@@ -793,6 +1024,363 @@
             pointer-events: none;
         }
 
+        .hellfire-aura,
+        .hellfire-embers,
+        .hellfire-tag {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 220ms ease, transform 220ms ease, filter 220ms ease;
+        }
+
+        .hellfire-embers {
+            left: 14px;
+            right: 14px;
+            bottom: 14px;
+            height: 74px;
+            display: block;
+            transform-origin: bottom center;
+            z-index: 1;
+        }
+
+        .hellfire-embers-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            pointer-events: none;
+        }
+
+        .hellfire-tag {
+            top: 1px;
+            left: -10px;
+            padding: 6px 20px;
+            border-radius: 999px;
+            background: linear-gradient(110deg, rgba(255, 82, 0, 0.95), rgba(82, 0, 0, 0.92));
+            font-size: 0.58rem;
+            font-weight: 700;
+            letter-spacing: 0.46em;
+            text-transform: uppercase;
+            color: rgba(255, 236, 210, 0.92);
+            text-align: center;
+            box-shadow: 0 0 18px rgba(255, 72, 0, 0.55), inset 0 0 14px rgba(0, 0, 0, 0.55);
+            transform: rotate(12deg) translateX(26px);
+            z-index: 2;
+        }
+
+        /* Enhanced Hellfire Spot Styles - Replace existing .is-hellfire styles */
+        
+        .spot.is-hellfire,
+        .spot[data-hellfire="true"],
+        .spot[data-state="hellfire"] {
+            /* More dramatic gradient matching brand header */
+            background: 
+                radial-gradient(ellipse 140% 180% at 50% 120%, rgba(255, 82, 0, 0.5) 0%, rgba(138, 17, 17, 0.75) 45%, rgba(12, 11, 11, 0.95) 80%),
+                linear-gradient(180deg, rgba(50, 8, 0, 0.92), rgba(8, 2, 0, 0.98));
+            border-color: rgba(255, 140, 40, 0.92);
+            box-shadow: 
+                inset 0 0 60px rgba(255, 70, 0, 0.55),
+                inset 0 -20px 40px rgba(255, 140, 0, 0.25),
+                0 0 50px rgba(255, 50, 0, 0.4), 
+                0 35px 55px -24px rgba(255, 106, 0, 0.6);
+            animation: hellfire-pulse-enhanced 2s ease-in-out infinite alternate;
+            transform: translateY(-3px);
+        }
+
+        .spot.is-hellfire::before,
+        .spot[data-hellfire="true"]::before,
+        .spot[data-state="hellfire"]::before {
+            /* Flame-like organic shape */
+            inset: -40% -28% -48%;
+            background: 
+                radial-gradient(ellipse 90% 140% at 50% 110%, 
+                    rgba(255, 170, 60, 0.6) 0%, 
+                    rgba(255, 100, 20, 0.45) 30%,
+                    transparent 75%);
+            opacity: 0.9;
+            animation: hellfire-flicker-enhanced 2.2s ease-in-out infinite;
+            filter: blur(14px);
+        }
+
+        .spot.is-hellfire::after,
+        .spot[data-hellfire="true"]::after,
+        .spot[data-state="hellfire"]::after {
+            box-shadow: 
+                inset 0 0 0 1px rgba(255, 220, 180, 0.18),
+                inset 0 -4px 12px rgba(255, 140, 0, 0.3),
+                0 0 0 1px rgba(255, 100, 0, 0.35);
+            opacity: 0.95;
+        }
+
+        /* Enhanced Hellfire Aura */
+        .spot.is-hellfire .hellfire-aura,
+        .spot[data-hellfire="true"] .hellfire-aura,
+        .spot[data-state="hellfire"] .hellfire-aura {
+            opacity: 0.92;
+            transform: scale(1.05);
+            animation: hellfire-aura-pulse 3.2s ease-in-out infinite alternate;
+            background: conic-gradient(
+                from 135deg,
+                rgba(255, 60, 0, 0) 0%,
+                rgba(255, 120, 30, 0.6) 15%,
+                rgba(255, 50, 0, 0.85) 30%,
+                rgba(255, 160, 60, 0.55) 50%,
+                rgba(255, 60, 0, 0) 100%
+            );
+            filter: blur(36px) saturate(1.3);
+        }
+
+        /* Enhanced Hellfire Number Badge */
+        .spot.is-hellfire .spot-number,
+        .spot[data-hellfire="true"] .spot-number,
+        .spot[data-state="hellfire"] .spot-number {
+            background: 
+                radial-gradient(circle at 50% 35%, 
+                    rgba(255, 245, 220, 0.98) 0%, 
+                    rgba(255, 140, 30, 0.98) 50%, 
+                    rgba(100, 20, 0, 1) 100%);
+            border: 2px solid rgba(255, 220, 180, 0.9);
+            box-shadow: 
+                inset 0 2px 8px rgba(255, 255, 255, 0.4),
+                inset 0 -2px 12px rgba(80, 0, 0, 0.6),
+                0 0 32px rgba(255, 150, 50, 0.7),
+                0 0 16px rgba(255, 100, 0, 0.8);
+            color: #1a0600;
+            text-shadow: 
+                0 0 14px rgba(255, 230, 200, 0.9), 
+                0 1px 2px rgba(255, 255, 255, 0.5),
+                0 4px 18px rgba(255, 100, 0, 0.6);
+            animation: hellfire-number-enhanced 1.3s ease-in-out infinite alternate;
+        }
+
+        .spot.is-hellfire .spot-number::after,
+        .spot[data-hellfire="true"] .spot-number::after,
+        .spot[data-state="hellfire"] .spot-number::after {
+            border: 1px solid rgba(255, 180, 80, 0.7);
+            opacity: 0.95;
+            box-shadow: 0 0 8px rgba(255, 150, 60, 0.5);
+        }
+
+        /* Enhanced Hellfire Tag */
+        .spot.is-hellfire .hellfire-tag,
+        .spot[data-hellfire="true"] .hellfire-tag,
+        .spot[data-state="hellfire"] .hellfire-tag {
+            opacity: 1;
+            transform: rotate(-8deg) translateX(0);
+            background: linear-gradient(115deg, 
+                rgba(255, 100, 10, 0.96), 
+                rgba(180, 40, 0, 0.94));
+            box-shadow: 
+                0 0 24px rgba(255, 90, 0, 0.65), 
+                inset 0 1px 4px rgba(255, 200, 150, 0.4),
+                inset 0 -2px 10px rgba(0, 0, 0, 0.6);
+            animation: hellfire-tag-enhanced 3s ease-in-out infinite;
+        }
+
+        /* Embers Container Enhancement */
+        .spot.is-hellfire .hellfire-embers,
+        .spot[data-hellfire="true"] .hellfire-embers,
+        .spot[data-state="hellfire"] .hellfire-embers {
+            opacity: 1;
+            height: 85px;
+            bottom: 10px;
+        }
+
+        /* Enhanced Text Glow */
+        .spot.is-hellfire .splotEntry,
+        .spot[data-hellfire="true"] .splotEntry,
+        .spot[data-state="hellfire"] .splotEntry {
+            color: rgba(255, 245, 235, 0.98);
+            text-shadow: 
+                0 0 20px rgba(255, 100, 30, 0.65), 
+                0 0 8px rgba(255, 200, 150, 0.4),
+                0 2px 6px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Enhanced Use Count */
+        .spot.is-hellfire .use-count,
+        .spot[data-hellfire="true"] .use-count,
+        .spot[data-state="hellfire"] .use-count {
+            color: rgba(255, 240, 210, 0.96);
+            background: linear-gradient(115deg, 
+                rgba(100, 20, 0, 0.92), 
+                rgba(255, 100, 20, 0.65));
+            border-color: rgba(255, 160, 60, 0.6);
+            box-shadow: 
+                inset 0 0 20px rgba(0, 0, 0, 0.8),
+                inset 0 1px 4px rgba(255, 200, 150, 0.3),
+                0 0 28px rgba(255, 100, 30, 0.35);
+        }
+
+        /* Enhanced Hover State */
+        .spot.is-hellfire:hover,
+        .spot[data-hellfire="true"]:hover,
+        .spot[data-state="hellfire"]:hover {
+            transform: translateY(-7px);
+            box-shadow: 
+                inset 0 0 70px rgba(255, 80, 0, 0.65),
+                inset 0 -25px 50px rgba(255, 150, 40, 0.3),
+                0 0 60px rgba(255, 60, 0, 0.55), 
+                0 42px 65px -24px rgba(255, 120, 30, 0.7);
+        }
+
+        /* Enhanced Highlight State */
+        .spot.is-hellfire.is-hellfire-highlight,
+        .spot[data-hellfire="true"].is-hellfire-highlight,
+        .spot[data-state="hellfire"].is-hellfire-highlight {
+            animation: 
+                hellfire-pulse-enhanced 1.2s ease-in-out infinite alternate, 
+                hellfire-shake-enhanced 0.5s cubic-bezier(0.68, 0.05, 0.35, 1.5) 0s 2;
+            box-shadow: 
+                inset 0 0 80px rgba(255, 70, 0, 0.75),
+                inset 0 -30px 60px rgba(255, 160, 50, 0.4),
+                0 0 70px rgba(255, 50, 0, 0.7), 
+                0 45px 75px -24px rgba(255, 130, 40, 0.8);
+        }
+
+        /* Enhanced Animations */
+        @keyframes hellfire-pulse-enhanced {
+            0% {
+                box-shadow: 
+                    inset 0 0 50px rgba(255, 60, 0, 0.45),
+                    inset 0 -18px 35px rgba(255, 130, 30, 0.2),
+                    0 0 40px rgba(255, 40, 0, 0.35), 
+                    0 30px 48px -24px rgba(255, 100, 20, 0.52);
+                filter: brightness(0.96) saturate(1.1);
+            }
+            50% {
+                box-shadow: 
+                    inset 0 0 75px rgba(255, 80, 0, 0.65),
+                    inset 0 -24px 48px rgba(255, 150, 50, 0.32),
+                    0 0 60px rgba(255, 60, 0, 0.5), 
+                    0 38px 60px -20px rgba(255, 120, 40, 0.7);
+                filter: brightness(1.08) saturate(1.25);
+            }
+            100% {
+                box-shadow: 
+                    inset 0 0 55px rgba(255, 65, 0, 0.5),
+                    inset 0 -20px 38px rgba(255, 140, 35, 0.25),
+                    0 0 45px rgba(255, 45, 0, 0.4), 
+                    0 32px 50px -24px rgba(255, 105, 25, 0.58);
+                filter: brightness(1) saturate(1.15);
+            }
+        }
+
+        @keyframes hellfire-flicker-enhanced {
+            0% {
+                opacity: 0.65;
+                filter: hue-rotate(-6deg) saturate(1.1) blur(14px);
+            }
+            25% {
+                opacity: 0.95;
+                filter: hue-rotate(8deg) saturate(1.4) blur(16px);
+            }
+            50% {
+                opacity: 0.75;
+                filter: hue-rotate(-3deg) saturate(1.2) blur(15px);
+            }
+            75% {
+                opacity: 1;
+                filter: hue-rotate(10deg) saturate(1.35) blur(17px);
+            }
+            100% {
+                opacity: 0.7;
+                filter: hue-rotate(0deg) saturate(1.15) blur(14px);
+            }
+        }
+
+        @keyframes hellfire-aura-pulse {
+            0% {
+                opacity: 0.8;
+                transform: scale(1.02) rotate(0deg);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.08) rotate(2deg);
+            }
+            100% {
+                opacity: 0.85;
+                transform: scale(1.05) rotate(-1deg);
+            }
+        }
+
+        @keyframes hellfire-number-enhanced {
+            0% {
+                transform: translateY(0) scale(1);
+                box-shadow: 
+                    inset 0 2px 8px rgba(255, 255, 255, 0.35),
+                    inset 0 -2px 12px rgba(80, 0, 0, 0.5),
+                    0 0 28px rgba(255, 140, 40, 0.65),
+                    0 0 14px rgba(255, 90, 0, 0.75);
+            }
+            50% {
+                transform: translateY(-1px) scale(1.05);
+                box-shadow: 
+                    inset 0 2px 10px rgba(255, 255, 255, 0.45),
+                    inset 0 -2px 14px rgba(80, 0, 0, 0.65),
+                    0 0 36px rgba(255, 160, 60, 0.8),
+                    0 0 18px rgba(255, 110, 20, 0.85);
+            }
+            100% {
+                transform: translateY(1px) scale(0.96);
+                box-shadow: 
+                    inset 0 2px 6px rgba(255, 255, 255, 0.3),
+                    inset 0 -2px 10px rgba(80, 0, 0, 0.55),
+                    0 0 24px rgba(255, 130, 35, 0.6),
+                    0 0 12px rgba(255, 85, 0, 0.7);
+            }
+        }
+
+        @keyframes hellfire-tag-enhanced {
+            0%, 100% {
+                filter: drop-shadow(0 0 16px rgba(255, 110, 20, 0.75));
+                transform: rotate(-8deg) translateX(0) scale(1);
+            }
+            33% {
+                filter: drop-shadow(0 0 26px rgba(255, 180, 60, 0.9));
+                transform: rotate(-7deg) translateX(0) scale(1.02);
+            }
+            66% {
+                filter: drop-shadow(0 0 20px rgba(255, 140, 40, 0.8));
+                transform: rotate(-9deg) translateX(0) scale(0.99);
+            }
+        }
+
+        @keyframes hellfire-shake-enhanced {
+            0% {
+                transform: translate3d(0, -3px, 0) rotate(0deg);
+            }
+            20% {
+                transform: translate3d(3px, -2px, 0) rotate(-1deg);
+            }
+            40% {
+                transform: translate3d(-3px, -4px, 0) rotate(0.8deg);
+            }
+            60% {
+                transform: translate3d(2px, -2px, 0) rotate(-0.5deg);
+            }
+            80% {
+                transform: translate3d(-2px, -3px, 0) rotate(0.3deg);
+            }
+            100% {
+                transform: translate3d(0, -3px, 0) rotate(0deg);
+            }
+        }
+
+        /* Accessibility: Respect reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            .spot.is-hellfire,
+            .spot[data-hellfire="true"],
+            .spot[data-state="hellfire"],
+            .spot.is-hellfire .spot-number,
+            .spot[data-hellfire="true"] .spot-number,
+            .spot[data-state="hellfire"] .spot-number,
+            .hellfire-aura,
+            .hellfire-embers,
+            .hellfire-embers-canvas,
+            .hellfire-tag {
+                animation: none !important;
+            }
+        }
         .spot:hover,
         .spot:focus-within {
             transform: translateY(-4px);
@@ -852,6 +1440,17 @@
             text-shadow: 0 0 12px rgba(0, 0, 0, 0.55);
         }
 
+        /* Clamp long titles to two lines to avoid overflow */
+        .splotEntry {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2; /* standard property for compat */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
         .use-count {
             position: relative;
             align-self: flex-end;
@@ -900,23 +1499,11 @@
             border-color: rgba(167, 167, 167, 0.2);
         }
 
-        .spot.is-hellfire,
-        .spot[data-state="hellfire"] {
-            background: linear-gradient(180deg, rgba(0, 215, 161, 0.16), rgba(12, 11, 11, 0.95));
-            border-color: rgba(0, 215, 161, 0.45);
-            box-shadow: inset 0 0 26px rgba(0, 215, 161, 0.25), 0 0 32px rgba(0, 215, 161, 0.25);
-        }
-
-        .spot.is-hellfire .spot-number,
-        .spot[data-state="hellfire"] .spot-number {
-            background: radial-gradient(circle at 40% 40%, rgba(0, 215, 161, 0.35), rgba(12, 11, 11, 0.9));
-            border-color: rgba(0, 215, 161, 0.4);
-            box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6), 0 0 16px rgba(0, 215, 161, 0.38);
-        }
-
         .spot[data-motion="static"]::before {
             display: none;
         }
+
+        /* removed EJS electric-border special card styles; programmatic borders will style .spot */
 
         .breakaway-ribbon {
             position: relative;
@@ -1151,6 +1738,19 @@
             .blink_me {
                 animation: none;
             }
+
+            .spot.is-hellfire,
+            .spot[data-hellfire="true"],
+            .spot[data-state="hellfire"],
+            .spot.is-hellfire .spot-number,
+            .spot[data-hellfire="true"] .spot-number,
+            .spot[data-state="hellfire"] .spot-number,
+            .hellfire-aura,
+            .hellfire-embers,
+            .hellfire-embers-canvas,
+            .hellfire-tag {
+                animation: none !important;
+            }
         }
 
         @media (max-width: 720px) {
@@ -1226,16 +1826,25 @@
         <div class="board-frame">
             <div class="board-background-root" id="board-background-root" aria-hidden="true"></div>
             <div class="grid" id="board">
-                <% board.forEach(function(dataRow, idxOfRow, orgnlAryObject) { %>
-                    <div class="spot tilt-card" id='splot_<%= dataRow.id %>'>
-                        <h2>
-                            <span class="spot-number" id="splot_number_<%= dataRow.id %>">
-                                <%= dataRow.id %>
-                            </span>
-                            <span class="splotEntry" id='splotEntry_<%= dataRow.id %>'><%= dataRow.entry %></span>
-                        </h2>
-                        <p class="use-count" id="splot_count_<%= dataRow.id %>">Uses: <%= dataRow.splot_dot %></p>
-                    </div>
+                <% board.forEach(function(dataRow) {
+                    const spotIdString = String(dataRow.id);
+                    const numericSpotId = Number(spotIdString);
+                    const isHellfire = hellfireSpotIds.includes(numericSpotId) || hellfireSpotIdsStrings.includes(spotIdString);
+                %>
+                        <div class="spot tilt-card<%= isHellfire ? ' is-hellfire' : '' %>" id='splot_<%= dataRow.id %>' data-spot-id="<%= dataRow.id %>"<%= isHellfire ? ' data-hellfire="true"' : '' %>>
+                            <div class="hellfire-aura" aria-hidden="true"></div>
+                            <div class="hellfire-embers" aria-hidden="true">
+                                <canvas class="hellfire-embers-canvas" aria-hidden="true"></canvas>
+                            </div>
+                            <div class="hellfire-tag" aria-hidden="true">Hellfire</div>
+                            <h2>
+                                <span class="spot-number" id="splot_number_<%= dataRow.id %>">
+                                    <%= dataRow.id %>
+                                </span>
+                                <span class="splotEntry" id='splotEntry_<%= dataRow.id %>'><%= dataRow.entry %></span>
+                            </h2>
+                            <p class="use-count" id="splot_count_<%= dataRow.id %>">Uses: <%= dataRow.splot_dot %></p>
+                        </div>
                 <% }); %>
             </div>
         </div>

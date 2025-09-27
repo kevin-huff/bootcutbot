@@ -1,0 +1,216 @@
+:root {
+    --base-coal: #0C0B0B;
+    --basalt: #131217;
+    --char: #1B1A20;
+    --ember: #DD2222;
+    --furnace: #FF6A00;
+    --sulfur: #F3C623;
+    --ash: #A7A7A7;
+    --bone: #F2E9E4;
+    --blood: #8A1111;
+    --verdigris: #00D7A1;
+    --steel: rgba(180, 170, 150, 0.35);
+    --shadow-strong: rgba(0, 0, 0, 0.92);
+    --shadow-soft: rgba(0, 0, 0, 0.45);
+    --font-display: 'Cinzel Decorative', 'UnifrakturCook', serif;
+    --font-body: 'Inter', 'Rubik', sans-serif;
+    --electric-border: rgba(243, 198, 35, 0.22);
+    --electric-border-strong: rgba(255, 106, 0, 0.35);
+    --torment-fill: linear-gradient(90deg, rgba(255, 106, 0, 0.95) 0%, rgba(221, 34, 34, 0.98) 54%, rgba(243, 198, 35, 0.9) 100%);
+    --torment-fill-dim: linear-gradient(90deg, rgba(70, 24, 16, 0.7), rgba(58, 11, 11, 0.6));
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body.torment-body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, var(--base-coal) 0%, var(--basalt) 55%, var(--char) 100%);
+    font-family: var(--font-body);
+    color: var(--bone);
+    letter-spacing: 0.02em;
+    position: relative;
+}
+
+body.torment-body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
+    mix-blend-mode: screen;
+    opacity: 0.18;
+}
+
+.torment-overlay {
+    width: min(82vw, 940px);
+    padding: 24px 32px 30px;
+    border-radius: 24px;
+    position: relative;
+    background: linear-gradient(180deg, rgba(19, 18, 23, 0.92), rgba(12, 11, 11, 0.88));
+    border: 1px solid var(--electric-border);
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+        0 18px 32px -22px rgba(0, 0, 0, 0.9);
+    isolation: isolate;
+    overflow: hidden;
+}
+
+.torment-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 18px;
+    border-radius: 20px;
+    background: radial-gradient(120% 140% at 50% -20%, rgba(255, 106, 0, 0.24) 0%, rgba(210, 34, 34, 0.14) 40%, transparent 72%);
+    opacity: 0.45;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.torment-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    background: radial-gradient(circle at 12% 18%, rgba(255, 136, 0, 0.18), transparent 55%),
+                radial-gradient(circle at 82% 24%, rgba(255, 210, 110, 0.12), transparent 60%);
+    opacity: 0.8;
+}
+
+.torment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.torment-title {
+    font-family: var(--font-display);
+    font-size: clamp(32px, 5vw, 58px);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-shadow: 0 0 16px rgba(255, 106, 0, 0.35);
+    margin: 0;
+}
+
+.torment-tooltip {
+    font-size: 0.85rem;
+    color: rgba(167, 167, 167, 0.9);
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+}
+
+.torment-bar-wrapper {
+    position: relative;
+    margin-bottom: 22px;
+}
+
+.torment-bar {
+    position: relative;
+    height: clamp(40px, 6vw, 68px);
+    border-radius: 18px;
+    background: rgba(12, 11, 11, 0.76);
+    border: 1px solid rgba(243, 198, 35, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+}
+
+.torment-bar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0.25), transparent 52%);
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    opacity: 0.45;
+}
+
+.torment-bar-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0;
+    background: var(--torment-fill);
+    box-shadow: 0 0 18px rgba(255, 106, 0, 0.35);
+    transition: width 0.65s cubic-bezier(0.22, 0.68, 0, 1), filter 0.3s ease;
+    filter: saturate(1.25);
+}
+
+.torment-bar-fill.dimmed {
+    filter: saturate(0.5);
+    background: var(--torment-fill-dim);
+    box-shadow: none;
+}
+
+.torment-bar-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at 15% 50%, rgba(255, 196, 132, 0.28), transparent 65%),
+                radial-gradient(circle at 85% 50%, rgba(255, 240, 180, 0.22), transparent 70%);
+    mix-blend-mode: screen;
+}
+
+.torment-flare {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    height: 130%;
+    width: 140px;
+    background: radial-gradient(circle at center, rgba(255, 230, 160, 0.75), rgba(255, 120, 20, 0.24), transparent 70%);
+    opacity: 0;
+    pointer-events: none;
+    filter: blur(2px);
+    transition: opacity 0.35s ease;
+}
+
+.torment-flare.active {
+    opacity: 0.95;
+    animation: emberPulse 1.8s ease-in-out infinite;
+}
+
+.torment-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(10px, 2.2vw, 18px);
+    font-size: clamp(16px, 2.4vw, 22px);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.torment-amount {
+    font-size: clamp(20px, 3vw, 30px);
+    font-family: var(--font-display);
+    color: #ffeede;
+    text-shadow: 0 0 18px rgba(255, 106, 0, 0.25);
+}
+
+.torment-goal {
+    text-align: center;
+    color: rgba(243, 198, 35, 0.92);
+}
+
+.torment-remaining {
+    text-align: right;
+    color: rgba(167, 167, 167, 0.92);
+}
+
+@keyframes emberPulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.95; }
+    50% { transform: translate(-50%, -50%) scale(1.25); opacity: 0.45; }
+}
+
+@media (max-width: 768px) {
+    .torment-overlay {
+        padding: 18px 20px 24px;
+        width: min(92vw, 700px);
+    }
+}

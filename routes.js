@@ -10,6 +10,10 @@ import { state } from './constants.js';
 import { getAuthUrl, handleAuthCallback } from './auth.js';
 import { initializeEventSub } from './eventSub.js';
 import { hellfireSpotIds, heavenfireSpotIds } from './utils.js';
+import {
+  getTormentMeterState,
+  recordContribution as recordTormentContribution
+} from './tormentMeterService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -118,6 +122,39 @@ router.get("/timer_admin", basicAuth({
   res.render("timer_admin.ejs", {
     initial_seconds: Math.floor(remainingTime / 1000)
   });
+});
+
+router.get('/torment_meter', async (req, res) => {
+  try {
+    const initialState = await getTormentMeterState();
+    res.render('torment_meter.ejs', {
+      tormentMeterState: initialState
+    });
+  } catch (error) {
+    console.error('Failed to load torment meter state for overlay:', error);
+    res.render('torment_meter.ejs', {
+      tormentMeterState: null,
+      error: 'Failed to load torment meter.'
+    });
+  }
+});
+
+router.get('/torment_meter_admin', basicAuth({
+  users: { [process.env.web_user]: process.env.web_pass },
+  challenge: true,
+}), async (req, res) => {
+  try {
+    const initialState = await getTormentMeterState();
+    res.render('torment_meter_admin.ejs', {
+      tormentMeterState: initialState
+    });
+  } catch (error) {
+    console.error('Failed to load torment meter state for admin:', error);
+    res.render('torment_meter_admin.ejs', {
+      tormentMeterState: null,
+      error: 'Failed to load torment meter.'
+    });
+  }
 });
 
 router.get("/menu", (req, res) => {
@@ -379,6 +416,21 @@ router.post("/4th_wall", async (req, res) => {
         console.log(`Added ${minutes} minutes from merch purchase of $${purchaseAmount.value}`);
       } else {
         console.error('Socket.io instance not found');
+      }
+    }
+    const cents = Math.round(Number(purchaseAmount.value) * 100);
+    if (cents > 0) {
+      try {
+        await recordTormentContribution({
+          amountCents: cents,
+          source: 'fourthwall_purchase',
+          metadata: {
+            orderId: req.body?.data?.id || null,
+            customer: req.body?.data?.customer?.name || null
+          }
+        });
+      } catch (error) {
+        console.error('Failed to record torment meter contribution from 4th Wall webhook:', error);
       }
     }
   }

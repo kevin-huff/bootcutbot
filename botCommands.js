@@ -7,6 +7,9 @@ import { CensorSensor } from 'censor-sensor';
 import { abbadabbabotSay } from './utils.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import {
+  recordContribution as recordTormentContribution
+} from './tormentMeterService.js';
 
 import {
   handleJoinCommand,
@@ -60,6 +63,49 @@ censor.disableTier(5);
 
 const bot_display_name = process.env.bot_account;
 
+function resolveSubPlanCents(methods = {}, userstate = {}) {
+  const plan = (methods.plan || userstate['msg-param-sub-plan'] || '').toString().toLowerCase();
+  switch (plan) {
+    case '2000':
+      return 999;
+    case '3000':
+      return 2499;
+    case 'prime':
+      return 499;
+    case '1000':
+    default:
+      return 499;
+  }
+}
+
+async function recordTormentSubs({
+  count = 1,
+  methods = {},
+  userstate = {},
+  source = 'subscription',
+  metadata = {}
+}) {
+  const quantity = Math.max(1, Number(count) || 0);
+  const cents = resolveSubPlanCents(methods, userstate) * quantity;
+  if (cents <= 0) {
+    return;
+  }
+  try {
+    await recordTormentContribution({
+      amountCents: cents,
+      source,
+      metadata: {
+        count: quantity,
+        plan: methods.plan || userstate['msg-param-sub-plan'] || '1000',
+        username: userstate['display-name'] || userstate.username || null,
+        ...metadata
+      }
+    });
+  } catch (error) {
+    console.error('Failed to record torment meter subscription contribution:', error);
+  }
+}
+
 const client = new tmi.Client({
   options: { debug: true },
   identity: {
@@ -87,6 +133,21 @@ function initializeBotCommands(io) {
     
     // Track bits for stats but don't add time (now handled by EventSub)
     await handleBitTracker(userstate.bits, io);
+    const bitAmount = Math.round(Number(userstate.bits) || 0);
+    if (bitAmount > 0) {
+      try {
+        await recordTormentContribution({
+          amountCents: bitAmount,
+          source: 'bits',
+          metadata: {
+            username: userstate['display-name'] || userstate.username || null,
+            message: message || null
+          }
+        });
+      } catch (error) {
+        console.error('Failed to record torment meter contribution from bits:', error);
+      }
+    }
   });
 
   // Subscription events
@@ -99,6 +160,16 @@ function initializeBotCommands(io) {
       console.error('Socket handlers not found for subscription');
     }
     handleSubTracker(1, io);
+    await recordTormentSubs({
+      count: 1,
+      methods: method,
+      userstate,
+      source: 'subscription',
+      metadata: {
+        username,
+        message: message || null
+      }
+    });
   });
   
   client.on("resub", async (channel, username, months, message, userstate, methods) => {
@@ -110,6 +181,17 @@ function initializeBotCommands(io) {
       console.error('Socket handlers not found for resub');
     }
     handleSubTracker(1, io);
+    await recordTormentSubs({
+      count: 1,
+      methods,
+      userstate,
+      source: 'resub',
+      metadata: {
+        username,
+        months,
+        message: message || null
+      }
+    });
   });
   
   client.on("subgift", async (channel, username, streakMonths, recipient, methods, userstate) => {
@@ -121,6 +203,31 @@ function initializeBotCommands(io) {
       console.error('Socket handlers not found for gift sub');
     }
     handleSubTracker(1, io);
+    await recordTormentSubs({
+      count: 1,
+      methods,
+      userstate,
+      source: 'gift_sub',
+      metadata: {
+        gifter: username,
+        recipient,
+        streakMonths
+      }
+    });
+  });
+
+  client.on('submysterygift', async (channel, username, numbOfSubs, methods, userstate) => {
+    handleSubTracker(numbOfSubs, io);
+    await recordTormentSubs({
+      count: numbOfSubs,
+      methods,
+      userstate,
+      source: 'gift_sub_bulk',
+      metadata: {
+        gifter: username,
+        count: numbOfSubs
+      }
+    });
   });
 
   // Message handling

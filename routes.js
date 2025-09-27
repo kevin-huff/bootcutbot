@@ -59,6 +59,24 @@ router.get("/countdown", (req, res) => {
   res.render("countdown", { endTime: dateTimeEST });
 });
 
+router.get("/count-down-timer", (req, res) => {
+  const { target, tz } = req.query;
+
+  if (!target) {
+    return res.status(400).send("Missing required 'target' query parameter.");
+  }
+
+  const targetMoment = tz ? momentTz.tz(target, tz) : momentTz(target);
+
+  if (!targetMoment.isValid()) {
+    return res.status(400).send("Invalid target date-time provided.");
+  }
+
+  res.render("countdown_timer.ejs", {
+    targetTimestamp: targetMoment.valueOf(),
+  });
+});
+
 router.get("/timer", async (req, res) => {
   const isPaused = await timer_db.get("is_paused");
   let remainingTime = 0;

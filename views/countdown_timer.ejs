@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Countdown Timer</title>
+    <link rel="stylesheet" href="../flipclock.css">
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+    <script src="../flipclock.js"></script>
+</head>
+<body>
+    <div class="clock"></div>
+
+    <script type="text/javascript">
+        $(function () {
+            var targetTimestamp = <%- JSON.stringify(targetTimestamp) %>;
+
+            if (!targetTimestamp || isNaN(targetTimestamp)) {
+                console.error('Countdown timer received an invalid target timestamp.');
+                return;
+            }
+
+            function secondsUntilTarget() {
+                return Math.max(0, Math.floor((targetTimestamp - Date.now()) / 1000));
+            }
+
+            window.clock = $('.clock').FlipClock(secondsUntilTarget(), {
+                clockFace: 'HourlyCounter',
+                countdown: true,
+                autoStart: false,
+                callbacks: {
+                    interval: function () {
+                        if (this.factory.getTime().time <= 0) {
+                            this.factory.stop();
+                        }
+                    }
+                }
+            });
+
+            if (secondsUntilTarget() > 0) {
+                window.clock.start();
+            }
+
+            var RESYNC_INTERVAL_MS = 60 * 60 * 1000; // One hour
+
+            function resyncClock() {
+                var remainingSeconds = secondsUntilTarget();
+                window.clock.stop();
+                window.clock.setTime(remainingSeconds);
+                if (remainingSeconds > 0) {
+                    window.clock.start();
+                }
+            }
+
+            setInterval(resyncClock, RESYNC_INTERVAL_MS);
+        });
+    </script>
+</body>
+</html>

@@ -23,6 +23,49 @@ $(document).ready(function() {
   socket.on("connect", () => {
     console.log('socket connected:',socket.connected); // true
   });
+  socket.on('alt_splot_swap', function(data) {
+    if (!data || data.id === undefined || data.id === null) { return; }
+    const spotId = String(data.id);
+    const entryEl = document.getElementById(`splotEntry_${spotId}`);
+    const dotEl = document.getElementById(`splot_dot_${spotId}`);
+    const container = document.getElementById(`splot_${spotId}`);
+
+    const hellfireSet = new Set((data.hellfireSpotIds || []).map((value) => String(value)));
+    const heavenfireSet = new Set((data.heavenFireSpotIds || []).map((value) => String(value)));
+    const hasAltFlag = typeof data.isAlt === 'boolean';
+    const isAlt = hasAltFlag ? Boolean(data.isAlt) : false;
+    const isHeavenfire = heavenfireSet.has(spotId) || (spotId === '6' && isAlt && !hellfireSet.has(spotId));
+    const isHellfire = !isHeavenfire && (hellfireSet.has(spotId) || (isAlt && spotId !== '6'));
+    const altActive = hasAltFlag ? isAlt : (isHeavenfire || (isHellfire && spotId !== '6'));
+
+    const baseEntry = data.entry ?? '';
+    const altEntry = data.alt_entry ?? baseEntry;
+    const baseDots = data.splot_dot ?? 0;
+    const altDots = data.alt_splot_dot ?? baseDots;
+
+    if (entryEl) {
+      const activeEntry = altActive ? altEntry : baseEntry;
+      entryEl.textContent = activeEntry;
+    }
+    if (dotEl) {
+      const activeDots = altActive ? altDots : baseDots;
+      dotEl.textContent = activeDots;
+    }
+    if (container) {
+      container.classList.toggle('is-heavenfire', isHeavenfire);
+      container.classList.toggle('is-hellfire', isHellfire);
+      if (isHeavenfire) {
+        container.dataset.heavenfire = 'true';
+      } else {
+        delete container.dataset.heavenfire;
+      }
+      if (isHellfire) {
+        container.dataset.hellfire = 'true';
+      } else {
+        delete container.dataset.hellfire;
+      }
+    }
+  });
   // Twitch chat connection
   const client = new tmi.Client({
       options: { debug: true },

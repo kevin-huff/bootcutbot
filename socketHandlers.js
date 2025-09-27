@@ -1,7 +1,7 @@
 import jsoning from 'jsoning';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { splotStates, initializeSettings, get_random_splot, abbadabbabotSay, say } from './utils.js';
+import { splotStates, hellfireSpotIds, heavenfireSpotIds, initializeSettings, get_random_splot, abbadabbabotSay, say } from './utils.js';
 import { state } from './constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -155,12 +155,41 @@ export const initializeSocketHandlers = (io) => {
     });
 
     socket.on("alt_splot_swap", (splotData, callback) => {
-      if (splotStates[splotData.id]) {
-        splotStates[splotData.id].isAlt = !splotStates[splotData.id].isAlt;
+      const spotId = String(splotData.id);
+      const currentState = splotStates[spotId] || { isAlt: false };
+      currentState.isAlt = !currentState.isAlt;
+      splotStates[spotId] = currentState;
+
+      const isSpotSix = spotId === '6';
+
+      if (currentState.isAlt) {
+        if (isSpotSix) {
+          heavenfireSpotIds.add(spotId);
+          hellfireSpotIds.delete(spotId);
+        } else {
+          heavenfireSpotIds.delete(spotId);
+          hellfireSpotIds.add(spotId);
+        }
       } else {
-        splotStates[splotData.id] = { isAlt: true };
+        heavenfireSpotIds.delete(spotId);
+        if (isSpotSix) {
+          hellfireSpotIds.add(spotId);
+        } else {
+          hellfireSpotIds.delete(spotId);
+        }
       }
-      io.emit("alt_splot_swap", { ...splotData, isAlt: splotStates[splotData.id].isAlt });
+
+      const payload = {
+        ...splotData,
+        isAlt: currentState.isAlt,
+        hellfireSpotIds: Array.from(hellfireSpotIds),
+        heavenFireSpotIds: Array.from(heavenfireSpotIds)
+      };
+
+      io.emit("alt_splot_swap", payload);
+      if (typeof callback === 'function') {
+        callback(payload);
+      }
     });
 
     socket.on("clear_board", async (arg, callback) => {

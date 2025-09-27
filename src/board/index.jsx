@@ -495,6 +495,7 @@ const bootstrapReactBits = () => {
   renderPrismBackground();
   renderBreakawayRibbon(initialRibbonItems);
   renderBrandFlames();
+  refreshElectricBorderSpots();
 };
 
 if (document.readyState === 'loading') {

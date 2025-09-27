@@ -9,6 +9,7 @@ import { dirname } from 'path';
 import { state } from './constants.js';
 import { getAuthUrl, handleAuthCallback } from './auth.js';
 import { initializeEventSub } from './eventSub.js';
+import { hellfireSpotIds, heavenfireSpotIds } from './utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -119,6 +120,8 @@ router.get("/board", (req, res) => {
     board: board_db.get("board"),
     breakaways: current_breakaways,
     current_turn: state.current_turn,
+    hellfireSpotIds: Array.from(hellfireSpotIds),
+    heavenFireSpotIds: Array.from(heavenfireSpotIds)
   });
 });
 

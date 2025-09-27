@@ -27,6 +27,8 @@ censor.disableTier(4);
 censor.disableTier(5);
 
 const splotStates = {};
+const hellfireSpotIds = new Set(['6']);
+const heavenfireSpotIds = new Set();
 
 const initializeSettings = () => {
   // Initialize settings from DB or environment variables
@@ -164,6 +166,8 @@ const getCustomMessage = (soundType) => {
 
 export {
   splotStates,
+  hellfireSpotIds,
+  heavenfireSpotIds,
   initializeSettings,
   get_random_splot,
   abbadabbabotSay,

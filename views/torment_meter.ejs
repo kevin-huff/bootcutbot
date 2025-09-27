@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torment Meter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Inter:wght@400;600&family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/torment-meter.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="torment-body">
+    <div class="torment-overlay">
+        <div class="torment-header">
+            <span class="torment-title">Torment Meter</span>
+            <span class="torment-tooltip" id="tormentDecay"></span>
+        </div>
+        <div class="torment-bar-wrapper">
+            <div class="torment-bar">
+                <div class="torment-bar-fill" id="tormentBarFill"></div>
+                <div class="torment-bar-overlay"></div>
+            </div>
+            <div class="torment-flare" id="tormentFlare"></div>
+        </div>
+        <div class="torment-stats">
+            <div class="torment-amount" id="tormentActive"></div>
+            <div class="torment-goal">Goal <span id="tormentGoal"></span></div>
+            <div class="torment-remaining" id="tormentRemaining"></div>
+        </div>
+    </div>
+
+    <audio id="tormentAudio" preload="auto" src="<%= tormentMeterState && tormentMeterState.audioUrl ? tormentMeterState.audioUrl : 'https://cdn.leantube.org/hellfire.mp3?v=1714958299269' %>"></audio>
+    <script>
+        window.__INITIAL_TORMENT_METER_STATE__ = <%- JSON.stringify(tormentMeterState || null) %>;
+        window.__INITIAL_TORMENT_ERROR__ = <%- JSON.stringify(typeof error === 'string' ? error : null) %>;
+    </script>
+    <script src="/torment-meter.js"></script>
+</body>
+</html>

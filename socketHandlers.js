@@ -2,6 +2,15 @@ import jsoning from 'jsoning';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { splotStates, hellfireSpotIds, heavenfireSpotIds, initializeSettings, get_random_splot, abbadabbabotSay, say } from './utils.js';
+import {
+  getTormentMeterState,
+  recordContribution as recordTormentContribution,
+  resetTormentMeter,
+  setAudioUrl as setTormentAudioUrl,
+  setBaseGoal as setTormentBaseGoal,
+  setMinGoal as setTormentMinGoal,
+  dollarsToCentsSafe
+} from './tormentMeterService.js';
 import { state } from './constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -197,6 +206,111 @@ export const initializeSocketHandlers = (io) => {
       console.log(arg);
       callback("board_cleared");
       io.emit("clear_board", []);
+    });
+
+    socket.on('join_torment_meter', async () => {
+      socket.join('torment_meter');
+      try {
+        const state = await getTormentMeterState();
+        socket.emit('torment_meter_update', state);
+      } catch (error) {
+        console.error('Failed to load torment meter state:', error);
+        socket.emit('torment_meter_error', { message: 'Unable to load torment meter state.' });
+      }
+    });
+
+    socket.on('torment_meter_manual_add', async (payload = {}, callback) => {
+      try {
+        const amount = Number(payload.amount);
+        if (!Number.isFinite(amount) || amount <= 0) {
+          throw new Error('Amount must be greater than zero.');
+        }
+        const cents = dollarsToCentsSafe(amount);
+        const metadata = payload.metadata && typeof payload.metadata === 'object' ? payload.metadata : {};
+        await recordTormentContribution({
+          amountCents: cents,
+          source: payload.source || 'manual',
+          sourceDetails: payload.sourceDetails,
+          note: payload.note || null,
+          metadata: { ...metadata, origin: 'admin_manual' }
+        });
+        if (typeof callback === 'function') {
+          callback({ ok: true });
+        }
+      } catch (error) {
+        console.error('Torment meter manual add failed:', error);
+        if (typeof callback === 'function') {
+          callback({ ok: false, error: error.message });
+        }
+      }
+    });
+
+    socket.on('torment_meter_reset', async (callback) => {
+      try {
+        const state = await resetTormentMeter();
+        if (typeof callback === 'function') {
+          callback({ ok: true, state });
+        }
+      } catch (error) {
+        console.error('Torment meter reset failed:', error);
+        if (typeof callback === 'function') {
+          callback({ ok: false, error: error.message });
+        }
+      }
+    });
+
+    socket.on('torment_meter_set_base_goal', async (payload, callback) => {
+      try {
+        const amount = Number(typeof payload === 'object' ? payload?.amount : payload);
+        if (!Number.isFinite(amount) || amount <= 0) {
+          throw new Error('Base goal must be greater than zero.');
+        }
+        const state = await setTormentBaseGoal(amount);
+        if (typeof callback === 'function') {
+          callback({ ok: true, state });
+        }
+      } catch (error) {
+        console.error('Failed to set torment meter base goal:', error);
+        if (typeof callback === 'function') {
+          callback({ ok: false, error: error.message });
+        }
+      }
+    });
+
+    socket.on('torment_meter_set_min_goal', async (payload, callback) => {
+      try {
+        const amount = Number(typeof payload === 'object' ? payload?.amount : payload);
+        if (!Number.isFinite(amount) || amount < 0) {
+          throw new Error('Minimum goal must be zero or greater.');
+        }
+        const state = await setTormentMinGoal(amount);
+        if (typeof callback === 'function') {
+          callback({ ok: true, state });
+        }
+      } catch (error) {
+        console.error('Failed to set torment meter minimum goal:', error);
+        if (typeof callback === 'function') {
+          callback({ ok: false, error: error.message });
+        }
+      }
+    });
+
+    socket.on('torment_meter_set_audio', async (payload, callback) => {
+      try {
+        const url = typeof payload === 'object' ? payload?.url : payload;
+        if (!url || typeof url !== 'string' || url.trim().length === 0) {
+          throw new Error('Audio URL must be provided.');
+        }
+        const state = await setTormentAudioUrl(url);
+        if (typeof callback === 'function') {
+          callback({ ok: true, state });
+        }
+      } catch (error) {
+        console.error('Failed to set torment meter audio URL:', error);
+        if (typeof callback === 'function') {
+          callback({ ok: false, error: error.message });
+        }
+      }
     });
 
     socket.on("log_action", async (arg, callback) => {

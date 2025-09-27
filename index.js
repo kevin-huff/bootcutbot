@@ -13,6 +13,11 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import routes from './routes.js';
 import { initializeSocketHandlers, handleSubathonAddTime } from './socketHandlers.js';
+import {
+  initializeTormentMeter,
+  recordContribution as recordTormentContribution,
+  shutdownTormentMeter
+} from './tormentMeterService.js';
 import { initializeEventSub } from './eventSub.js';
 import { initializeBotCommands } from './botCommands.js';
 
@@ -28,6 +33,10 @@ const server = http.createServer(app);
 const io = new Server(server);
 let eventSubClient;
 let streamlabsSocket;
+
+initializeTormentMeter(io).catch(error => {
+  console.error('Failed to initialize Torment Meter:', error);
+});
 
 // Initialize Streamlabs Socket
 if (process.env.streamlabs_socket_token) {
@@ -51,6 +60,21 @@ if (process.env.streamlabs_socket_token) {
             await socketHandlers.handleSubathonAddTime(minutes * 60, `donation_$${amount}`, io);
           } else {
             console.error('Socket handlers not found for Streamlabs donation');
+          }
+        }
+        const messageText = String(eventData.message?.[0]?.message || '').toLowerCase();
+        if (!messageText.includes('merch')) {
+          try {
+            await recordTormentContribution({
+              amountCents: Math.round(amount * 100),
+              source: 'streamlabs_donation',
+              metadata: {
+                name: eventData.message?.[0]?.name || null,
+                message: eventData.message?.[0]?.message || null
+              }
+            });
+          } catch (error) {
+            console.error('Failed to record torment meter contribution from Streamlabs donation:', error);
           }
         }
       }
@@ -139,5 +163,6 @@ process.on('SIGINT', async () => {
   if (streamlabsSocket) {
     streamlabsSocket.disconnect();
   }
+  await shutdownTormentMeter();
   process.exit(0);
 });

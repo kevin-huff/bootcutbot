@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Torment Meter Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-MlwrG5t9gAtZodtN4Kw3UX0YPD9PEw24kTx5c5NyEJD7BqXc9E+u6KDvY8XK59bG" crossorigin="anonymous">
+    <link rel="stylesheet" href="/torment-meter.css">
+    <style>
+        body {
+            background: #1b0b0b;
+            color: #f9e7df;
+            font-family: 'Inter', sans-serif;
+        }
+        .card {
+            background: rgba(30, 0, 0, 0.85);
+            color: #f9e7df;
+            border: 1px solid rgba(255, 120, 0, 0.3);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+        }
+        .card-header {
+            border-bottom: 1px solid rgba(255, 120, 0, 0.25);
+            font-family: 'Cinzel Decorative', serif;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        label {
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .table-dark td, .table-dark th {
+            border-color: rgba(255, 120, 0, 0.15);
+        }
+        .table-dark thead th {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 0.9rem;
+            letter-spacing: 0.08em;
+        }
+        .torment-summary-value {
+            font-size: 2rem;
+            font-family: 'Cinzel Decorative', serif;
+        }
+        .torment-summary-label {
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.08em;
+            color: #ffbb88;
+        }
+        .btn-torment {
+            background: linear-gradient(135deg, rgba(255, 90, 0, 0.95), rgba(120, 0, 0, 0.9));
+            border: 1px solid rgba(255, 140, 0, 0.45);
+            color: #fff5eb;
+            letter-spacing: 0.05em;
+        }
+        .btn-torment:hover {
+            background: linear-gradient(135deg, rgba(255, 115, 0, 0.95), rgba(160, 0, 0, 0.9));
+        }
+        .form-control {
+            background: rgba(0, 0, 0, 0.35);
+            color: #ffeade;
+            border: 1px solid rgba(255, 120, 0, 0.35);
+        }
+        .form-control:focus {
+            background: rgba(0, 0, 0, 0.55);
+            border-color: rgba(255, 150, 0, 0.65);
+            box-shadow: 0 0 0 0.2rem rgba(255, 140, 0, 0.25);
+        }
+        .torment-admin-progress {
+            margin-bottom: 24px;
+        }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div class="container py-4">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h1 class="mb-0" style="font-family: 'UnifrakturCook', cursive; letter-spacing: 0.12em;">Torment Meter Admin</h1>
+            <button id="resetMeterBtn" class="btn btn-outline-warning">Reset Meter</button>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body torment-admin-progress">
+                <div id="tormentAdminBar" class="torment-bar">
+                    <div class="torment-bar-fill" id="tormentAdminBarFill"></div>
+                    <div class="torment-bar-overlay"></div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        <div class="torment-summary-label">Active Total</div>
+                        <div class="torment-summary-value" id="adminActiveTotal">$0.00</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="torment-summary-label">Current Goal</div>
+                        <div class="torment-summary-value" id="adminCurrentGoal">$0.00</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="torment-summary-label">Remaining</div>
+                        <div class="torment-summary-value" id="adminRemaining">$0.00</div>
+                    </div>
+                </div>
+                <div class="mt-2 text-right text-muted" id="adminDecayCountdown"></div>
+            </div>
+        </div>
+
+        <div id="tormentStatus" class="alert alert-info" role="alert" style="display: none;"></div>
+
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">Adjust Goals</div>
+                    <div class="card-body">
+                        <form id="baseGoalForm" class="mb-3">
+                            <label for="baseGoalInput">Base Goal (USD)</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">$</span>
+                                </div>
+                                <input type="number" step="0.01" min="1" class="form-control" id="baseGoalInput" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-torment" type="submit">Set Base</button>
+                                </div>
+                            </div>
+                        </form>
+                        <form id="minGoalForm">
+                            <label for="minGoalInput">Minimum Goal (USD)</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">$</span>
+                                </div>
+                                <input type="number" step="0.01" min="0" class="form-control" id="minGoalInput" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-torment" type="submit">Set Minimum</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">Manual Adjustments</div>
+                    <div class="card-body">
+                        <form id="manualContributionForm">
+                            <div class="form-group">
+                                <label for="manualAmount">Amount (USD)</label>
+                                <input type="number" step="0.01" min="0.01" class="form-control" id="manualAmount" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="manualSource">Source Label</label>
+                                <input type="text" class="form-control" id="manualSource" placeholder="Manual Adjustment">
+                            </div>
+                            <div class="form-group">
+                                <label for="manualNote">Note</label>
+                                <input type="text" class="form-control" id="manualNote" placeholder="Optional note">
+                            </div>
+                            <button class="btn btn-torment btn-block" type="submit">Add Contribution</button>
+                        </form>
+                        <hr>
+                        <form id="audioForm">
+                            <label for="audioInput">Trigger Audio URL</label>
+                            <input type="url" class="form-control mb-2" id="audioInput" placeholder="https://">
+                            <button class="btn btn-outline-light btn-block" type="submit">Update Audio</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-7 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">Active Contributions</div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-dark mb-0" id="contributionsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Source</th>
+                                        <th>Amount</th>
+                                        <th>Available</th>
+                                        <th>Expires In</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">Active Reductions</div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-dark mb-0" id="reductionsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Goal</th>
+                                        <th>Expires In</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.__TORMENT_METER_INITIAL_STATE__ = <%- JSON.stringify(tormentMeterState || null) %>;
+        window.__TORMENT_METER_ERROR__ = <%- JSON.stringify(typeof error === 'string' ? error : null) %>;
+    </script>
+    <script src="/torment-meter-admin.js"></script>
+</body>
+</html>

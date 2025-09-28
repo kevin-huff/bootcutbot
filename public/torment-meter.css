@@ -84,6 +84,12 @@ body.torment-body::before {
 .torment-content {
     position: relative;
     z-index: 4;
+    overflow: hidden;
+}
+
+.torment-content > *:not(.torment-content-flames) {
+    position: relative;
+    z-index: 2;
 }
 
 .torment-embers {
@@ -183,11 +189,11 @@ body.torment-body::before {
 
 .torment-header-flames {
     position: absolute;
-    inset: 0;
+    inset: -12% -10%;
     pointer-events: none;
     overflow: hidden;
     mix-blend-mode: screen;
-    opacity: 0.95;
+    opacity: 0.92;
     z-index: 1;
 }
 

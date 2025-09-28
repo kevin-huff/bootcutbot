@@ -53,6 +53,7 @@ body.torment-body::before {
         0 18px 32px -22px rgba(0, 0, 0, 0.9);
     isolation: isolate;
     overflow: hidden;
+    transition: box-shadow 0.35s ease, transform 0.35s ease;
 }
 
 .torment-overlay::before {
@@ -61,9 +62,10 @@ body.torment-body::before {
     inset: 18px;
     border-radius: 20px;
     background: radial-gradient(120% 140% at 50% -20%, rgba(255, 106, 0, 0.24) 0%, rgba(210, 34, 34, 0.14) 40%, transparent 72%);
-    opacity: 0.45;
+    opacity: calc(0.35 + var(--torment-progress, 0) * 0.4);
     pointer-events: none;
-    z-index: -1;
+    z-index: 1;
+    animation: emberDrift 18s ease-in-out infinite alternate;
 }
 
 .torment-overlay::after {
@@ -74,14 +76,135 @@ body.torment-body::before {
     mix-blend-mode: screen;
     background: radial-gradient(circle at 12% 18%, rgba(255, 136, 0, 0.18), transparent 55%),
                 radial-gradient(circle at 82% 24%, rgba(255, 210, 110, 0.12), transparent 60%);
-    opacity: 0.8;
+    opacity: calc(0.6 + var(--torment-progress, 0) * 0.35);
+    z-index: 1;
+    animation: emberGlow 12s ease-in-out infinite alternate;
+}
+
+.torment-content {
+    position: relative;
+    z-index: 4;
+}
+
+.torment-embers {
+    position: absolute;
+    inset: -35px;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0.5;
+    mix-blend-mode: screen;
+}
+
+.torment-ember-layer {
+    position: absolute;
+    inset: -30%;
+    background:
+        radial-gradient(55% 35% at 20% 80%, rgba(255, 128, 32, 0.22), transparent 70%),
+        radial-gradient(45% 25% at 70% 30%, rgba(255, 204, 102, 0.18), transparent 74%),
+        radial-gradient(65% 40% at 40% 20%, rgba(221, 40, 40, 0.24), transparent 78%);
+    transform-origin: center;
+    filter: blur(0.6px);
+    animation: emberLayerDrift 28s linear infinite;
+}
+
+.torment-ember-layer.layer-1 {
+    animation-duration: 26s;
+    animation-direction: alternate;
+    opacity: 0.85;
+}
+
+.torment-ember-layer.layer-2 {
+    animation-duration: 34s;
+    animation-direction: alternate-reverse;
+    opacity: 0.65;
+    filter: blur(1px);
+}
+
+.torment-sparks {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 3;
+    overflow: hidden;
+    opacity: 0.65;
+}
+
+.torment-sparks::before,
+.torment-sparks::after {
+    content: '';
+    position: absolute;
+    bottom: -25%;
+    left: 50%;
+    width: 3px;
+    height: 3px;
+    background: rgba(255, 200, 140, 0.85);
+    border-radius: 50%;
+    box-shadow:
+        -320px -10px rgba(255, 190, 120, 0.35),
+        -180px 60px rgba(255, 190, 120, 0.4),
+        -60px 120px rgba(255, 226, 185, 0.55),
+        40px 90px rgba(255, 210, 150, 0.45),
+        180px 40px rgba(255, 226, 185, 0.5),
+        260px 120px rgba(255, 170, 100, 0.35),
+        340px 20px rgba(255, 190, 120, 0.4),
+        -260px 160px rgba(255, 220, 160, 0.3);
+    animation: sparkRise 12s linear infinite;
+    filter: blur(0.2px);
+}
+
+.torment-sparks::after {
+    animation-delay: -6s;
+    transform: scale(0.85);
+    opacity: 0.55;
 }
 
 .torment-header {
+    position: relative;
+    margin-bottom: 18px;
+    padding: 20px 28px;
+    border-radius: 20px;
+    border: 1px solid rgba(243, 198, 35, 0.2);
+    background: linear-gradient(180deg, rgba(19, 18, 23, 0.88), rgba(12, 11, 11, 0.76));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 24px -20px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    min-height: 96px;
+}
+
+.torment-header::before {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 106, 0, 0.18);
+    opacity: calc(0.22 + var(--torment-progress, 0) * 0.45);
+    pointer-events: none;
+}
+
+.torment-header-flames {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    mix-blend-mode: screen;
+    opacity: 0.95;
+    z-index: 1;
+}
+
+.torment-header-flames-canvas,
+.torment-header-flames canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.torment-header-content {
+    position: relative;
+    z-index: 2;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 18px;
+    gap: 18px;
 }
 
 .torment-title {
@@ -91,6 +214,7 @@ body.torment-body::before {
     text-transform: uppercase;
     text-shadow: 0 0 16px rgba(255, 106, 0, 0.35);
     margin: 0;
+    animation: titleFlicker 7.5s ease-in-out infinite;
 }
 
 .torment-tooltip {
@@ -98,6 +222,7 @@ body.torment-body::before {
     color: rgba(167, 167, 167, 0.9);
     letter-spacing: 0.32em;
     text-transform: uppercase;
+    animation: tooltipBlink 14s linear infinite;
 }
 
 .torment-bar-wrapper {
@@ -113,6 +238,19 @@ body.torment-body::before {
     border: 1px solid rgba(243, 198, 35, 0.18);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     overflow: hidden;
+}
+
+.torment-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -45%;
+    width: 35%;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.22) 45%, rgba(255, 255, 255, 0) 100%);
+    transform: skewX(-15deg);
+    animation: highlightSweep 7s linear infinite;
+    opacity: 0.55;
 }
 
 .torment-bar::before {
@@ -135,6 +273,7 @@ body.torment-body::before {
     box-shadow: 0 0 18px rgba(255, 106, 0, 0.35);
     transition: width 0.65s cubic-bezier(0.22, 0.68, 0, 1), filter 0.3s ease;
     filter: saturate(1.25);
+    animation: flowPulse 4.6s ease-in-out infinite;
 }
 
 .torment-bar-fill.dimmed {
@@ -185,16 +324,31 @@ body.torment-body::before {
     font-family: var(--font-display);
     color: #ffeede;
     text-shadow: 0 0 18px rgba(255, 106, 0, 0.25);
+    animation: statFlicker 9s ease-in-out infinite;
 }
 
 .torment-goal {
     text-align: center;
     color: rgba(243, 198, 35, 0.92);
+    animation: statFlicker 10s ease-in-out infinite reverse;
 }
 
 .torment-remaining {
     text-align: right;
     color: rgba(167, 167, 167, 0.92);
+    animation: statFlicker 11s ease-in-out infinite;
+}
+
+.torment-overlay.torment-triggered {
+    animation: overlaySurge 1.1s ease-out;
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+        0 28px 44px -18px rgba(255, 97, 0, 0.45);
+}
+
+.torment-overlay.torment-triggered::after {
+    animation-duration: 6s;
+    opacity: 1;
 }
 
 @keyframes emberPulse {
@@ -207,4 +361,76 @@ body.torment-body::before {
         padding: 18px 20px 24px;
         width: min(92vw, 700px);
     }
+}
+
+@keyframes emberDrift {
+    0% { transform: translate3d(-6px, -8px, 0) scale(1); opacity: 0.55; }
+    50% { transform: translate3d(8px, 6px, 0) scale(1.02); opacity: 0.68; }
+    100% { transform: translate3d(-4px, 10px, 0) scale(1); opacity: 0.55; }
+}
+
+@keyframes emberGlow {
+    0%, 100% { filter: brightness(1); opacity: 0.75; }
+    45% { filter: brightness(1.18); opacity: 0.92; }
+    70% { filter: brightness(1.05); opacity: 0.82; }
+}
+
+@keyframes emberLayerDrift {
+    0% { transform: translate3d(-6%, 4%, 0) scale(1.05) rotate(0deg); }
+    50% { transform: translate3d(6%, -4%, 0) scale(1.08) rotate(2.5deg); }
+    100% { transform: translate3d(-5%, -6%, 0) scale(1.02) rotate(-2deg); }
+}
+
+@keyframes sparkRise {
+    0% { transform: translate3d(-50%, 0, 0) scale(0.8); opacity: 0; }
+    20% { opacity: 0.7; }
+    60% { opacity: 0.4; }
+    100% { transform: translate3d(-50%, -160%, 0) scale(1.25); opacity: 0; }
+}
+
+@keyframes flowPulse {
+    0%, 100% { filter: saturate(1.25) brightness(1); }
+    35% { filter: saturate(1.45) brightness(1.08); }
+    55% { filter: saturate(1.15) brightness(0.95); }
+}
+
+@keyframes highlightSweep {
+    0% { transform: translate3d(0, 0, 0) skewX(-15deg); opacity: 0; }
+    10% { opacity: 0.6; }
+    45% { transform: translate3d(320%, 0, 0) skewX(-15deg); opacity: 0.35; }
+    55% { opacity: 0; }
+    100% { transform: translate3d(480%, 0, 0) skewX(-15deg); opacity: 0; }
+}
+
+@keyframes titleFlicker {
+    0%, 100% { text-shadow: 0 0 16px rgba(255, 106, 0, 0.35); opacity: 1; }
+    32% { text-shadow: 0 0 24px rgba(255, 150, 60, 0.55); }
+    36% { opacity: 0.86; }
+    38% { opacity: 1; }
+    72% { text-shadow: 0 0 18px rgba(255, 90, 0, 0.5); }
+    78% { opacity: 0.92; }
+}
+
+@keyframes tooltipBlink {
+    0%, 100% { opacity: 0.78; }
+    8% { opacity: 1; }
+    12% { opacity: 0.6; }
+    16% { opacity: 0.95; }
+    50% { opacity: 0.72; }
+    64% { opacity: 0.88; }
+}
+
+@keyframes statFlicker {
+    0%, 100% { filter: brightness(1); }
+    45% { filter: brightness(1.1); }
+    52% { filter: brightness(0.92); }
+    58% { filter: brightness(1.08); }
+}
+
+@keyframes overlaySurge {
+    0% { transform: scale(1); }
+    18% { transform: scale(1.03); }
+    34% { transform: scale(0.995); }
+    52% { transform: scale(1.015); }
+    100% { transform: scale(1); }
 }

@@ -10,33 +10,27 @@
     <link rel="stylesheet" href="/torment-meter.css">
     <script src="/socket.io/socket.io.js"></script>
 </head>
-<body class="torment-body">
+<body class="torment-body compact">
     <div class="torment-overlay" id="tormentOverlay">
-        <div class="torment-embers" aria-hidden="true">
-            <div class="torment-ember-layer layer-1"></div>
-            <div class="torment-ember-layer layer-2"></div>
+        <header class="torment-header">
+            <h1 class="torment-title" aria-label="Torment Meter">
+                <span>Torment</span>
+                <span>Meter</span>
+            </h1>
+            <span class="torment-countdown" id="tormentDecay"></span>
+        </header>
+
+        <div class="torment-progress">
+            <div class="torment-progress-track">
+                <div class="torment-progress-fill" id="tormentBarFill"></div>
+                <div class="torment-progress-flare" id="tormentFlare"></div>
+            </div>
         </div>
-        <div class="torment-sparks" aria-hidden="true"></div>
-        <div class="torment-content">
-            <div id="tormentHeaderFlames" class="torment-content-flames torment-header-flames" aria-hidden="true"></div>
-            <div class="torment-header">
-                <div class="torment-header-content">
-                    <span class="torment-title">Torment Meter</span>
-                    <span class="torment-tooltip" id="tormentDecay"></span>
-                </div>
-            </div>
-            <div class="torment-bar-wrapper">
-                <div class="torment-bar">
-                    <div class="torment-bar-fill" id="tormentBarFill"></div>
-                    <div class="torment-bar-overlay"></div>
-                </div>
-                <div class="torment-flare" id="tormentFlare"></div>
-            </div>
-            <div class="torment-stats">
-                <div class="torment-amount" id="tormentActive"></div>
-                <div class="torment-goal">Goal <span id="tormentGoal"></span></div>
-                <div class="torment-remaining" id="tormentRemaining"></div>
-            </div>
+
+        <div class="torment-stats">
+            <div class="torment-amount" id="tormentActive"></div>
+            <div class="torment-goal">Goal <span id="tormentGoal"></span></div>
+            <div class="torment-remaining" id="tormentRemaining"></div>
         </div>
     </div>
 

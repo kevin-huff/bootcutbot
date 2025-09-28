@@ -2,6 +2,7 @@
     const socket = io();
     const audioEl = document.getElementById('tormentAudio');
     const barFill = document.getElementById('tormentBarFill');
+    const overlayEl = document.getElementById('tormentOverlay');
     const activeEl = document.getElementById('tormentActive');
     const goalEl = document.getElementById('tormentGoal');
     const remainingEl = document.getElementById('tormentRemaining');
@@ -77,6 +78,9 @@
         }
         const percent = Math.max(0, Math.min(100, Number(state.progressPercent) || 0));
         barFill.style.width = `${percent}%`;
+        if (overlayEl) {
+            overlayEl.style.setProperty('--torment-progress', (percent / 100).toFixed(3));
+        }
         if (percent <= 0) {
             barFill.classList.add('dimmed');
         } else {
@@ -149,6 +153,10 @@
             setTimeout(() => {
                 flareEl.style.animation = 'emberPulse 1.8s ease-in-out infinite';
             }, 2400);
+        }
+        if (overlayEl) {
+            overlayEl.classList.add('torment-triggered');
+            setTimeout(() => overlayEl.classList.remove('torment-triggered'), 1100);
         }
     }
 

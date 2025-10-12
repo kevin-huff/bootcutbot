@@ -89,15 +89,14 @@ const PrismBackground = () => {
   );
 };
 
-const BreakawayLabel = ({ children }) => (
-  <span className="breakaway-label">{children}</span>
+const BreakawayLabel = ({ children, className = '' }) => (
+  <span className={`breakaway-label${className ? ` ${className}` : ''}`}>{children}</span>
 );
 
 const BreakawayCard = ({ item }) => (
   <div className="breakaway-col" id={`breakaway_${item.id}`}>
     <div className="breakaway-content">
       <div className="breakaway-header">
-        <BreakawayLabel>Breakaways</BreakawayLabel>
         <h3>
           <span id={`breakawayName_${item.id}`}>{item.name}</span>
         </h3>
@@ -121,11 +120,14 @@ const BreakawayRibbon = ({ items }) => {
   }
 
   return (
-    <React.Fragment>
-      {items.map((item) => (
-        <BreakawayCard item={item} key={item.id} />
-      ))}
-    </React.Fragment>
+    <div className="breakaway-ribbon-stack" role="group" aria-label="Breakaway counters">
+      <BreakawayLabel className="breakaway-label--group">Breakaways</BreakawayLabel>
+      <div className="breakaway-ribbon-row">
+        {items.map((item) => (
+          <BreakawayCard item={item} key={item.id} />
+        ))}
+      </div>
+    </div>
   );
 };
 
@@ -490,6 +492,11 @@ window.renderPrismBackground = renderPrismBackground;
 window.renderBreakawayRibbon = renderBreakawayRibbon;
 
 const initialRibbonItems = window.breakawayDataMap ? Array.from(window.breakawayDataMap.values()) : [];
+
+const refreshElectricBorderSpots = () => {
+  // Stub function - electric border functionality may be added later
+  // or this might be defined elsewhere in the application
+};
 
 const bootstrapReactBits = () => {
   renderPrismBackground();

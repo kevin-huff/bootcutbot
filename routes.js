@@ -171,7 +171,7 @@ router.get("/board", (req, res) => {
   if (current_breakaways == null) {
     current_breakaways = [];
   }
-  res.render("integrated_board_hell.ejs", {
+  res.render("integrated_board_2025.ejs", {
     board: board_db.get("board"),
     breakaways: current_breakaways,
     current_turn: state.current_turn,

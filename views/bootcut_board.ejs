@@ -90,11 +90,30 @@
       EndTime = ( new Date() ).getTime() + TimeOut;
       UpdateTimer();
     };
+    var Prime = function( timeout ) {
+      var parsed = Number(timeout);
+      if (!Number.isFinite(parsed) || parsed < 0) { parsed = 0; }
+      Running = false;
+      TimeOut = parsed;
+      CurrentTime = ( new Date() ).getTime();
+      EndTime = CurrentTime + parsed;
+      $('#timer_display').css('color','yellow');
+      $('#current_player').css('color','yellow');
+      $('#timer_display').removeClass('blink_me');
+      $('#current_player').removeClass('blink_me');
+      var minutes = Math.floor(parsed / 60000);
+      var seconds = Math.floor((parsed % 60000) / 1000);
+      $('#timer_num').html(
+        String(minutes).padStart(2, '0') + ':' +
+        String(seconds).padStart(2, '0')
+      );
+    };
 
     return {
         Pause: Pause,
         Resume: Resume,
-        Start: Start
+        Start: Start,
+        Prime: Prime
     };
   })(jQuery);
   let thisCountDown = CountDown;
@@ -118,6 +137,10 @@
       socket.on('timer_server', function(msg){
         console.log('timer_admin:', msg)
         $('#timer_num').html(msg.timer_display);
+        if(msg.action == 'set'){
+          thisCountDown.Prime(msg.timer_value);
+          return;
+        }
         if(msg.action == 'start'){
           thisCountDown.Start(msg.timer_value);
         }

@@ -3,6 +3,16 @@ const connectedDice = {};
 var this_js_script = $('script[src*=main]');
 var data = this_js_script.attr('data'); 
 const templateData = JSON.parse(data);
+let timerStatus = 'idle';
+
+const formatMsAsDisplay = (ms) => {
+  const totalMs = Math.max(0, Math.floor(Number(ms) || 0));
+  const totalSeconds = Math.floor(totalMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+};
+
 console.log('templateData',templateData);
 $(document).ready(function() {
     $("#img1").attr("src", "portal.jpg");
@@ -126,6 +136,13 @@ $(document).ready(function() {
     });
     socket.on('add_time', (additionalSeconds) => {
       CountDown.AddTime(additionalSeconds);
+      if (CountDown.IsRunning()) {
+        timerStatus = 'running';
+      } else if (CountDown.GetRemainingMs() > 0) {
+        timerStatus = (timerStatus === 'paused') ? 'paused' : 'idle';
+      } else {
+        timerStatus = 'idle';
+      }
     });
     $.getJSON("historical_splots.json", function(data) {
       var keys = Object.keys(data);
@@ -134,7 +151,8 @@ $(document).ready(function() {
       });
     });
     updateTurn(templateData.current_turn);
-    $('#pause').hide();
+    CountDown.ResetDisplay();
+    timerStatus = 'idle';
     $('#autoPick').click(function(){
       client.connect()
       .then((data) => {
@@ -176,6 +194,7 @@ $(document).ready(function() {
 
     });
     $('#pause').click(function(){
+      if (timerStatus !== 'running') { return; }
       let timer_data = {
         'action' : 'pause',
         'timer_display' : $('#timer_display').text()
@@ -183,105 +202,235 @@ $(document).ready(function() {
       socket.emit('timer_admin', timer_data, (response) => {
         console.log(response);
       });
+      CountDown.Pause();
+      timerStatus = CountDown.GetRemainingMs() > 0 ? 'paused' : 'idle';
     });
     $('#resume').click(function(){
-      let timer_data = {
-        'action' : 'resume',
-        'timer_display' : $('#timer_display').text()
-      };
-      socket.emit('timer_admin', timer_data, (response) => {
-        console.log(response);
-      })
+      let remaining = CountDown.GetRemainingMs();
+      if (timerStatus === 'idle') {
+        if (remaining <= 0) {
+          startTimer();
+          remaining = CountDown.GetRemainingMs();
+        }
+        if (remaining <= 0) {
+          return;
+        }
+        const display = formatMsAsDisplay(remaining);
+        let timer_data = {
+          action: 'start',
+          timer_value: remaining,
+          timer_display: display
+        };
+        socket.emit('timer_admin', timer_data, (response) => {
+          console.log(response);
+        });
+        CountDown.Start(remaining);
+        timerStatus = 'running';
+        return;
+      }
+      if (timerStatus === 'paused' && remaining > 0) {
+        const display = formatMsAsDisplay(remaining);
+        let timer_data = {
+          action: 'resume',
+          timer_display: display
+        };
+        socket.emit('timer_admin', timer_data, (response) => {
+          console.log(response);
+        });
+        CountDown.Resume();
+        timerStatus = 'running';
+      }
     });
-    startTimer();
   }, false);
   var CountDown = (function ($) {
-    // Length ms 
     var TimeOut = 10000;
-    // Interval ms
     var TimeGap = 1000;
-    
-    var CurrentTime = (new Date()).getTime();
-    var EndTime = (new Date()).getTime() + TimeOut;
-    
-    var GuiTimer = $('#timer');
-    var GuiPause = $('#pause');
-    
-    var Running = false;
-    
-    var UpdateTimer = function() {
-        // Run till timeout
-        if (CurrentTime + TimeGap < EndTime && Running) {
-            setTimeout(UpdateTimer, TimeGap);
-        }
-        // Countdown if running
-        if (Running) {
-            CurrentTime += TimeGap;
-            if (CurrentTime >= EndTime) {
-                Running = false;
-                $('#pause').hide();
-                $('#resume').hide();
-                $('#reset').show();
-                $('#timer_display').html('00:00');
-                $('#timer_display').css('color', 'red');
-            } else {
-                // Update Gui
-                var Time = new Date();
-                Time.setTime(EndTime - CurrentTime);
-                var Minutes = Time.getMinutes();
-                var Seconds = Time.getSeconds();
-                $('#timer_display').html(
-                    String(Minutes).padStart(2, '0') + ':' +
-                    String(Seconds).padStart(2, '0'));
-                $('#resume').hide();
-            }
-        }
-    };
-    
-    var Pause = function() {
-        Running = false;
-        $('#pause').hide();
-        $('#resume').show();
-        $('#reset').show();
-    };
-    
-    var Resume = function() {
-        Running = true;
-        $('#pause').show();
-        $('#resume').hide();
-        $('#reset').hide();
-        UpdateTimer();
-    };
-    
-    var Start = function(Timeout) {
-        $('#timer_display').css('color', 'black');
-        TimeOut = Timeout;
-        CurrentTime = (new Date()).getTime();
-        EndTime = (new Date()).getTime() + TimeOut;
-        UpdateTimer();
+    var running = false;
+    var endTime = Date.now();
+    var remainingMs = 0;
+    var timerHandle = null;
+    var $timerDisplay = $();
+    var $pauseBtn = $();
+    var $resumeBtn = $();
+    var $resetBtn = $();
+
+    var ensureElements = function () {
+      if ($timerDisplay.length === 0) { $timerDisplay = $('#timer_display'); }
+      if ($pauseBtn.length === 0) { $pauseBtn = $('#pause'); }
+      if ($resumeBtn.length === 0) { $resumeBtn = $('#resume'); }
+      if ($resetBtn.length === 0) { $resetBtn = $('#reset'); }
     };
 
-    var AddTime = function(secondsToAdd) {
-        EndTime += secondsToAdd * 1000;
-        if (!Running) {
-            // If not running, update the GUI immediately
-            var Time = new Date();
-            Time.setTime(EndTime - CurrentTime);
-            var Minutes = Time.getMinutes();
-            var Seconds = Time.getSeconds();
-            $('#timer_display').html(
-                String(Minutes).padStart(2, '0') + ':' +
-                String(Seconds).padStart(2, '0'));
-        }
+    var formatSegment = function (value) {
+      return String(Math.max(0, Math.floor(value))).padStart(2, '0');
     };
-    
+
+    var cancelTick = function () {
+      if (timerHandle) {
+        clearTimeout(timerHandle);
+        timerHandle = null;
+      }
+    };
+
+    var setDisplay = function (ms) {
+      ensureElements();
+      var clamped = Math.max(0, Math.floor(ms));
+      var totalSeconds = Math.floor(clamped / 1000);
+      var minutes = Math.floor(totalSeconds / 60);
+      var seconds = totalSeconds % 60;
+      $timerDisplay.text(formatSegment(minutes) + ':' + formatSegment(seconds));
+    };
+
+    var setButtonsForState = function (state) {
+      ensureElements();
+      switch (state) {
+        case 'running':
+          $pauseBtn.removeClass('d-none').show();
+          $resumeBtn.addClass('d-none').hide();
+          $resetBtn.hide();
+          break;
+        case 'paused':
+          $pauseBtn.removeClass('d-none').hide();
+          $resumeBtn.removeClass('d-none').show();
+          $resetBtn.show();
+          break;
+        case 'idle':
+          $pauseBtn.addClass('d-none').hide();
+          $resumeBtn.removeClass('d-none').show();
+          $resetBtn.show();
+          break;
+        case 'expired':
+          $pauseBtn.addClass('d-none').hide();
+          $resumeBtn.removeClass('d-none').show();
+          $resetBtn.show();
+          break;
+        default:
+          $pauseBtn.addClass('d-none').hide();
+          $resumeBtn.addClass('d-none').hide();
+          $resetBtn.show();
+      }
+    };
+
+    var applyExpiredState = function () {
+      ensureElements();
+      running = false;
+      remainingMs = 0;
+      cancelTick();
+      setDisplay(0);
+      $timerDisplay.css('color', 'red');
+      setButtonsForState('expired');
+      timerStatus = 'idle';
+    };
+
+    var tick = function () {
+      if (!running) { return; }
+      var now = Date.now();
+      remainingMs = Math.max(0, endTime - now);
+      if (remainingMs <= 0) {
+        applyExpiredState();
+        return;
+      }
+      setDisplay(remainingMs);
+      timerHandle = setTimeout(tick, TimeGap);
+    };
+
+    var Start = function (timeoutMs) {
+      var parsed = Number(timeoutMs);
+      if (!Number.isFinite(parsed)) {
+        parsed = TimeOut;
+      } else if (parsed > 0) {
+        TimeOut = parsed;
+      }
+      remainingMs = Math.max(0, parsed);
+      cancelTick();
+      if (remainingMs <= 0) {
+        applyExpiredState();
+        return;
+      }
+      running = true;
+      endTime = Date.now() + remainingMs;
+      ensureElements();
+      $timerDisplay.css('color', 'black');
+      setDisplay(remainingMs);
+      setButtonsForState('running');
+      timerHandle = setTimeout(tick, TimeGap);
+    };
+
+    var Pause = function () {
+      if (!running) { return; }
+      remainingMs = Math.max(0, endTime - Date.now());
+      running = false;
+      cancelTick();
+      setDisplay(remainingMs);
+      setButtonsForState(remainingMs > 0 ? 'paused' : 'expired');
+      $timerDisplay.css('color', remainingMs > 0 ? 'black' : 'red');
+    };
+
+    var Resume = function () {
+      if (running || remainingMs <= 0) { return; }
+      running = true;
+      endTime = Date.now() + remainingMs;
+      ensureElements();
+      $timerDisplay.css('color', 'black');
+      setButtonsForState('running');
+      cancelTick();
+      setDisplay(remainingMs);
+      timerHandle = setTimeout(tick, TimeGap);
+    };
+
+    var AddTime = function (secondsToAdd) {
+      var deltaMs = Number(secondsToAdd) * 1000;
+      if (!Number.isFinite(deltaMs)) { return; }
+      if (running) {
+        remainingMs = Math.max(0, endTime - Date.now()) + deltaMs;
+        endTime = Date.now() + remainingMs;
+        cancelTick();
+        timerHandle = setTimeout(tick, TimeGap);
+      } else {
+        remainingMs = Math.max(0, remainingMs) + deltaMs;
+      }
+      if (remainingMs <= 0) {
+        applyExpiredState();
+        return;
+      }
+      setDisplay(remainingMs);
+      if (!running) {
+        setButtonsForState('paused');
+        ensureElements();
+        $timerDisplay.css('color', 'black');
+      }
+    };
+
+    var Prime = function (durationMs) {
+      var parsed = Number(durationMs);
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        parsed = 0;
+      }
+      cancelTick();
+      running = false;
+      remainingMs = parsed;
+      setDisplay(parsed);
+      ensureElements();
+      $timerDisplay.css('color', 'black');
+      setButtonsForState('idle');
+      timerStatus = 'idle';
+    };
+
+    var ResetDisplay = function () {
+      Prime(0);
+    };
+
     return {
-        Pause: Pause,
-        Resume: Resume,
-        Start: Start,
-        AddTime: AddTime
+      Start: Start,
+      Pause: Pause,
+      Resume: Resume,
+      AddTime: AddTime,
+      Prime: Prime,
+      ResetDisplay: ResetDisplay,
+      IsRunning: function () { return running; },
+      GetRemainingMs: function () { return remainingMs; }
     };
-})(jQuery);
+  })(jQuery);
 
 
   function updateTurn(text) {
@@ -618,36 +767,40 @@ $(document).ready(function() {
     });
     $('#addSplot').modal('hide');
   }
-  function startTimer(thisCountDown = CountDown) {
-    let minutesAndSecOut = $('#timer').val();
-    
-    let minutesAndSec = minutesAndSecOut.split(':');
-    console.log(minutesAndSec)
-    let totalSecondsOut = parseInt(minutesAndSec[0])*60;
-    if(minutesAndSec.length > 1){
-      totalSecondsOut += parseInt(minutesAndSec[1]);
-    } else {
-      minutesAndSec[1] = '00';
+  function startTimer() {
+    let minutesAndSecOut = ($('#timer').val() || '0:00').trim();
+    if (!minutesAndSecOut.includes(':')) {
+      minutesAndSecOut = minutesAndSecOut + ':00';
     }
-    $('#timer_display').html(minutesAndSec[0] + ':' + minutesAndSec[1]);
+    let minutesAndSec = minutesAndSecOut.split(':').map(function(part) {
+      return part.trim();
+    });
+    let minutes = parseInt(minutesAndSec[0], 10);
+    let seconds = minutesAndSec.length > 1 ? parseInt(minutesAndSec[1], 10) : 0;
+    if (Number.isNaN(minutes)) { minutes = 0; }
+    if (Number.isNaN(seconds)) { seconds = 0; }
+    minutes = Math.max(0, minutes);
+    seconds = Math.max(0, seconds);
+    let totalSecondsOut = minutes * 60 + seconds;
     let milsecondsOut = totalSecondsOut * 1000;
+
+    const normalizedMinutes = Math.floor(totalSecondsOut / 60);
+    const normalizedSeconds = totalSecondsOut % 60;
+    const displayMinutes = String(normalizedMinutes).padStart(2, '0');
+    const displaySeconds = String(normalizedSeconds).padStart(2, '0');
+
+    CountDown.Prime(milsecondsOut);
+    timerStatus = 'idle';
+
     let timer_data = {
         timer_value: milsecondsOut,
-        timer_display: minutesAndSec[0] + ':' + minutesAndSec[1],
-        action: 'start'
+        timer_display: displayMinutes + ':' + displaySeconds,
+        action: 'set'
     }
     console.log(timer_data);
     socket.emit('timer_admin', timer_data, (response) => {
       console.log(response);
     });
-    thisCountDown.Start(milsecondsOut);
-    $('#pause').removeClass('d-none')
-    $('#pause').hide();
-    $('#resume').removeClass('d-none');
-    $('#resume').show();
-    $('#reset').hide();
-    jQuery('#pause').on('click',thisCountDown.Pause);
-    jQuery('#resume').on('click',thisCountDown.Resume);
   }
   function clearBoard(){
       // javascript confirm

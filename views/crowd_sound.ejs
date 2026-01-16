@@ -16,7 +16,11 @@
 
     function addToQueue(item) {
         // For iframes, use the element ID directly
-        const itemId = item.tagName === "IFRAME" ? item.id : item.id;
+        if (!item || !item.id) {
+            console.warn('Attempted to queue missing media element.');
+            return;
+        }
+        const itemId = item.id;
         queue.push(itemId);
         console.log(`Added to queue: ${itemId}. Queue now:`, queue);
         if (queue.length === 1) {
@@ -38,6 +42,8 @@
 
         if (!mediaElement) {
             console.error(`Media element not found: ${nextItem}`);
+            queue.shift();
+            playNext();
             return; // Early exit if the element doesn't exist
         }
 
@@ -45,10 +51,21 @@
         if (mediaElement.tagName === "VIDEO") {
             console.log("showing a video");
             mediaElement.style.display = "block";
+            try {
+                mediaElement.pause();
+                mediaElement.currentTime = 0;
+            } catch (error) {
+                console.warn(`Unable to reset ${nextItem}:`, error);
+            }
             
             mediaElement.onended = function() {
                 console.log(`Video playback ended for: ${nextItem}`);
                 mediaElement.style.display = "none";
+                try {
+                    mediaElement.currentTime = 0;
+                } catch (error) {
+                    console.warn(`Unable to reset ${nextItem} after playback:`, error);
+                }
                 queue.shift();
                 playNext();
             };
@@ -61,12 +78,23 @@
                 playNext();
             });
         } else if (mediaElement.tagName === "AUDIO") {
+            try {
+                mediaElement.pause();
+                mediaElement.currentTime = 0;
+            } catch (error) {
+                console.warn(`Unable to reset ${nextItem}:`, error);
+            }
             mediaElement.onended = function() {
                 console.log(`Audio playback ended for: ${nextItem}`);
                 if (nextItem.startsWith('fart')) {
                     setTimeout(function() {
                         gifElement.style.display = "none";
                     }, 3000);
+                }
+                try {
+                    mediaElement.currentTime = 0;
+                } catch (error) {
+                    console.warn(`Unable to reset ${nextItem} after playback:`, error);
                 }
                 queue.shift();
                 playNext();

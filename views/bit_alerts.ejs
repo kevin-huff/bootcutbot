@@ -48,6 +48,10 @@
       });
 
     function addToQueue(item) {
+    if (!item || !item.id) {
+        console.warn('Attempted to queue missing media element.');
+        return;
+    }
     queue.push(item.id); // Add item's ID, not the item itself
     console.log(`Added to queue: ${item.id}. Queue now:`, queue);
     if (queue.length === 1) {
@@ -69,6 +73,8 @@ function playNext() {
 
     if (!mediaElement) {
         console.error(`Media element not found: ${nextItem}`);
+        queue.shift();
+        playNext();
         return; // Early exit if the element doesn't exist
     }
     // See if it's hidden
@@ -77,12 +83,24 @@ function playNext() {
       mediaElement.style.display = "block";
     }
 
+    try {
+        mediaElement.pause();
+        mediaElement.currentTime = 0;
+    } catch (error) {
+        console.warn(`Unable to reset ${nextItem}:`, error);
+    }
+
     mediaElement.onended = function() {
         console.log(`Playback ended for: ${nextItem}`);
         // If it's a video hide it.
         if (mediaElement.tagName === "VIDEO") {
           console.log("hiding a video");
           mediaElement.style.display = "none";
+        }
+        try {
+            mediaElement.currentTime = 0;
+        } catch (error) {
+            console.warn(`Unable to reset ${nextItem} after playback:`, error);
         }
         // If the ended item started with "fart", hide the gif
         if (nextItem.startsWith('fart')) {

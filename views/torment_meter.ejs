@@ -34,7 +34,7 @@
         </div>
     </div>
 
-    <audio id="tormentAudio" preload="auto" src="<%= tormentMeterState && tormentMeterState.audioUrl ? tormentMeterState.audioUrl : 'https://cdn.leantube.org/hellfire.mp3?v=1714958299269' %>"></audio>
+    <!--<audio id="tormentAudio" preload="auto" src="<%= tormentMeterState && tormentMeterState.audioUrl ? tormentMeterState.audioUrl : 'https://cdn.leantube.org/hellfire.mp3?v=1714958299269' %>"></audio>-->
     <script>
         window.__INITIAL_TORMENT_METER_STATE__ = <%- JSON.stringify(tormentMeterState || null) %>;
         window.__INITIAL_TORMENT_ERROR__ = <%- JSON.stringify(typeof error === 'string' ? error : null) %>;

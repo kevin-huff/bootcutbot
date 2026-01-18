@@ -145,8 +145,66 @@ const handleSubathonAddTime = async (seconds, source, io) => {
   console.log(`Added ${adjustedSeconds} seconds (${multiplierEnabled ? `${multiplierValue}x multiplier` : 'no multiplier'}) from ${source}, new end time: ${new Date(newEndTime)}${wasCapped ? ' [CAPPED]' : ''}`);
 };
 
+const SPIN_THRESHOLD_DEFAULT = 60; // $60 triggers a spin
+
+// Handle donation progress - updates donation totals and checks for spin thresholds
+// Does NOT add time to the timer (that should be handled separately)
+const handleDonationProgress = async (dollarAmount, source, io, sourceDetails = {}) => {
+  if (dollarAmount <= 0) return { spinsEarned: 0 };
+
+  const donorName = sourceDetails.username || sourceDetails.name || source || "Anonymous";
+
+  console.log(`[Donation Progress] Processing $${dollarAmount.toFixed(2)} from ${source} (${donorName})`);
+
+  // Update donation totals
+  let donationTotal = await settings_db.get("donationTotal") || 0;
+  let donationProgress = await settings_db.get("donationProgress") || 0;
+  const spinThreshold = await settings_db.get("spinThreshold") || SPIN_THRESHOLD_DEFAULT;
+
+  donationTotal += dollarAmount;
+  donationProgress += dollarAmount;
+
+  await settings_db.set("donationTotal", donationTotal);
+
+  // Check for spin threshold
+  let spinsEarned = 0;
+  while (donationProgress >= spinThreshold) {
+    donationProgress -= spinThreshold;
+    spinsEarned++;
+  }
+
+  await settings_db.set("donationProgress", donationProgress);
+
+  // Add spins if earned
+  if (spinsEarned > 0) {
+    let pending = await settings_db.get("pendingSpins") || 0;
+    pending += spinsEarned;
+    await settings_db.set("pendingSpins", pending);
+    const completed = await settings_db.get("completedSpins") || 0;
+    io.emit("spinStateUpdate", { pending, completed });
+    console.log(`[Donation Progress] ${source} added ${spinsEarned} spin(s)! New pending: ${pending}`);
+
+    // Emit spin earned event for overlay effects
+    io.emit("spinEarned", { spinsEarned, donorName, amount: dollarAmount, source });
+  }
+
+  // Broadcast updated donation state
+  const nextSpinIn = Math.max(0, spinThreshold - donationProgress);
+  io.emit("donationUpdate", {
+    total: donationTotal,
+    progress: donationProgress,
+    threshold: spinThreshold,
+    nextSpinIn,
+    progressPercent: Math.min(100, (donationProgress / spinThreshold) * 100)
+  });
+
+  console.log(`[Donation Progress] Total: $${donationTotal.toFixed(2)}, Progress: $${donationProgress.toFixed(2)}/${spinThreshold}`);
+
+  return { dollarAmount, spinsEarned };
+};
+
 // Export the handlers
-export { handleSubathonAddTime };
+export { handleSubathonAddTime, handleDonationProgress };
 
 // Anniversary timer tick interval - broadcasts every second
 let anniversaryTimerInterval = null;

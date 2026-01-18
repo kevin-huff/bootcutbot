@@ -3,3 +3,9 @@
 node_modules
 .env
 public/board-assets/
+
+# Runtime database files - preserve on server
+db/wheel_db.json
+db/timer_db.json
+db/torment_meter.json
+db/donors_db.json

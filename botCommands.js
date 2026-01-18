@@ -125,17 +125,33 @@ function initializeBotCommands(io) {
 
   // Special bit amounts for effects
   client.on("cheer", async (channel, userstate, message) => {
-    console.log('userstate of cheer', userstate);
+    console.log('[CHEER] Received:', userstate.bits, 'bits from', userstate['display-name']);
     if(userstate.bits == 99) io.emit('kermit_sex', userstate);
     if(userstate.bits == 399) io.emit('jarjar', userstate);
     if(userstate.bits == 299) io.emit('draculaAngel', userstate);
     if(userstate.bits == 450) io.emit('ash_spit', userstate);
-    
-    // Track bits for stats but don't add time (now handled by EventSub)
+
+    // Add time for bits: 100 bits = $1 = 60 seconds
+    const bitAmount = parseInt(userstate.bits) || 0;
+    if (bitAmount > 0) {
+      const secondsToAdd = Math.floor(bitAmount * 0.6); // 100 bits = 60 seconds
+      console.log(`[CHEER] ⏱️ TIMER: Adding ${secondsToAdd}s for ${bitAmount} bits`);
+      const socketHandlers = global.app.get('socketHandlers');
+      if (socketHandlers && socketHandlers.handleSubathonAddTime) {
+        await socketHandlers.handleSubathonAddTime(secondsToAdd, `bits_${bitAmount}`, io);
+        console.log(`[CHEER] ⏱️ TIMER: Successfully added ${secondsToAdd}s`);
+      } else {
+        console.error('[CHEER] ❌ TIMER: socketHandlers not found!');
+      }
+    }
+
+    // Track bits for stats
     await handleBitTracker(userstate.bits, io);
-    const bitAmount = Math.round(Number(userstate.bits) || 0);
+
+    // Add to torment meter
     if (bitAmount > 0) {
       try {
+        console.log(`[CHEER] 🔥 TORMENT: Adding ${bitAmount} cents`);
         await recordTormentContribution({
           amountCents: bitAmount,
           source: 'bits',
@@ -144,22 +160,27 @@ function initializeBotCommands(io) {
             message: message || null
           }
         });
+        console.log(`[CHEER] 🔥 TORMENT: Successfully added ${bitAmount} cents`);
       } catch (error) {
-        console.error('Failed to record torment meter contribution from bits:', error);
+        console.error('[CHEER] ❌ TORMENT: Failed to record:', error);
       }
     }
   });
 
   // Subscription events
   client.on("subscription", async (channel, username, method, message, userstate) => {
+    console.log(`[SUB] New subscription from ${username}`);
     // Add 5 minutes for new sub
     const socketHandlers = global.app.get('socketHandlers');
     if (socketHandlers && socketHandlers.handleSubathonAddTime) {
-      //await socketHandlers.handleSubathonAddTime(5 * 60, `sub_${username}`, io);
+      console.log(`[SUB] ⏱️ TIMER: Adding 300s (5 min) for sub`);
+      await socketHandlers.handleSubathonAddTime(5 * 60, `sub_${username}`, io);
+      console.log(`[SUB] ⏱️ TIMER: Successfully added 300s`);
     } else {
-      console.error('Socket handlers not found for subscription');
+      console.error('[SUB] ❌ TIMER: socketHandlers not found!');
     }
     handleSubTracker(1, io);
+    console.log(`[SUB] 🔥 TORMENT: Recording sub contribution`);
     await recordTormentSubs({
       count: 1,
       methods: method,
@@ -173,14 +194,18 @@ function initializeBotCommands(io) {
   });
   
   client.on("resub", async (channel, username, months, message, userstate, methods) => {
+    console.log(`[RESUB] ${username} resubbed for ${months} months`);
     // Add 5 minutes for resub
     const socketHandlers = global.app.get('socketHandlers');
     if (socketHandlers && socketHandlers.handleSubathonAddTime) {
-      //await socketHandlers.handleSubathonAddTime(5 * 60, `resub_${username}_${months}m`, io);
+      console.log(`[RESUB] ⏱️ TIMER: Adding 300s (5 min) for resub`);
+      await socketHandlers.handleSubathonAddTime(5 * 60, `resub_${username}_${months}m`, io);
+      console.log(`[RESUB] ⏱️ TIMER: Successfully added 300s`);
     } else {
-      console.error('Socket handlers not found for resub');
+      console.error('[RESUB] ❌ TIMER: socketHandlers not found!');
     }
     handleSubTracker(1, io);
+    console.log(`[RESUB] 🔥 TORMENT: Recording resub contribution`);
     await recordTormentSubs({
       count: 1,
       methods,
@@ -195,14 +220,18 @@ function initializeBotCommands(io) {
   });
   
   client.on("subgift", async (channel, username, streakMonths, recipient, methods, userstate) => {
+    console.log(`[GIFTSUB] ${username} gifted sub to ${recipient}`);
     // Add 5 minutes for gift sub
     const socketHandlers = global.app.get('socketHandlers');
     if (socketHandlers && socketHandlers.handleSubathonAddTime) {
-      //await socketHandlers.handleSubathonAddTime(5 * 60, `giftsub_from_${username}_to_${recipient}`, io);
+      console.log(`[GIFTSUB] ⏱️ TIMER: Adding 300s (5 min) for gift sub`);
+      await socketHandlers.handleSubathonAddTime(5 * 60, `giftsub_from_${username}_to_${recipient}`, io);
+      console.log(`[GIFTSUB] ⏱️ TIMER: Successfully added 300s`);
     } else {
-      console.error('Socket handlers not found for gift sub');
+      console.error('[GIFTSUB] ❌ TIMER: socketHandlers not found!');
     }
     handleSubTracker(1, io);
+    console.log(`[GIFTSUB] 🔥 TORMENT: Recording gift sub contribution`);
     await recordTormentSubs({
       count: 1,
       methods,
@@ -217,7 +246,19 @@ function initializeBotCommands(io) {
   });
 
   client.on('submysterygift', async (channel, username, numbOfSubs, methods, userstate) => {
+    console.log(`[GIFTBOMB] ${username} gifted ${numbOfSubs} subs!`);
+    // Add 5 minutes per gifted sub
+    const totalSeconds = 5 * 60 * numbOfSubs;
+    const socketHandlers = global.app.get('socketHandlers');
+    if (socketHandlers && socketHandlers.handleSubathonAddTime) {
+      console.log(`[GIFTBOMB] ⏱️ TIMER: Adding ${totalSeconds}s (${numbOfSubs} x 5 min) for gift bomb`);
+      await socketHandlers.handleSubathonAddTime(totalSeconds, `giftbomb_${username}_x${numbOfSubs}`, io);
+      console.log(`[GIFTBOMB] ⏱️ TIMER: Successfully added ${totalSeconds}s`);
+    } else {
+      console.error('[GIFTBOMB] ❌ TIMER: socketHandlers not found!');
+    }
     handleSubTracker(numbOfSubs, io);
+    console.log(`[GIFTBOMB] 🔥 TORMENT: Recording ${numbOfSubs} gift subs contribution`);
     await recordTormentSubs({
       count: numbOfSubs,
       methods,
@@ -394,23 +435,31 @@ function initializeBotCommands(io) {
   // Streamlabs Socket Events
   streamlabsSocket.on('event', async (eventData) => {
     if (eventData.type === 'donation') {
-      console.log('donation:', eventData.message);
-      let donation_amount = parseFloat(eventData.message[0].amount);
-      // Add 1 minute per dollar
-      const minutes = Math.floor(donation_amount);
-      if (minutes > 0) {
+      const donorName = eventData.message[0]?.name || 'anonymous';
+      const donationAmount = parseFloat(eventData.message[0].amount);
+      const donationMessage = eventData.message[0]?.message || '';
+      console.log(`[DONATION] $${donationAmount} from ${donorName}: "${donationMessage}"`);
+
+      // Check if this is a merch purchase - skip timer add to avoid double counting
+      if (donationMessage.toLowerCase().includes('merch')) {
+        console.log('[DONATION] Skipping merch purchase (handled by 4th wall webhook)');
+        handleDonationTracker(donationAmount, io);
+        return;
+      }
+
+      // Add 1 minute per dollar to timer
+      const secondsToAdd = Math.floor(donationAmount) * 60;
+      if (secondsToAdd > 0) {
         const socketHandlers = global.app.get('socketHandlers');
         if (socketHandlers && socketHandlers.handleSubathonAddTime) {
-          // Check if this is a merch purchase by looking at the message
-          if (eventData.message[0].message && eventData.message[0].message.toLowerCase().includes('merch')) {
-            console.log('Skipping merch purchase donation to avoid double counting');
-            return;
-          }
+          console.log(`[DONATION] ⏱️ TIMER: Adding ${secondsToAdd}s ($${donationAmount} = ${Math.floor(donationAmount)} min)`);
+          await socketHandlers.handleSubathonAddTime(secondsToAdd, `donation_${donorName}`, io);
+          console.log(`[DONATION] ⏱️ TIMER: Successfully added ${secondsToAdd}s`);
         } else {
-          console.error('Socket handlers not found for Streamlabs donation');
+          console.error('[DONATION] ❌ TIMER: socketHandlers not found!');
         }
       }
-      handleDonationTracker(donation_amount, io);
+      handleDonationTracker(donationAmount, io);
     }
   });
 }

@@ -79,6 +79,12 @@ socket.on('timeAdded', (data) => {
     log(`⏱️ +${timeStr} from ${sourceDisplay}${multiplierNote}${cappedNote}`);
 });
 
+// Spin progress additions
+socket.on('updateDonationsTracker', (data) => {
+    if (!data || !data.donationToAdd) return;
+    log(`🎡 +$${data.donationToAdd.toFixed(2)} to spin progress`);
+});
+
 // Format time source for display
 function formatTimeSource(source) {
     if (!source) return 'unknown';

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anniversary Overlay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/css/comic-theme.css?v=<%= Date.now() %>">
+  <style>
+    /* Mode Visibility Gating */
+    body[data-mode="wheel"] .overlay-hud,
+    body[data-mode="wheel"] .overlay-leaderboard,
+    body[data-mode="wheel"] .overlay-effects,
+    body[data-mode="wheel"] .overlay-progress,
+    body[data-mode="wheel"] .overlay-respin {
+      display: none !important;
+    }
+
+    body[data-mode="leaderboard"] .overlay-hud,
+    body[data-mode="leaderboard"] .overlay-wheel,
+    body[data-mode="leaderboard"] .overlay-effects,
+    body[data-mode="leaderboard"] .overlay-progress,
+    body[data-mode="leaderboard"] .overlay-respin {
+      display: none !important;
+    }
+  </style>
+</head>
+
+<body class="anniversary-overlay" data-mode="<%= mode || 'overlay' %>">
+
+  <div class="anniversary-shell">
+
+    <!-- TOP LEFT: Timer -->
+    <section class="overlay-hud overlay-hud--left comic-panel comic-panel--tight">
+      <div class="comic-label">Subathon</div>
+      <div id="subathonTimer">00:00:00</div>
+    </section>
+
+    <!-- TOP RIGHT: Spins -->
+    <section class="overlay-hud overlay-hud--right comic-panel comic-panel--tight">
+      <div class="comic-label">Wheel of Abbabox</div>
+      <div class="spin-row">
+        <div class="spin-stat">
+          <label>Pending</label>
+          <span id="pendingSpins">0</span>
+        </div>
+        <div style="font-size: 1.5em; opacity: 0.5; margin: 0 10px;">/</div>
+        <div class="spin-stat">
+          <label>Done</label>
+          <span id="completedSpins">0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- MID LEFT: Leaderboard -->
+    <section class="overlay-leaderboard comic-panel">
+      <div class="comic-label">Top Donors</div>
+      <div id="leaderboardList" class="leaderboard-container">
+        <!-- JS populates -->
+      </div>
+    </section>
+
+    <!-- MID CENTER: Wheel -->
+    <section class="overlay-wheel">
+      <!-- Wheel is rendered here by JS or OBS source (500x500 canvas) -->
+      <div id="wheelStage"></div>
+
+      <!-- Result Display (shown after spin) - positioned on top of wheel -->
+      <div id="spinResultDisplay" class="spin-result-display">
+        <div class="spin-result-label">WINNER!</div>
+        <div id="spinResultText" class="spin-result-text"></div>
+      </div>
+    </section>
+
+    <!-- MID RIGHT: Next Spin Info -->
+    <section class="overlay-effects">
+      <div class="comic-panel" id="nextSpinInfo">
+        <div class="comic-label">Next Spin In:</div>
+        <div class="next-spin-options">
+          <div class="next-spin-option">
+            <span class="next-spin-value" id="nextSpinSubs">0</span>
+            <span class="next-spin-label">subs</span>
+          </div>
+          <div class="next-spin-divider">or</div>
+          <div class="next-spin-option">
+            <span class="next-spin-value" id="nextSpinBits">0</span>
+            <span class="next-spin-label">bits</span>
+          </div>
+          <div class="next-spin-divider">or</div>
+          <div class="next-spin-option">
+            <span class="next-spin-value" id="nextSpinDollars">$0</span>
+            <span class="next-spin-label">donated</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BOTTOM: Progress -->
+    <section class="overlay-progress">
+      <div class="progress-header">
+        <!-- INLINE: Respin -->
+        <section class="overlay-respin comic-panel comic-panel--tight" id="respinWindow">
+          <div class="respin-content">
+            <div class="comic-label" style="margin:0">RESPIN?</div>
+            <div id="respinTimer">2:00</div>
+            <div class="respin-cost">$10</div>
+          </div>
+        </section>
+        <span class="progress-amount">$<span id="progressCurrent">0</span> / $<span id="progressGoal">0</span></span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="anniversaryProgressFill"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    window.__ANNIVERSARY_MODE__ = document.body.dataset.mode;
+  </script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/overlay.js?v=<%= Date.now() %>"></script>
+</body>
+
+</html>

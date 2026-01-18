@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anniversary Control Plane</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            background: #111;
+            color: #eee;
+        }
+
+        .card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            border-bottom: 1px solid #333;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #aaa;
+        }
+
+        .btn-group {
+            width: 100%;
+        }
+
+        .stat-display {
+            font-family: monospace;
+            font-size: 1.5em;
+            color: #00ff66;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #666;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .visibility-toggle {
+            position: relative;
+            text-align: left;
+            padding-left: 2em;
+        }
+
+        .visibility-toggle .toggle-indicator {
+            position: absolute;
+            left: 0.5em;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .visibility-toggle.active {
+            background: rgba(0, 255, 102, 0.2);
+            border-color: #00ff66;
+            color: #00ff66;
+        }
+
+        .visibility-toggle.active .toggle-indicator {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container py-4">
+        <h1 class="mb-4 text-center text-danger">ANNIVERSARY CONTROL PLANE</h1>
+
+        <div class="row">
+            <!-- TIMER CONTROL -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">Subathon Timer</div>
+                    <div class="card-body">
+                        <div class="stat-label">Time Remaining</div>
+                        <div class="stat-display" id="adminTimer">--:--:--</div>
+
+                        <div class="d-grid gap-2 mb-3">
+                            <button class="btn btn-warning" id="btnPauseResume">PAUSE / RESUME</button>
+                        </div>
+
+                        <div class="btn-group mb-2">
+                            <button class="btn btn-outline-success" onclick="addTime(300)">+5m</button>
+                            <button class="btn btn-outline-success" onclick="addTime(600)">+10m</button>
+                            <button class="btn btn-outline-success" onclick="addTime(1800)">+30m</button>
+                        </div>
+                        <div class="btn-group mb-2">
+                            <button class="btn btn-outline-danger" onclick="addTime(-60)">-1m</button>
+                            <button class="btn btn-outline-danger" onclick="addTime(-300)">-5m</button>
+                        </div>
+                        <button class="btn btn-outline-info btn-sm" onclick="testTimeAddedAnimation()">Test Animation</button>
+
+                        <hr>
+                        <label class="stat-label">Set Timer (minutes)</label>
+                        <div class="input-group mb-3">
+                            <input type="number" class="form-control bg-dark text-white border-secondary"
+                                id="inputSetTimer" value="60" min="1">
+                            <button class="btn btn-outline-primary" id="btnSetTimer">SET</button>
+                        </div>
+
+                        <hr>
+                        <label class="stat-label">Max End Time (Cap)</label>
+                        <div class="mb-2" id="maxEndTimeDisplay" style="font-size: 0.85em; color: #888;">
+                            No cap set
+                        </div>
+                        <div class="input-group mb-2">
+                            <input type="datetime-local" class="form-control bg-dark text-white border-secondary"
+                                id="inputMaxEndTime">
+                            <button class="btn btn-outline-warning" id="btnSetMaxEndTime">SET CAP</button>
+                        </div>
+                        <button class="btn btn-outline-secondary btn-sm" id="btnClearMaxEndTime">Clear Cap</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SPINS CONTROL -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">Wheel of Abbabox</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="stat-label">Pending</div>
+                                <div class="stat-display" id="adminPendingSpins">0</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-label">Completed</div>
+                                <div class="stat-display" id="adminCompletedSpins">0</div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mb-3">
+                            <button class="btn btn-primary" id="btnTriggerSpin">TRIGGER NEXT SPIN</button>
+                            <button class="btn btn-outline-light" id="btnToggleWheel">SHOW WHEEL</button>
+                        </div>
+
+                        <div class="btn-group mb-3">
+                            <button class="btn btn-outline-success" onclick="adjustSpins(1)">+1 Spin</button>
+                            <button class="btn btn-outline-danger" onclick="adjustSpins(-1)">-1 Spin</button>
+                        </div>
+
+                        <hr>
+                        <div class="stat-label mb-2">Rigged Spin (Looks Normal)</div>
+                        <div class="input-group mb-2">
+                            <select class="form-select bg-dark text-white border-secondary" id="riggedSlotSelect">
+                                <option value="">-- Select Target --</option>
+                            </select>
+                            <button class="btn btn-danger" id="btnRiggedSpin">RIG IT</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DONATION TRACKING -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">Donation Tracker</div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="stat-label">Total Donations</div>
+                                <div class="stat-display" id="adminDonationTotal">$0</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-label">Next Spin In</div>
+                                <div class="stat-display" id="adminNextSpinIn">$60</div>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="stat-label mb-1">Progress to Spin</div>
+                        <div class="progress mb-2" style="height: 20px; background: #333;">
+                            <div class="progress-bar bg-success" id="adminProgressBar" role="progressbar"
+                                style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                <span id="adminProgressText">$0 / $60</span>
+                            </div>
+                        </div>
+
+                        <hr>
+                        <label class="stat-label">Add Donation</label>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text bg-dark text-white border-secondary">$</span>
+                            <input type="number" class="form-control bg-dark text-white border-secondary"
+                                id="inputDonationAmount" value="10" min="0.01" step="0.01">
+                            <button class="btn btn-success" id="btnAddDonation">ADD</button>
+                        </div>
+                        <div class="btn-group w-100 mb-3">
+                            <button class="btn btn-outline-success btn-sm" onclick="quickAddDonation(5)">+$5</button>
+                            <button class="btn btn-outline-success btn-sm" onclick="quickAddDonation(10)">+$10</button>
+                            <button class="btn btn-outline-success btn-sm" onclick="quickAddDonation(25)">+$25</button>
+                            <button class="btn btn-outline-success btn-sm" onclick="quickAddDonation(60)">+$60</button>
+                        </div>
+
+                        <hr>
+                        <label class="stat-label">Manual Override</label>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <div class="input-group">
+                                    <input type="number" class="form-control bg-dark text-white border-secondary"
+                                        id="inputSetDonationTotal" placeholder="Total $" min="0" step="0.01">
+                                    <button class="btn btn-outline-secondary btn-sm" id="btnSetDonationTotal">Set Total</button>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="input-group">
+                                    <input type="number" class="form-control bg-dark text-white border-secondary"
+                                        id="inputSetDonationProgress" placeholder="Progress $" min="0" step="0.01">
+                                    <button class="btn btn-outline-secondary btn-sm" id="btnSetDonationProgress">Set Prog</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline-danger btn-sm" id="btnResetDonationProgress">Reset Progress to $0</button>
+
+                        <hr>
+                        <label class="stat-label">Spin Threshold</label>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text bg-dark text-white border-secondary">$</span>
+                            <input type="number" class="form-control bg-dark text-white border-secondary"
+                                id="inputSpinThreshold" value="60" min="1">
+                            <button class="btn btn-outline-warning btn-sm" id="btnSetSpinThreshold">SET</button>
+                        </div>
+
+                        <hr>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-info" onclick="triggerEffect('pow')">Test POW Effect</button>
+                            <button class="btn btn-outline-warning" onclick="triggerRespinWindow()">Open Respin Window</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OVERLAY VISIBILITY TOGGLES -->
+        <div class="card">
+            <div class="card-header">Overlay Element Visibility</div>
+            <div class="card-body">
+                <div class="text-muted mb-3" style="font-size: 0.85em;">
+                    Toggle overlay elements on/off. Changes are instant.
+                </div>
+                <div class="row g-2">
+                    <div class="col-md-4 col-6">
+                        <button class="btn btn-outline-light w-100 visibility-toggle active" data-element="timer">
+                            <span class="toggle-indicator">✓</span> Timer
+                        </button>
+                    </div>
+                    <div class="col-md-4 col-6">
+                        <button class="btn btn-outline-light w-100 visibility-toggle active" data-element="spins">
+                            <span class="toggle-indicator">✓</span> Spins Counter
+                        </button>
+                    </div>
+                    <div class="col-md-4 col-6">
+                        <button class="btn btn-outline-light w-100 visibility-toggle active" data-element="leaderboard">
+                            <span class="toggle-indicator">✓</span> Leaderboard
+                        </button>
+                    </div>
+                    <div class="col-md-4 col-6">
+                        <button class="btn btn-outline-light w-100 visibility-toggle active" data-element="wheel">
+                            <span class="toggle-indicator">✓</span> Wheel
+                        </button>
+                    </div>
+                    <div class="col-md-4 col-6">
+                        <button class="btn btn-outline-light w-100 visibility-toggle active" data-element="nextSpin">
+                            <span class="toggle-indicator">✓</span> Next Spin Info
+                        </button>
+                    </div>
+                    <div class="col-md-4 col-6">
+                        <button class="btn btn-outline-light w-100 visibility-toggle active" data-element="progress">
+                            <span class="toggle-indicator">✓</span> Progress Bar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LOGS / FEEDBACK -->
+        <div class="card">
+            <div class="card-header">System Log</div>
+            <div class="card-body bg-black text-monospace" id="adminLog"
+                style="height: 150px; overflow-y: auto; font-size: 0.8em; color: #0f0;">
+                <div>System ready...</div>
+            </div>
+        </div>
+
+        <!-- WHEEL SLOTS -->
+        <div class="card">
+            <div class="card-header">Wheel Slots</div>
+            <div class="card-body">
+                <div class="text-muted mb-2" style="font-size: 0.85em;">
+                    Add or edit wheel slots. Colors are auto-assigned.
+                </div>
+                <div class="row g-2 mb-2 text-uppercase text-muted" style="font-size: 0.75em;">
+                    <div class="col-8">Label</div>
+                    <div class="col-3">Weight</div>
+                    <div class="col-1"></div>
+                </div>
+                <div id="wheelSlotsList"></div>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    <button class="btn btn-outline-light" id="btnAddWheelSlot">ADD SLOT</button>
+                    <button class="btn btn-outline-info" id="btnLoadWheelSlots">LOAD CURRENT</button>
+                    <button class="btn btn-success" id="btnSaveWheelSlots">SAVE SLOTS</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- REMOVED SLOTS -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Removed Slots</span>
+                <span class="badge bg-secondary" id="removedSlotsCount">0</span>
+            </div>
+            <div class="card-body">
+                <div class="text-muted mb-2" style="font-size: 0.85em;">
+                    Slots that have been spun are moved here. Click to restore ($25 donation tier).
+                </div>
+                <div id="removedSlotsList" class="mb-2">
+                    <div class="text-muted text-center py-3" id="noRemovedSlots">No removed slots</div>
+                </div>
+                <button class="btn btn-outline-danger btn-sm" id="btnClearRemovedSlots">Clear All Removed</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/admin.js?v=<%= Date.now() %>"></script>
+</body>
+
+</html>

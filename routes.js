@@ -10,6 +10,7 @@ import { state } from './constants.js';
 import { getAuthUrl, handleAuthCallback } from './auth.js';
 import { initializeEventSub } from './eventSub.js';
 import { hellfireSpotIds, heavenfireSpotIds } from './utils.js';
+import anniversaryRoutes from './routes/anniversary.js';
 import {
   getTormentMeterState,
   recordContribution as recordTormentContribution
@@ -20,6 +21,7 @@ const __dirname = dirname(__filename);
 
 const router = express.Router();
 router.use(bodyParser.json());
+router.use(anniversaryRoutes);
 
 const settings_db = new jsoning("db/queue_settings.json");
 const queue_db = new jsoning("db/queue.json");
@@ -84,7 +86,7 @@ router.get("/count-down-timer", (req, res) => {
 router.get("/timer", async (req, res) => {
   const isPaused = await timer_db.get("is_paused");
   let remainingTime = 0;
-  
+
   if (isPaused) {
     // If paused, use the stored remaining time
     remainingTime = await timer_db.get("remaining_at_pause") || 0;
@@ -107,7 +109,7 @@ router.get("/timer_admin", basicAuth({
 }), async (req, res) => {
   const isPaused = await timer_db.get("is_paused");
   let remainingTime = 0;
-  
+
   if (isPaused) {
     // If paused, use the stored remaining time
     remainingTime = await timer_db.get("remaining_at_pause") || 0;
@@ -342,7 +344,7 @@ router.get("/auth/status", (req, res) => {
 
 router.get("/auth/twitch/callback", async (req, res) => {
   const { code } = req.query;
-  
+
   if (!code) {
     res.status(400).send('Missing authorization code');
     return;
@@ -350,7 +352,7 @@ router.get("/auth/twitch/callback", async (req, res) => {
 
   try {
     await handleAuthCallback(code);
-    
+
     // Get the io instance from the app
     const io = req.app.get('io');
     if (!io) {
@@ -371,7 +373,7 @@ router.get("/auth/twitch/callback", async (req, res) => {
         req.app.set('eventSubClient', eventSubClient);
       }
     }
-    
+
     res.render("auth.ejs", { success: true });
   } catch (error) {
     console.error('Auth callback error:', error);
@@ -434,7 +436,7 @@ router.post("/4th_wall", async (req, res) => {
       }
     }
   }
-  
+
   res.sendStatus(200);
 });
 

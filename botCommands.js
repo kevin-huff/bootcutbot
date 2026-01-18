@@ -148,6 +148,13 @@ function initializeBotCommands(io) {
     // Track bits for stats
     await handleBitTracker(userstate.bits, io);
 
+    // Add to spin progress (100 bits = $1)
+    if (bitAmount > 0) {
+      const bitDollarValue = bitAmount / 100;
+      console.log(`[CHEER] 🎡 SPINS: Adding $${bitDollarValue.toFixed(2)} to donation progress`);
+      handleDonationTracker(bitDollarValue, io);
+    }
+
     // Add to torment meter
     if (bitAmount > 0) {
       try {
@@ -169,7 +176,10 @@ function initializeBotCommands(io) {
 
   // Subscription events
   client.on("subscription", async (channel, username, method, message, userstate) => {
-    console.log(`[SUB] New subscription from ${username}`);
+    const subPlan = userstate['msg-param-sub-plan'] || '1000';
+    const subValueCents = resolveSubPlanCents(method, userstate);
+    const subValueDollars = subValueCents / 100;
+    console.log(`[SUB] New subscription from ${username} (${subPlan} = $${subValueDollars})`);
     // Add 5 minutes for new sub
     const socketHandlers = global.app.get('socketHandlers');
     if (socketHandlers && socketHandlers.handleSubathonAddTime) {
@@ -180,6 +190,9 @@ function initializeBotCommands(io) {
       console.error('[SUB] ❌ TIMER: socketHandlers not found!');
     }
     handleSubTracker(1, io);
+    // Add to spin progress (tier-based value)
+    console.log(`[SUB] 🎡 SPINS: Adding $${subValueDollars} to donation progress`);
+    handleDonationTracker(subValueDollars, io);
     console.log(`[SUB] 🔥 TORMENT: Recording sub contribution`);
     await recordTormentSubs({
       count: 1,
@@ -194,7 +207,10 @@ function initializeBotCommands(io) {
   });
   
   client.on("resub", async (channel, username, months, message, userstate, methods) => {
-    console.log(`[RESUB] ${username} resubbed for ${months} months`);
+    const subPlan = userstate['msg-param-sub-plan'] || '1000';
+    const subValueCents = resolveSubPlanCents(methods, userstate);
+    const subValueDollars = subValueCents / 100;
+    console.log(`[RESUB] ${username} resubbed for ${months} months (${subPlan} = $${subValueDollars})`);
     // Add 5 minutes for resub
     const socketHandlers = global.app.get('socketHandlers');
     if (socketHandlers && socketHandlers.handleSubathonAddTime) {
@@ -205,6 +221,9 @@ function initializeBotCommands(io) {
       console.error('[RESUB] ❌ TIMER: socketHandlers not found!');
     }
     handleSubTracker(1, io);
+    // Add to spin progress (tier-based value)
+    console.log(`[RESUB] 🎡 SPINS: Adding $${subValueDollars} to donation progress`);
+    handleDonationTracker(subValueDollars, io);
     console.log(`[RESUB] 🔥 TORMENT: Recording resub contribution`);
     await recordTormentSubs({
       count: 1,
@@ -220,7 +239,18 @@ function initializeBotCommands(io) {
   });
   
   client.on("subgift", async (channel, username, streakMonths, recipient, methods, userstate) => {
-    console.log(`[GIFTSUB] ${username} gifted sub to ${recipient}`);
+    // Check if this is part of a mystery gift (gift bomb) - if so, skip timer/torment
+    // since we already handled it in submysterygift
+    const isPartOfMysteryGift = userstate['msg-param-community-gift-id'];
+    if (isPartOfMysteryGift) {
+      console.log(`[GIFTSUB] ${username} -> ${recipient} (part of gift bomb, skipping timer/torment)`);
+      return;
+    }
+
+    const subPlan = userstate['msg-param-sub-plan'] || '1000';
+    const subValueCents = resolveSubPlanCents(methods, userstate);
+    const subValueDollars = subValueCents / 100;
+    console.log(`[GIFTSUB] ${username} gifted sub to ${recipient} (${subPlan} = $${subValueDollars})`);
     // Add 5 minutes for gift sub
     const socketHandlers = global.app.get('socketHandlers');
     if (socketHandlers && socketHandlers.handleSubathonAddTime) {
@@ -231,6 +261,9 @@ function initializeBotCommands(io) {
       console.error('[GIFTSUB] ❌ TIMER: socketHandlers not found!');
     }
     handleSubTracker(1, io);
+    // Add to spin progress (tier-based value)
+    console.log(`[GIFTSUB] 🎡 SPINS: Adding $${subValueDollars} to donation progress`);
+    handleDonationTracker(subValueDollars, io);
     console.log(`[GIFTSUB] 🔥 TORMENT: Recording gift sub contribution`);
     await recordTormentSubs({
       count: 1,
@@ -246,7 +279,10 @@ function initializeBotCommands(io) {
   });
 
   client.on('submysterygift', async (channel, username, numbOfSubs, methods, userstate) => {
-    console.log(`[GIFTBOMB] ${username} gifted ${numbOfSubs} subs!`);
+    const subPlan = userstate['msg-param-sub-plan'] || '1000';
+    const subValueCents = resolveSubPlanCents(methods, userstate);
+    const subValueDollars = subValueCents / 100;
+    console.log(`[GIFTBOMB] ${username} gifted ${numbOfSubs} subs! (${subPlan} = $${subValueDollars} each)`);
     // Add 5 minutes per gifted sub
     const totalSeconds = 5 * 60 * numbOfSubs;
     const socketHandlers = global.app.get('socketHandlers');
@@ -258,6 +294,10 @@ function initializeBotCommands(io) {
       console.error('[GIFTBOMB] ❌ TIMER: socketHandlers not found!');
     }
     handleSubTracker(numbOfSubs, io);
+    // Add to spin progress (tier-based value)
+    const giftValue = numbOfSubs * subValueDollars;
+    console.log(`[GIFTBOMB] 🎡 SPINS: Adding $${giftValue.toFixed(2)} to donation progress`);
+    handleDonationTracker(giftValue, io);
     console.log(`[GIFTBOMB] 🔥 TORMENT: Recording ${numbOfSubs} gift subs contribution`);
     await recordTormentSubs({
       count: numbOfSubs,

@@ -127,8 +127,18 @@ if (btnSetMaxEndTime && inputMaxEndTime) {
             log('ERROR: Select a date/time first');
             return;
         }
-        log(`Setting max end time to ${datetime}`);
-        socket.emit('admin:setMaxEndTime', { datetime });
+        // Convert to timestamp to avoid timezone issues between client and server
+        const timestamp = new Date(datetime).getTime();
+        if (isNaN(timestamp)) {
+            log('ERROR: Invalid date/time');
+            return;
+        }
+        if (timestamp < Date.now()) {
+            log('ERROR: Cap time must be in the future');
+            return;
+        }
+        log(`Setting max end time to ${datetime} (${new Date(timestamp).toISOString()})`);
+        socket.emit('admin:setMaxEndTime', { timestamp });
     });
 }
 
@@ -182,18 +192,18 @@ const loadWheelSlotsButton = document.getElementById('btnLoadWheelSlots');
 const saveWheelSlotsButton = document.getElementById('btnSaveWheelSlots');
 
 const WHEEL_COLOR_PALETTE = [
-    '#ff4444',
-    '#00ff66',
-    '#444444',
-    '#222222',
-    '#ffaa00',
-    '#aa00aa',
-    '#00aaff',
-    '#ffffff',
-    '#ff66cc',
-    '#ffcc00',
-    '#66ffcc',
-    '#ff9966'
+    '#ff4444',  // red
+    '#00ff66',  // green
+    '#ffaa00',  // orange
+    '#aa00aa',  // purple
+    '#00aaff',  // blue
+    '#ff66cc',  // pink
+    '#ffcc00',  // yellow
+    '#66ffcc',  // cyan
+    '#ff9966',  // peach
+    '#9966ff',  // violet
+    '#66ff99',  // mint
+    '#ff6699'   // coral
 ];
 
 function randomWheelColor() {
@@ -206,23 +216,25 @@ function createWheelSlotRow(slot = {}) {
     if (slot.id !== undefined && slot.id !== null) {
         row.dataset.slotId = String(slot.id);
     }
+    const colorValue = (slot.color && String(slot.color).trim()) || randomWheelColor();
     row.innerHTML = `
-        <div class="col-8">
+        <div class="col-6">
             <input type="text" class="form-control bg-dark text-white border-secondary" data-field="label" placeholder="Label">
         </div>
-        <div class="col-3">
+        <div class="col-2">
             <input type="number" class="form-control bg-dark text-white border-secondary" data-field="weight" min="1" step="1" value="1">
         </div>
-        <div class="col-1 d-grid">
+        <div class="col-2">
+            <input type="color" class="form-control form-control-color w-100" data-field="color" value="${colorValue}" title="Slot color">
+        </div>
+        <div class="col-2 d-grid">
             <button class="btn btn-outline-danger" type="button" data-action="remove">X</button>
         </div>
-        <input type="hidden" data-field="color">
     `;
 
     const labelInput = row.querySelector('[data-field="label"]');
     const weightInput = row.querySelector('[data-field="weight"]');
     const colorInput = row.querySelector('[data-field="color"]');
-    const colorValue = (slot.color && String(slot.color).trim()) || randomWheelColor();
 
     if (labelInput) labelInput.value = slot.label || '';
     if (weightInput && slot.weight !== undefined && slot.weight !== null) {

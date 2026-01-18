@@ -514,8 +514,8 @@
       let wheelSlots = [
         { label: "Gift 5", color: "#ff4444", weight: 1 },
         { label: "Hydrate", color: "#00ff66", weight: 1 },
-        { label: "Beanboozled", color: "#444444", weight: 1 },
-        { label: "Plank", color: "#222222", weight: 1 },
+        { label: "Beanboozled", color: "#ffcc00", weight: 1 },
+        { label: "Plank", color: "#00aaff", weight: 1 },
         { label: "VIP", color: "#ffaa00", weight: 1 },
         { label: "Timeout", color: "#aa00aa", weight: 1 }
       ];

@@ -67,6 +67,50 @@ socket.on('admin:wheelSlotsError', (data) => {
     log(`Wheel slots error: ${msg}`);
 });
 
+// Timer addition events (bits, subs, donations)
+socket.on('timeAdded', (data) => {
+    if (!data) return;
+    const minutes = Math.floor(data.seconds / 60);
+    const secs = data.seconds % 60;
+    const timeStr = minutes > 0 ? `${minutes}m ${secs}s` : `${secs}s`;
+    const sourceDisplay = formatTimeSource(data.source);
+    const cappedNote = data.capped ? ' [CAPPED]' : '';
+    const multiplierNote = data.multiplier && data.multiplier !== 1 ? ` (${data.multiplier}x)` : '';
+    log(`⏱️ +${timeStr} from ${sourceDisplay}${multiplierNote}${cappedNote}`);
+});
+
+// Format time source for display
+function formatTimeSource(source) {
+    if (!source) return 'unknown';
+    // Parse source strings like "bits_500", "sub_username", "donation_name"
+    if (source.startsWith('bits_')) {
+        const amount = source.replace('bits_', '');
+        return `${amount} bits`;
+    }
+    if (source.startsWith('sub_')) {
+        const user = source.replace('sub_', '');
+        return `sub (${user})`;
+    }
+    if (source.startsWith('resub_')) {
+        const parts = source.replace('resub_', '').split('_');
+        return `resub (${parts[0]})`;
+    }
+    if (source.startsWith('giftsub_from_')) {
+        const rest = source.replace('giftsub_from_', '');
+        const [gifter] = rest.split('_to_');
+        return `gift sub (${gifter})`;
+    }
+    if (source.startsWith('giftbomb_')) {
+        const rest = source.replace('giftbomb_', '');
+        const [gifter, count] = rest.split('_x');
+        return `gift bomb ${count || '?'}x (${gifter})`;
+    }
+    if (source.startsWith('donation_')) {
+        const name = source.replace('donation_', '').replace('$', '');
+        return `donation (${name})`;
+    }
+    return source;
+}
 
 // ACTIONS (Admin -> Server)
 

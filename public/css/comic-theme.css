@@ -1,0 +1,857 @@
+:root {
+  --comic-ink: #050505;
+  /* Pure Black */
+  --comic-ink-soft: #1a1a1a;
+  /* Dark Charcoal */
+  --comic-panel: #111111;
+  /* Panel BG */
+  --comic-text: #e0e0e0;
+  /* Off-white */
+  --comic-accent: #b80f0a;
+  /* Spawn Red (Cape) */
+  --comic-accent-2: #50c878;
+  /* Necroplasm Green */
+  --comic-accent-3: #ffffff;
+  /* White Highlights */
+  --comic-border: #000000;
+  --comic-shadow: #000000;
+  --comic-font-display: "Bangers", cursive;
+  --comic-font-body: "Comic Neue", "Trebuchet MS", sans-serif;
+}
+
+body.anniversary-overlay {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  background: transparent;
+  /* OBS Ready */
+  font-family: var(--comic-font-body);
+  color: var(--comic-text);
+  overflow: hidden;
+}
+
+/* Base Layout */
+.anniversary-shell {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  padding: 32px;
+  box-sizing: border-box;
+
+  /* Columns: Left (wheel) | Right (effects) */
+  grid-template-columns: 1fr 280px;
+
+  /* Rows: Top HUD | Middle Content | Bottom Progress */
+  grid-template-rows: auto 1fr auto;
+
+  grid-template-areas:
+    "hud-left    hud-right"
+    "wheel       effects"
+    "progress    progress";
+
+  gap: 20px;
+}
+
+/* Visibility Rules */
+body[data-mode="overlay"] .overlay-wheel,
+body[data-mode="overlay"] .overlay-leaderboard {
+  display: none !important;
+}
+
+body[data-mode="overlay"].wheel-active .overlay-wheel {
+  display: grid !important;
+}
+
+/* Common Panel Styling - Gritty */
+.comic-panel {
+  background: var(--comic-panel);
+  border: 3px solid var(--comic-border);
+  position: relative;
+  /* Hard drop shadow for "ink" look */
+  box-shadow: 6px 6px 0 var(--comic-shadow);
+}
+
+.comic-panel::after {
+  /* Gritty texture overlay using CSS noise/pattern */
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: radial-gradient(var(--comic-ink-soft) 15%, transparent 16%);
+  background-size: 4px 4px;
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.comic-panel--tight {
+  padding: 8px 16px;
+}
+
+.comic-label {
+  font-family: var(--comic-font-display);
+  font-size: 1.4rem;
+  color: var(--comic-accent-2);
+  /* Green Titles */
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+  text-shadow: 2px 2px 0 #000;
+  transform: skewX(-2deg);
+  /* slight dynamic skew */
+}
+
+/* TOP ROW */
+.overlay-hud--left {
+  grid-area: hud-left;
+  align-self: start;
+  justify-self: start;
+  width: fit-content;
+}
+
+.overlay-hud--right {
+  grid-area: hud-right;
+  align-self: start;
+}
+
+/* Timer Specifics */
+#subathonTimer {
+  font-family: var(--comic-font-display);
+  font-size: 4rem;
+  line-height: 0.9;
+  color: var(--comic-accent);
+  /* Red Timer */
+  text-shadow: 4px 4px 0 #000;
+  -webkit-text-stroke: 1px var(--comic-ink);
+  transition: color 0.3s ease, opacity 0.3s ease;
+}
+
+#subathonTimer.paused {
+  color: #ff6666;
+  opacity: 0.7;
+  animation: timerPauseBlink 1.5s ease-in-out infinite;
+}
+
+@keyframes timerPauseBlink {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 0.4; }
+}
+
+/* Time Added Animation */
+.time-added-floater {
+  position: absolute;
+  top: 0;
+  right: -20px;
+  font-family: var(--comic-font-display);
+  font-size: 2.5rem;
+  color: var(--comic-accent-2);
+  text-shadow:
+    3px 3px 0 #000,
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: timeAddedFloat 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  z-index: 100;
+}
+
+.time-added-floater .multiplier-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: var(--comic-accent);
+  color: white;
+  font-size: 0.6em;
+  border-radius: 4px;
+  vertical-align: middle;
+  animation: badgePop 0.3s ease-out;
+}
+
+@keyframes timeAddedFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1.1);
+  }
+  30% {
+    transform: translateY(-10px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px) scale(0.9);
+  }
+}
+
+@keyframes badgePop {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* Timer pulse when time is added */
+#subathonTimer.time-added-pulse {
+  animation: timerPulseGlow 0.5s ease-out;
+}
+
+@keyframes timerPulseGlow {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.08);
+    filter: brightness(1.5);
+    text-shadow:
+      4px 4px 0 #000,
+      0 0 20px var(--comic-accent-2),
+      0 0 40px var(--comic-accent-2);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+/* Spin Specifics */
+.spin-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--comic-font-display);
+  color: white;
+}
+
+.spin-stat {
+  text-align: center;
+}
+
+.spin-stat span {
+  font-size: 2.2em;
+  display: block;
+  line-height: 0.9;
+  text-shadow: 3px 3px 0 #000;
+}
+
+.spin-stat label {
+  font-size: 0.9em;
+  color: #888;
+  font-family: var(--comic-font-body);
+  text-transform: uppercase;
+}
+
+
+/* MIDDLE ROW */
+.overlay-leaderboard {
+  grid-area: leader;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.overlay-wheel {
+  grid-area: wheel;
+  display: grid;
+  place-items: center start; /* Align to left */
+  justify-content: start;
+  position: relative;
+}
+
+/* Right Column: Effects */
+.overlay-effects {
+  grid-area: effects;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  /* More space between effect boxes */
+  margin-top: 20px;
+  /* clear top HUD */
+}
+
+.effect-box {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-width: 2px;
+  /* thinner border for effects */
+}
+
+/* BOTTOM ROW: Gritty Progress Bar */
+.overlay-progress {
+  grid-area: progress;
+  align-self: end;
+  background: transparent;
+  /* Container is clear */
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  margin-bottom: 20px;
+  /* Lift off screen edge */
+  z-index: 5;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 20px;
+  padding: 0 20px;
+  /* Prevent edge touching */
+  margin-bottom: 4px;
+  /* increased spacing */
+  font-family: var(--comic-font-display);
+  font-size: 2rem;
+  /* even larger header */
+  color: white;
+  text-shadow: 3px 3px 0 #000;
+  text-transform: uppercase;
+  z-index: 2;
+}
+
+.progress-header .progress-amount {
+  margin-left: auto;
+}
+
+.progress-track {
+  height: 56px;
+  /* Thick and heavy */
+  background: #000;
+  /* Deep black track */
+  border: 4px solid #000;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.8);
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--comic-accent-2);
+  /* Necroplasm Green */
+  position: relative;
+  transition: width 0.3s ease-out;
+  box-shadow: 0 0 20px rgba(80, 200, 120, 0.4);
+  /* Glow */
+}
+
+/* Striped Texture for the Fill */
+.progress-fill::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(45deg,
+      rgba(0, 0, 0, 0.2),
+      rgba(0, 0, 0, 0.2) 10px,
+      transparent 10px,
+      transparent 20px);
+}
+
+/* "Energy" highlight on top */
+.progress-fill::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 30%;
+  background: rgba(255, 255, 255, 0.2);
+  z-index: 1;
+}
+
+/* Milestone Markers (skulls/notches) */
+.progress-track::after {
+  content: "";
+  /* Could be used for notches */
+}
+
+/* Respin is now inline in progress header - old grid rules removed */
+
+#wheelStage {
+  width: fit-content;
+  height: fit-content;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+/* List Styling */
+.overlay-leaderboard ol,
+.overlay-leaderboard ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.overlay-leaderboard li {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+body.comic-theme .comic-panel--tight {
+  padding: 8px 12px;
+}
+
+body.comic-theme .comic-label {
+  font-family: var(--comic-font-display);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.95em;
+}
+
+body.comic-theme .comic-value {
+  font-weight: 700;
+  color: var(--comic-accent-3);
+  text-shadow: 1px 1px 0 var(--comic-ink);
+}
+
+body.comic-theme .comic-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: #171513;
+  border: 2px solid var(--comic-border);
+  border-radius: 999px;
+  box-shadow: 2px 2px 0 var(--comic-shadow);
+}
+
+body.comic-theme .comic-grid {
+  display: grid;
+  gap: 10px;
+}
+
+body.comic-theme .sub-tracker-container {
+  border: var(--comic-outline) solid var(--comic-border);
+  border-radius: var(--comic-radius);
+  padding: 10px;
+  width: 800px;
+  position: relative;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: linear-gradient(140deg, #1f1c19, #2a2420);
+  box-shadow: var(--comic-shadow-offset);
+  overflow: hidden;
+}
+
+body.comic-theme .sub-tracker-container>* {
+  position: relative;
+  z-index: 1;
+}
+
+body.comic-theme .sub-tracker-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: radial-gradient(circle at 2px 2px,
+      rgba(255, 255, 255, 0.08) 1px,
+      transparent 0);
+  background-size: 7px 7px;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+body.comic-theme .sub-tracker-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.06) 0,
+      rgba(255, 255, 255, 0.06) 8%,
+      transparent 8%,
+      transparent 20%);
+  background-size: 18px 18px;
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+body.comic-theme .progress-bar {
+  width: 100%;
+  height: 24px;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  border: 2px solid var(--comic-border);
+  background: #141312;
+  box-shadow: 2px 2px 0 var(--comic-shadow);
+}
+
+body.comic-theme .progress-fill {
+  height: 100%;
+  width: 0;
+  position: relative;
+  transition: width 0.5s ease-in-out;
+  background: linear-gradient(90deg, var(--comic-accent-2), var(--comic-accent));
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.4);
+}
+
+body.comic-theme .progress-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background: linear-gradient(45deg,
+      rgba(255, 255, 255, 0.08) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 255, 255, 0.08) 50%,
+      rgba(255, 255, 255, 0.08) 75%,
+      transparent 75%,
+      transparent);
+  background-size: 18px 18px;
+  animation: progressStripes 2.2s linear infinite;
+}
+
+body.comic-theme .sub-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-shadow: 1px 1px 0 var(--comic-ink);
+  font-size: 0.95em;
+  line-height: 1.1;
+  background: var(--comic-panel-alt);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 2px solid var(--comic-border);
+  box-shadow: 3px 3px 0 var(--comic-shadow);
+  gap: 8px;
+}
+
+body.comic-theme .sub-info h2 {
+  font-family: var(--comic-font-body);
+  font-size: 0.95em;
+  font-weight: 700;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+body.comic-theme .milestone-count {
+  position: relative;
+  display: inline-block;
+  color: var(--comic-accent-3);
+  text-shadow: 1px 1px 0 var(--comic-ink);
+}
+
+body.comic-theme #added_subs {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--comic-font-display);
+  font-size: 1.2em;
+  color: var(--comic-accent);
+  text-shadow: 2px 2px 0 var(--comic-ink);
+  z-index: 10;
+  display: none;
+}
+
+@keyframes progressStripes {
+  0% {
+    background-position: 0 0;
+  }
+
+  100% {
+    background-position: 18px 0;
+  }
+}
+
+@keyframes pop-up {
+  0% {
+    transform: translate(-50%, -100%) scale(0.6);
+    opacity: 0;
+  }
+
+  40% {
+    transform: translate(-50%, -50%) scale(1.05);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-animation {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(164, 59, 59, 0.7);
+  }
+
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(164, 59, 59, 0);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(164, 59, 59, 0);
+  }
+}
+
+.pulse-animation {
+  animation: pulse-animation 2s infinite;
+}
+
+/* Spin Result Display - centered on the 500px wheel canvas */
+.spin-result-display {
+  position: absolute;
+  top: 250px; /* Center of 500px wheel */
+  left: 250px; /* Center of 500px wheel */
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+  z-index: 100;
+  white-space: nowrap;
+}
+
+.spin-result-display.show {
+  opacity: 1;
+  animation: resultBounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.spin-result-label {
+  font-family: var(--comic-font-display);
+  font-size: 2.5rem;
+  color: var(--comic-accent);
+  text-shadow: 4px 4px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+  letter-spacing: 4px;
+  margin-bottom: 8px;
+  animation: winnerPulse 0.5s ease-in-out infinite alternate;
+}
+
+.spin-result-text {
+  font-family: var(--comic-font-display);
+  font-size: 3rem;
+  color: var(--comic-accent-2);
+  text-shadow: 4px 4px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+  background: rgba(0, 0, 0, 0.9);
+  padding: 12px 30px;
+  border: 4px solid var(--comic-border);
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.9);
+}
+
+@keyframes resultBounceIn {
+  0% {
+    transform: translate(-50%, -50%) scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  70% {
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes winnerPulse {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.05);
+  }
+}
+
+/* Respin Window Styles - inline with progress header */
+.overlay-respin {
+  opacity: 0;
+  transition: opacity 0.4s ease-out;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.overlay-respin.show {
+  opacity: 1;
+  pointer-events: auto;
+  animation: respinPulse 1s ease-in-out infinite;
+}
+
+.respin-content {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 8px 16px;
+}
+
+#respinTimer {
+  font-family: var(--comic-font-display);
+  font-size: 2.5rem;
+  color: var(--comic-accent);
+  text-shadow: 3px 3px 0 #000;
+  min-width: 80px;
+  text-align: center;
+}
+
+.respin-cost {
+  background: var(--comic-accent-2);
+  padding: 8px 16px;
+  border-radius: 8px;
+  color: #000;
+  font-family: var(--comic-font-display);
+  font-size: 1.5rem;
+  font-weight: bold;
+  box-shadow: 3px 3px 0 #000;
+}
+
+@keyframes respinPulse {
+  0%, 100% {
+    box-shadow: 6px 6px 0 var(--comic-shadow), 0 0 20px rgba(80, 200, 120, 0.3);
+  }
+  50% {
+    box-shadow: 6px 6px 0 var(--comic-shadow), 0 0 40px rgba(80, 200, 120, 0.6);
+  }
+}
+
+/* === SPIN EARNED ANIMATION === */
+.spin-earned-pulse {
+  animation: spinEarnedPulse 0.5s ease-out 3;
+}
+
+@keyframes spinEarnedPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 6px 6px 0 var(--comic-shadow);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 6px 6px 0 var(--comic-shadow), 0 0 30px var(--comic-accent), 0 0 60px var(--comic-accent);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 6px 6px 0 var(--comic-shadow);
+  }
+}
+
+.spin-earned-floater {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  text-align: center;
+  pointer-events: none;
+  animation: spinEarnedFloat 3s ease-out forwards;
+}
+
+.spin-earned-text {
+  font-family: var(--comic-font-display);
+  font-size: 5rem;
+  color: var(--comic-accent);
+  text-shadow:
+    5px 5px 0 #000,
+    -2px -2px 0 #000,
+    2px -2px 0 #000,
+    -2px 2px 0 #000,
+    0 0 30px var(--comic-accent);
+  letter-spacing: 4px;
+  white-space: nowrap;
+}
+
+.spin-earned-donor {
+  font-family: var(--comic-font-display);
+  font-size: 2rem;
+  color: var(--comic-accent-2);
+  text-shadow: 3px 3px 0 #000;
+  margin-top: 10px;
+}
+
+@keyframes spinEarnedFloat {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  30% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -80%) scale(0.8);
+  }
+}
+
+/* === PROGRESS BAR FILL ANIMATION === */
+.progress-fill {
+  transition: width 0.5s ease-out, background-color 0.3s ease;
+}
+
+/* === NEXT SPIN IN DISPLAY === */
+#nextSpinInfo {
+  text-align: center;
+  padding: 16px 12px;
+}
+
+#nextSpinInfo .comic-label {
+  font-size: 1.2em;
+  margin-bottom: 12px;
+}
+
+.next-spin-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.next-spin-option {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.next-spin-value {
+  font-family: var(--comic-font-display);
+  font-size: 2em;
+  color: var(--comic-accent-2);
+  text-shadow: 2px 2px 0 #000;
+}
+
+.next-spin-label {
+  font-family: var(--comic-font-body);
+  font-size: 1em;
+  color: var(--comic-text);
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.next-spin-divider {
+  font-family: var(--comic-font-body);
+  font-size: 0.85em;
+  color: var(--comic-text);
+  opacity: 0.5;
+  text-transform: lowercase;
+}

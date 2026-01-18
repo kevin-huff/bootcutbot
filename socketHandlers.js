@@ -27,18 +27,18 @@ const timer_db = new jsoning("db/timer_db.json");
 const wheel_db = new jsoning("db/wheel_db.json");
 
 const WHEEL_COLOR_PALETTE = [
-  "#ff4444",
-  "#00ff66",
-  "#444444",
-  "#222222",
-  "#ffaa00",
-  "#aa00aa",
-  "#00aaff",
-  "#ffffff",
-  "#ff66cc",
-  "#ffcc00",
-  "#66ffcc",
-  "#ff9966"
+  "#ff4444",  // red
+  "#00ff66",  // green
+  "#ffaa00",  // orange
+  "#aa00aa",  // purple
+  "#00aaff",  // blue
+  "#ff66cc",  // pink
+  "#ffcc00",  // yellow
+  "#66ffcc",  // cyan
+  "#ff9966",  // peach
+  "#9966ff",  // violet
+  "#66ff99",  // mint
+  "#ff6699"   // coral
 ];
 
 const randomWheelColor = () =>
@@ -311,7 +311,7 @@ export const initializeSocketHandlers = (io) => {
     });
 
     socket.on("admin:setMaxEndTime", async (data) => {
-      // data can be { datetime: "2026-01-18T06:00:00" } or { clear: true }
+      // data can be { timestamp: 1234567890 }, { datetime: "2026-01-18T06:00:00" }, or { clear: true }
       if (data?.clear) {
         await timer_db.set("max_end_time", null);
         console.log(`[Admin] Max end time CLEARED`);
@@ -319,32 +319,43 @@ export const initializeSocketHandlers = (io) => {
         return;
       }
 
-      if (data?.datetime) {
-        const maxEndTime = new Date(data.datetime).getTime();
-        if (isNaN(maxEndTime)) {
-          console.log(`[Admin] Invalid max end time: ${data.datetime}`);
-          return;
+      // Accept timestamp (preferred) or datetime string (legacy)
+      let maxEndTime;
+      if (data?.timestamp && Number.isFinite(data.timestamp)) {
+        maxEndTime = data.timestamp;
+      } else if (data?.datetime) {
+        maxEndTime = new Date(data.datetime).getTime();
+      }
+
+      if (!maxEndTime || isNaN(maxEndTime)) {
+        console.log(`[Admin] Invalid max end time: ${JSON.stringify(data)}`);
+        return;
+      }
+
+      // Validate that cap is in the future
+      const currentTime = Date.now();
+      if (maxEndTime <= currentTime) {
+        console.log(`[Admin] Rejected max end time - must be in the future`);
+        return;
+      }
+
+      await timer_db.set("max_end_time", maxEndTime);
+      console.log(`[Admin] Max end time set to ${new Date(maxEndTime).toISOString()}`);
+      io.emit('maxEndTimeUpdate', { maxEndTime, datetime: new Date(maxEndTime).toISOString() });
+
+      // Check if current timer exceeds new cap and adjust
+      const currentEndTime = await timer_db.get("end_time");
+      const isPaused = await timer_db.get("is_paused");
+
+      if (currentEndTime && currentEndTime > maxEndTime) {
+        await timer_db.set("end_time", maxEndTime);
+
+        if (isPaused) {
+          const newRemaining = Math.max(0, maxEndTime - currentTime);
+          await timer_db.set("remaining_at_pause", newRemaining);
         }
 
-        await timer_db.set("max_end_time", maxEndTime);
-        console.log(`[Admin] Max end time set to ${new Date(maxEndTime).toISOString()}`);
-        io.emit('maxEndTimeUpdate', { maxEndTime, datetime: new Date(maxEndTime).toISOString() });
-
-        // Check if current timer exceeds new cap and adjust
-        const currentEndTime = await timer_db.get("end_time");
-        const isPaused = await timer_db.get("is_paused");
-
-        if (currentEndTime && currentEndTime > maxEndTime) {
-          await timer_db.set("end_time", maxEndTime);
-
-          if (isPaused) {
-            const currentTime = Date.now();
-            const newRemaining = Math.max(0, maxEndTime - currentTime);
-            await timer_db.set("remaining_at_pause", newRemaining);
-          }
-
-          console.log(`[Admin] Current timer was capped to new max end time`);
-        }
+        console.log(`[Admin] Current timer was capped to new max end time`);
       }
     });
 

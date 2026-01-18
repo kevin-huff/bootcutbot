@@ -32,7 +32,6 @@ import {
 import {
   handleSubTracker,
   handleBitTracker,
-  handleDonationTracker,
   handleSpinTracker
 } from './commands/trackerCommands.js';
 
@@ -44,6 +43,10 @@ import {
   handleDedSetCommand,
   handleWakeupCommand
 } from './commands/miscCommands.js';
+
+import {
+  handleDonationProgress
+} from './socketHandlers.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -152,7 +155,9 @@ function initializeBotCommands(io) {
     if (bitAmount > 0) {
       const bitDollarValue = bitAmount / 100;
       console.log(`[CHEER] 🎡 SPINS: Adding $${bitDollarValue.toFixed(2)} to donation progress`);
-      handleDonationTracker(bitDollarValue, io);
+      await handleDonationProgress(bitDollarValue, `bits_${bitAmount}`, io, {
+        username: userstate['display-name'] || userstate.username
+      });
     }
 
     // Add to torment meter
@@ -192,7 +197,7 @@ function initializeBotCommands(io) {
     handleSubTracker(1, io);
     // Add to spin progress (tier-based value)
     console.log(`[SUB] 🎡 SPINS: Adding $${subValueDollars} to donation progress`);
-    handleDonationTracker(subValueDollars, io);
+    await handleDonationProgress(subValueDollars, `sub_${username}`, io, { username });
     console.log(`[SUB] 🔥 TORMENT: Recording sub contribution`);
     await recordTormentSubs({
       count: 1,
@@ -223,7 +228,7 @@ function initializeBotCommands(io) {
     handleSubTracker(1, io);
     // Add to spin progress (tier-based value)
     console.log(`[RESUB] 🎡 SPINS: Adding $${subValueDollars} to donation progress`);
-    handleDonationTracker(subValueDollars, io);
+    await handleDonationProgress(subValueDollars, `resub_${username}`, io, { username });
     console.log(`[RESUB] 🔥 TORMENT: Recording resub contribution`);
     await recordTormentSubs({
       count: 1,
@@ -263,7 +268,7 @@ function initializeBotCommands(io) {
     handleSubTracker(1, io);
     // Add to spin progress (tier-based value)
     console.log(`[GIFTSUB] 🎡 SPINS: Adding $${subValueDollars} to donation progress`);
-    handleDonationTracker(subValueDollars, io);
+    await handleDonationProgress(subValueDollars, `giftsub_${username}`, io, { username });
     console.log(`[GIFTSUB] 🔥 TORMENT: Recording gift sub contribution`);
     await recordTormentSubs({
       count: 1,
@@ -297,7 +302,7 @@ function initializeBotCommands(io) {
     // Add to spin progress (tier-based value)
     const giftValue = numbOfSubs * subValueDollars;
     console.log(`[GIFTBOMB] 🎡 SPINS: Adding $${giftValue.toFixed(2)} to donation progress`);
-    handleDonationTracker(giftValue, io);
+    await handleDonationProgress(giftValue, `giftbomb_${username}_x${numbOfSubs}`, io, { username });
     console.log(`[GIFTBOMB] 🔥 TORMENT: Recording ${numbOfSubs} gift subs contribution`);
     await recordTormentSubs({
       count: numbOfSubs,
@@ -483,7 +488,7 @@ function initializeBotCommands(io) {
       // Check if this is a merch purchase - skip timer add to avoid double counting
       if (donationMessage.toLowerCase().includes('merch')) {
         console.log('[DONATION] Skipping merch purchase (handled by 4th wall webhook)');
-        handleDonationTracker(donationAmount, io);
+        await handleDonationProgress(donationAmount, `merch_${donorName}`, io, { name: donorName });
         return;
       }
 
@@ -499,7 +504,7 @@ function initializeBotCommands(io) {
           console.error('[DONATION] ❌ TIMER: socketHandlers not found!');
         }
       }
-      handleDonationTracker(donationAmount, io);
+      await handleDonationProgress(donationAmount, `donation_${donorName}`, io, { name: donorName });
     }
   });
 }

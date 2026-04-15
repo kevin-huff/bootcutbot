@@ -56,6 +56,12 @@ router.get("/turn", (req, res) => {
   });
 });
 
+router.get("/ticker", (req, res) => {
+  res.render("ticker.ejs", {
+    active_splot: state.active_splot,
+  });
+});
+
 router.get("/countdown", (req, res) => {
   const time = req.query.end || "00:00:00"; // Default to midnight if no time provided
   const dateTimeEST = moment

@@ -72,6 +72,7 @@
                   <button onClick = 'splotDotIncrease("<%= dataRow.id %>")' class="btn btn-sm btn-dark" title='Increase Splot Dot'><i class='fa-solid fa-plus-circle'></i></button>
                   <button onClick = 'breakAwaySplot("<%= dataRow.id %>")' class="btn btn-sm btn-dark" title='BA Replace Splot'><i class='fa-solid fa-dice-one'></i></button>
                   <button onClick = 'completeSplot(<%= dataRow.id %>)' class="btn btn-sm btn-dark" title='Complete Splot'><i class='fa-solid fa-circle-check'></i></button>
+                  <button onClick = 'activateSplot("<%= dataRow.id %>")' id='activate_splot_<%= dataRow.id %>' class="btn btn-sm btn-dark activate-splot-btn" title='Activate Splot (Now Playing)'><i class='fa-solid fa-play'></i></button>
                 </div>
               </div>
               <div class="col-md-12">

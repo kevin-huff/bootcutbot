@@ -17,6 +17,7 @@ if (queueOpen === undefined) {
 
 export const state = {
   current_turn: "None... yet",
+  active_splot: null,
   end_time: 1708317900,
   queue_open: queueOpen,
   firsts_first: true,

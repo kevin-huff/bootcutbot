@@ -1271,6 +1271,23 @@ export const initializeSocketHandlers = (io) => {
       callback("got it");
     });
 
+    socket.on("splot_activated", (arg, callback) => {
+      state.active_splot = {
+        entry: arg.entry,
+        splot_id: arg.splot_id,
+        rolled_by: state.current_turn,
+        activated_at: Date.now()
+      };
+      io.emit("splot_activated", state.active_splot);
+      if (callback) callback("splot activated");
+    });
+
+    socket.on("splot_deactivated", (arg, callback) => {
+      state.active_splot = null;
+      io.emit("splot_deactivated");
+      if (callback) callback("splot deactivated");
+    });
+
     socket.on("ba_admin", async (arg, callback) => {
       let current_breakaways = await breakaways_db.get("breakaways");
       if (current_breakaways == null) {

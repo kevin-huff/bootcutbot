@@ -667,7 +667,49 @@ $(document).ready(function() {
       console.log(response);
     });
   }
-  
+
+  let activeSplotId = null;
+
+  function activateSplot(splot_id) {
+    let splot_data = getSplotData(splot_id);
+    if (activeSplotId === splot_id) {
+      // Deactivate if clicking the same splot
+      deactivateSplot();
+      return;
+    }
+    activeSplotId = splot_id;
+    socket.emit('splot_activated', { entry: splot_data.entry, splot_id: splot_id }, (response) => {
+      console.log(response);
+    });
+    // Update button states
+    document.querySelectorAll('.activate-splot-btn').forEach(btn => {
+      btn.classList.remove('btn-success');
+      btn.classList.add('btn-dark');
+      btn.querySelector('i').classList.remove('fa-circle-stop');
+      btn.querySelector('i').classList.add('fa-play');
+    });
+    const activeBtn = document.getElementById('activate_splot_' + splot_id);
+    if (activeBtn) {
+      activeBtn.classList.remove('btn-dark');
+      activeBtn.classList.add('btn-success');
+      activeBtn.querySelector('i').classList.remove('fa-play');
+      activeBtn.querySelector('i').classList.add('fa-circle-stop');
+    }
+  }
+
+  function deactivateSplot() {
+    activeSplotId = null;
+    socket.emit('splot_deactivated', {}, (response) => {
+      console.log(response);
+    });
+    document.querySelectorAll('.activate-splot-btn').forEach(btn => {
+      btn.classList.remove('btn-success');
+      btn.classList.add('btn-dark');
+      btn.querySelector('i').classList.remove('fa-circle-stop');
+      btn.querySelector('i').classList.add('fa-play');
+    });
+  }
+
   function splotDotDecrease(splot_id){
     let spotData = getSplotData(splot_id);
     let new_splot_dot = spotData.splot_dot - 1;

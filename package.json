@@ -2,7 +2,7 @@
   "name": "glitch-mvp-node",
   "version": "0.0.1",
   "description": "BootcutBot for Bootcut on Twitch",
-  "main": "server.js",
+  "main": "index.js",
   "type": "module",
   "scripts": {
     "start": "node index.js",

@@ -1,276 +1,100 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-  <title>Now Playing Ticker</title>
+  <meta charset="UTF-8">
+  <title>Bootcut · Ticker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Share+Tech+Mono&family=Rajdhani:wght@500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/oracle.css">
   <script src="/socket.io/socket.io.js"></script>
-<script>
-  var socket = io();
-  let timerInterval = null;
-  let activatedAt = null;
-
-  function formatElapsed(ms) {
-    const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
-  }
-
-  function startTimer(startTime) {
-    if (timerInterval) clearInterval(timerInterval);
-    activatedAt = startTime;
-    updateTimer();
-    timerInterval = setInterval(updateTimer, 1000);
-  }
-
-  function updateTimer() {
-    if (!activatedAt) return;
-    const elapsed = Date.now() - activatedAt;
-    document.getElementById('elapsed').textContent = formatElapsed(elapsed);
-  }
-
-  function stopTimer() {
-    if (timerInterval) {
-      clearInterval(timerInterval);
-      timerInterval = null;
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      overflow: hidden;
     }
-    activatedAt = null;
-  }
-
-  function showTicker(data) {
-    document.getElementById('splot_entry').textContent = data.entry;
-    document.getElementById('rolled_by').textContent = data.rolled_by;
-    startTimer(data.activated_at);
-    document.getElementById('ticker_container').classList.add('visible');
-  }
-
-  function hideTicker() {
-    document.getElementById('ticker_container').classList.remove('visible');
-    stopTimer();
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    <% if (active_splot) { %>
-    showTicker(<%- JSON.stringify(active_splot) %>);
-    <% } %>
-
-    socket.on('splot_activated', function(data) {
-      showTicker(data);
-    });
-
-    socket.on('splot_deactivated', function() {
-      hideTicker();
-    });
-  });
-</script>
-
-<style>
-  :root {
-    --bg-primary: #05061a;
-    --panel-bg: rgba(10, 12, 40, 0.82);
-    --panel-border: rgba(33, 246, 255, 0.28);
-    --accent-cyan: #21f6ff;
-    --accent-magenta: #ff2fd1;
-    --accent-purple: #9b5eff;
-    --text-primary: #f8f9ff;
-    --text-secondary: rgba(248, 249, 255, 0.68);
-    --font-display: 'Orbitron', 'Audiowide', sans-serif;
-    --font-body: 'Share Tech Mono', 'Rajdhani', sans-serif;
-  }
-
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
-
-  body {
-    margin: 0;
-    padding: 0;
-    background: transparent;
-    font-family: var(--font-body);
-    overflow: hidden;
-    color: var(--text-primary);
-  }
-
-  #ticker_container {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%) translateY(100px);
-    opacity: 0;
-    transition: opacity 0.5s ease, transform 0.5s ease;
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    padding: 14px 24px;
-    min-width: 420px;
-    max-width: 800px;
-    border-radius: 16px;
-    background: rgba(4, 6, 24, 0.88);
-    border: 1px solid rgba(33, 246, 255, 0.3);
-    box-shadow:
-      0 0 40px rgba(33, 246, 255, 0.15),
-      0 0 20px rgba(255, 47, 209, 0.1),
-      inset 0 0 0 1px rgba(33, 246, 255, 0.08);
-    backdrop-filter: blur(12px);
-    overflow: hidden;
-    animation: cyberpunk-pulse 4s ease-in-out infinite;
-  }
-
-  @keyframes cyberpunk-pulse {
-    0%, 100% {
-      box-shadow:
-        0 0 40px rgba(33, 246, 255, 0.15),
-        0 0 20px rgba(255, 47, 209, 0.1),
-        inset 0 0 0 1px rgba(33, 246, 255, 0.08);
-      border-color: rgba(33, 246, 255, 0.3);
-    }
-    50% {
-      box-shadow:
-        0 0 55px rgba(33, 246, 255, 0.3),
-        0 0 30px rgba(255, 47, 209, 0.18),
-        inset 0 0 0 1px rgba(33, 246, 255, 0.15);
-      border-color: rgba(33, 246, 255, 0.5);
-    }
-  }
-
-  /* Animated grid background */
-  #ticker_container::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    background-image:
-      linear-gradient(0deg, rgba(33, 246, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(33, 246, 255, 0.03) 1px, transparent 1px);
-    background-size: 20px 20px;
-    background-position: 0 0;
-    animation: grid-scroll 20s linear infinite;
-    opacity: 0.8;
-  }
-
-  @keyframes grid-scroll {
-    0% { background-position: 0 0; }
-    100% { background-position: 20px 20px; }
-  }
-
-  /* Scan line */
-  #ticker_container::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    background: linear-gradient(
-      to right,
-      transparent 0%,
-      transparent 45%,
-      rgba(33, 246, 255, 0.3) 50%,
-      transparent 55%,
-      transparent 100%
-    );
-    background-size: 200% 100%;
-    animation: scan-line-h 4s linear infinite;
-    mix-blend-mode: screen;
-    opacity: 0.4;
-  }
-
-  @keyframes scan-line-h {
-    0% { background-position: 0% 0%; }
-    100% { background-position: 100% 0%; }
-  }
-
-  #ticker_container.visible {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-
-  .ticker-accent {
-    width: 4px;
-    height: 44px;
-    background: linear-gradient(var(--accent-cyan), var(--accent-magenta));
-    border-radius: 2px;
-    flex-shrink: 0;
-    box-shadow: 0 0 8px rgba(33, 246, 255, 0.4);
-    position: relative;
-    z-index: 1;
-  }
-
-  .ticker-content {
-    flex: 1;
-    min-width: 0;
-    position: relative;
-    z-index: 1;
-  }
-
-  .ticker-label {
-    font-family: var(--font-display);
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.22em;
-    color: var(--accent-cyan);
-    text-shadow: 0 0 10px rgba(33, 246, 255, 0.5);
-  }
-
-  .ticker-entry {
-    font-family: var(--font-display);
-    font-size: 22px;
-    font-weight: 500;
-    color: var(--text-primary);
-    text-shadow:
-      0 0 14px rgba(33, 246, 255, 0.35),
-      2px 0 2px rgba(255, 47, 209, 0.2),
-      -2px 0 2px rgba(33, 246, 255, 0.2);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-top: 2px;
-  }
-
-  .ticker-meta {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    white-space: nowrap;
-    position: relative;
-    z-index: 1;
-  }
-
-  .ticker-rolled-by {
-    font-family: var(--font-body);
-    font-size: 13px;
-    color: var(--accent-magenta);
-    text-shadow: 0 0 8px rgba(255, 47, 209, 0.4);
-  }
-
-  .ticker-timer {
-    font-family: var(--font-display);
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--accent-cyan);
-    text-shadow: 0 0 12px rgba(33, 246, 255, 0.5);
-    font-variant-numeric: tabular-nums;
-    margin-top: 2px;
-  }
-</style>
+    body { display: flex; justify-content: flex-start; align-items: flex-end; min-height: 100vh; padding: 20px; }
+    .ticker-stage { transition: opacity 0.4s ease, transform 0.4s ease; opacity: 0; transform: translateY(14px); }
+    .ticker-stage.visible { opacity: 1; transform: translateY(0); }
+  </style>
 </head>
-
 <body>
-  <div id="ticker_container">
-    <div class="ticker-accent"></div>
-    <div class="ticker-content">
-      <div class="ticker-label">Now Playing</div>
-      <div class="ticker-entry" id="splot_entry"></div>
-    </div>
-    <div class="ticker-meta">
-      <div class="ticker-rolled-by">rolled by <span id="rolled_by"></span></div>
-      <div class="ticker-timer" id="elapsed">00:00</div>
+  <div class="oracle-root">
+    <div class="ticker-stage" id="ticker_container">
+      <div class="oracle-ticker">
+        <div class="oracle-ticker-frame">
+          <div class="oracle-ticker-body">
+            <div class="oracle-ticker-row1">
+              <span class="oracle-ticker-badge">Active Splot</span>
+              <span class="oracle-ticker-elapsed" id="elapsed">00:00</span>
+            </div>
+            <div class="oracle-ticker-entry" id="splot_entry">&nbsp;</div>
+            <div class="oracle-ticker-row2">
+              <span class="oracle-ticker-rolledby">rolled by <b id="rolled_by">&nbsp;</b></span>
+            </div>
+            <div class="oracle-ticker-cta-row">
+              <span class="oracle-ticker-cta">!join for your turn</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-</body>
 
+  <script>
+    const INITIAL_ACTIVE = <%- JSON.stringify(typeof active_splot !== 'undefined' && active_splot ? active_splot : null) %>;
+
+    const container = document.getElementById('ticker_container');
+    const entryEl = document.getElementById('splot_entry');
+    const rolledByEl = document.getElementById('rolled_by');
+    const elapsedEl = document.getElementById('elapsed');
+
+    let activatedAt = null;
+    let timerInterval = null;
+
+    function formatElapsed(ms) {
+      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+      const m = Math.floor(totalSeconds / 60);
+      const s = totalSeconds % 60;
+      return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+    function tickElapsed() {
+      if (!activatedAt) return;
+      elapsedEl.textContent = formatElapsed(Date.now() - activatedAt);
+    }
+    function startTimer(ts) {
+      if (timerInterval) clearInterval(timerInterval);
+      activatedAt = ts || Date.now();
+      tickElapsed();
+      timerInterval = setInterval(tickElapsed, 1000);
+    }
+    function stopTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = null;
+      activatedAt = null;
+      elapsedEl.textContent = '00:00';
+    }
+
+    function showTicker(data) {
+      if (!data) return;
+      entryEl.textContent = data.entry || '';
+      rolledByEl.textContent = data.rolled_by || '';
+      startTimer(data.activated_at);
+      container.classList.add('visible');
+    }
+    function hideTicker() {
+      container.classList.remove('visible');
+      stopTimer();
+    }
+
+    if (INITIAL_ACTIVE) showTicker(INITIAL_ACTIVE);
+
+    const socket = io();
+    socket.on('connect', () => console.log('ticker connected'));
+    socket.on('splot_activated', showTicker);
+    socket.on('splot_deactivated', hideTicker);
+  </script>
+</body>
 </html>

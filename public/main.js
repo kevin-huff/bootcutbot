@@ -28,6 +28,69 @@ $(document).ready(function() {
       button.addEventListener('click', maybeFire);
     });
 
+    // --- Commands drawer (⌘K / Ctrl+K) ---
+    const drawer = document.getElementById('commands-drawer');
+    const backdrop = document.getElementById('commands-backdrop');
+    const openBtn = document.getElementById('open-commands');
+    const closeBtn = document.getElementById('close-commands');
+    const search = document.getElementById('commands-search');
+
+    function openCommandsDrawer() {
+      if (!drawer) return;
+      drawer.classList.add('is-open');
+      drawer.setAttribute('aria-hidden', 'false');
+      if (backdrop) backdrop.classList.add('is-open');
+      if (search) { search.value = ''; filterCommands(''); setTimeout(() => search.focus(), 50); }
+    }
+    function closeCommandsDrawer() {
+      if (!drawer) return;
+      drawer.classList.remove('is-open');
+      drawer.setAttribute('aria-hidden', 'true');
+      if (backdrop) backdrop.classList.remove('is-open');
+    }
+    function filterCommands(q) {
+      const needle = (q || '').trim().toLowerCase();
+      document.querySelectorAll('.drawer-cmd').forEach(row => {
+        if (!needle) { row.classList.remove('is-hidden'); return; }
+        const hay = (row.dataset.cmd || '') + ' ' + (row.dataset.desc || '');
+        row.classList.toggle('is-hidden', hay.indexOf(needle) === -1);
+      });
+      document.querySelectorAll('.drawer-group').forEach(group => {
+        const anyVisible = group.querySelectorAll('.drawer-cmd:not(.is-hidden)').length > 0;
+        group.style.display = anyVisible ? '' : 'none';
+      });
+    }
+    if (openBtn)  openBtn.addEventListener('click', openCommandsDrawer);
+    if (closeBtn) closeBtn.addEventListener('click', closeCommandsDrawer);
+    if (backdrop) backdrop.addEventListener('click', closeCommandsDrawer);
+    if (search)   search.addEventListener('input', (e) => filterCommands(e.target.value));
+    document.addEventListener('keydown', (e) => {
+      const isK = e.key === 'k' || e.key === 'K';
+      if (isK && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        if (drawer && drawer.classList.contains('is-open')) closeCommandsDrawer();
+        else openCommandsDrawer();
+      } else if (e.key === 'Escape' && drawer && drawer.classList.contains('is-open')) {
+        closeCommandsDrawer();
+      }
+    });
+
+    // --- Status bar live wiring ---
+    const sbSync = document.getElementById('foot-sync');
+    function tickSync() {
+      if (!sbSync) return;
+      const d = new Date();
+      sbSync.textContent = 'SYNC ' +
+        String(d.getHours()).padStart(2, '0') + ':' +
+        String(d.getMinutes()).padStart(2, '0') + ':' +
+        String(d.getSeconds()).padStart(2, '0');
+    }
+    tickSync();
+    setInterval(tickSync, 1000);
+
+    // Initial counts / active-splot sync
+    if (typeof updateBoardCount === 'function') updateBoardCount();
+    if (typeof updateBaCount === 'function') updateBaCount();
   });
   var socket = io();
   socket.on("connect", () => {
@@ -272,6 +335,7 @@ $(document).ready(function() {
       }
     };
 
+    var totalMsForFill = 0;
     var setDisplay = function (ms) {
       ensureElements();
       var clamped = Math.max(0, Math.floor(ms));
@@ -279,6 +343,12 @@ $(document).ready(function() {
       var minutes = Math.floor(totalSeconds / 60);
       var seconds = totalSeconds % 60;
       $timerDisplay.text(formatSegment(minutes) + ':' + formatSegment(seconds));
+      if (totalMsForFill < clamped) totalMsForFill = clamped;
+      var bar = document.getElementById('timer-bar-fill');
+      if (bar) {
+        var pct = totalMsForFill > 0 ? (clamped / totalMsForFill) * 100 : 0;
+        bar.style.width = Math.max(0, Math.min(100, pct)) + '%';
+      }
     };
 
     var setButtonsForState = function (state) {
@@ -434,60 +504,89 @@ $(document).ready(function() {
 
 
   function updateTurn(text) {
-      document.getElementById("current_player").innerHTML = "Current Player: " + text;
+      const el = document.getElementById("current_player");
+      if (!el) return;
+      el.textContent = text || '';
+      const sbTurn = document.getElementById('sb-turn');
+      if (sbTurn) sbTurn.textContent = text || '';
+      const playerTurnNum = document.getElementById('player-turn-num');
+      if (playerTurnNum) playerTurnNum.textContent = text || '';
   }
 
-  function updateBoard(splot_data){    
-    var edit_string = "<button onClick = 'popEditModal(" + splot_data.id + ")' class='btn btn-sm btn-dark' title='Edit Splot'><i class='fa-solid fa-pen'></i></button>" + "\n";    
-    var ba_complete_string = "<button onClick = 'breakAwaySplot("+ splot_data.id +")' class='btn btn-sm btn-dark' title='BA Replace Splot'><i class='fa-solid fa-dice-one'></i></button>" + "\n" +
-    "<button onClick = 'completeSplot(" + splot_data.id + ")' class='btn btn-sm btn-dark'  title='Complete Splot'><i class='fa-solid fa-circle-check'></i></button>" + "\n";
-    var splot_dots = '<span class="fa-stack"><span class="fa-regular fa-circle fa-stack-2x"></span><strong class="fa-stack-1x" id="splot_dot_' + splot_data.id + '">' + splot_data.splot_dot + '</strong></span>'+ "\n";
-    var splot_dot_increase = "<button onClick = 'splotDotIncrease(" + splot_data.id + ")' class='btn btn-sm btn-dark'  title='Increase Splot Dot'><i class='fa-solid fa-plus-circle'></i></button>" + "\n";
-    var splot_dot_decrease = "<button onClick = 'splotDotDecrease(" + splot_data.id + ")' class='btn btn-sm btn-dark'  title='Decrease Splot Dot'><i class='fa-solid fa-minus-circle'></i></button>" + "\n";
-    var fart_button = "<button onClick = 'swapSplot(" + splot_data.id + ")'class='btn btn-sm btn-dark swap_splot'  title='Swap Splot'><i class='fa-solid fa-arrow-right-arrow-left'></i></button>";
-    var alt_entry_string = splot_data.alt_entry ?
-    "<p>ALT SPLOT: <span id='altSplotEntry_" + splot_data.id + "'>" + splot_data.alt_entry +"</span> : <span id='alt_splot_dot_" + splot_data.id + "'>" + splot_data.alt_splot_dot + "</span> dots</p>" :
-    '';
-
-    var innerHTML = "<div class='row'>" +
-      '<div class="col-md-8">' +
-        '<h3 >' + splot_data.id + ': <span id="splotEntry_' + splot_data.id + '">' + splot_data.entry + '</span></h3>' +
-        alt_entry_string +
-      '</div>' +
-      '<div class="col-md-1">' +
-        '<span class="fa-stack float-right fa-beat">' +
-          '<span class="fa-regular fa-circle fa-stack-2x"></span>' +
-          '<strong class="fa-stack-1x" id="splot_dot_' + splot_data.id + '">' + splot_data.splot_dot + '</strong>' +
-        '</span>' +
-      '</div>' +
-      '<div class="col-md-3" id="new_splot_'+ splot_data.id +'_buttons">' + 
-        '<div class="row">' +
-          '<div class="col-md-12">' +
-              '<div class="btn-group" role="group">' +
-                splot_dot_increase + ba_complete_string +
-              "</div>" +
-          "</div>" +
-        "</div>" +
-        '<div class="row">' +
-          '<div class="col-md-12">' +
-              '<div class="btn-group" role="group">' +
-                splot_dot_decrease + edit_string + fart_button + 
-          '</div>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-        
-    var this_splot = document.getElementById('splot_' + splot_data.id);
-
-    if (this_splot) {
-        this_splot.innerHTML = innerHTML;
-    } else {
-      var div = document.createElement("div");
-      div.className = "col-md-6";
-      div.id = 'splot_' + splot_data.id;
-      div.innerHTML = innerHTML;
-      document.getElementById("board").appendChild(div);
+  function renderDots(value) {
+    const v = Math.max(0, Math.min(10, parseInt(value, 10) || 0));
+    let out = '';
+    for (let i = 0; i < 10; i++) {
+      out += '<span class="dot' + (i < v ? ' filled' : '') + '"></span>';
     }
+    return out;
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function updateBoard(splot_data){
+    const id = splot_data.id;
+    const idPadded = String(id).padStart(2, '0');
+    const dots = parseInt(splot_data.splot_dot, 10) || 0;
+    const entry = escapeHtml(splot_data.entry);
+    const hasAlt = !!splot_data.alt_entry;
+    const altEntry = escapeHtml(splot_data.alt_entry);
+    const altDots = parseInt(splot_data.alt_splot_dot, 10) || 0;
+
+    const altBlock = hasAlt ? (
+      '<div class="splot-alt">' +
+        '<small>ALT &middot; <span id="alt_splot_dot_' + id + '">' + altDots + '</span> DOTS</small>' +
+        '<span id="altSplotEntry_' + id + '">' + altEntry + '</span>' +
+      '</div>'
+    ) : '';
+
+    const innerHTML =
+      '<span class="splot-id">#' + idPadded + '</span>' +
+      '<div class="splot-body">' +
+        '<p class="splot-entry" id="splotEntry_' + id + '">' + entry + '</p>' +
+        altBlock +
+        '<div class="splot-dots">' +
+          '<small>DOTS</small>' +
+          '<span class="dots" data-value="' + dots + '">' + renderDots(dots) + '</span>' +
+          '<span class="splot-dot-n"><strong id="splot_dot_' + id + '">' + dots + '</strong>/10</span>' +
+        '</div>' +
+        '<div class="splot-actions">' +
+          '<button class="ibtn" title="Decrease" onclick="splotDotDecrease(\'' + id + '\')">&minus;</button>' +
+          '<button class="ibtn" title="Increase" onclick="splotDotIncrease(\'' + id + '\')">&#43;</button>' +
+          '<button class="ibtn ibtn--hot activate-splot-btn" id="activate_splot_' + id + '" title="Activate (Now Playing)" onclick="activateSplot(\'' + id + '\')">&#9654;</button>' +
+          '<button class="ibtn" title="Complete" onclick="completeSplot(' + id + ')">&#10003;</button>' +
+          '<span class="splot-spacer"></span>' +
+          '<button class="ibtn" title="Edit" onclick="popEditModal(' + id + ')">&#9998;</button>' +
+          '<button class="ibtn swap_splot" title="Swap Alt" onclick="swapSplot(' + id + ')">&#8646;</button>' +
+          '<button class="ibtn" title="BA Replace" onclick="breakAwaySplot(\'' + id + '\')">&#9856;</button>' +
+        '</div>' +
+      '</div>';
+
+    var this_splot = document.getElementById('splot_' + id);
+    if (this_splot) {
+      this_splot.innerHTML = innerHTML;
+    } else {
+      var article = document.createElement("article");
+      article.className = "splot";
+      article.id = 'splot_' + id;
+      article.innerHTML = innerHTML;
+      document.getElementById("board").appendChild(article);
+    }
+    updateBoardCount();
+    if (activeSplotId != null && String(activeSplotId) === String(id)) {
+      setActiveSplotUI(activeSplotId);
+    }
+  }
+
+  function updateBoardCount() {
+    const el = document.getElementById('splot-count');
+    if (!el) return;
+    const n = document.getElementById('board').childElementCount;
+    el.textContent = n + ' splot' + (n === 1 ? '' : 's');
   }
 
   function getSplotData(splot_id) {
@@ -585,41 +684,41 @@ $(document).ready(function() {
     $('#addBreakaway').modal('hide');
   }
 
-  function updateBreakaways(ba_data){    
-    var ba_dot_increase = "<button onClick = 'breakawayIncrease(" + ba_data.id + ")' class='btn btn-sm btn-dark'  title='Increase Splot Dot'><i class='fa-solid fa-plus-circle'></i></button>" + "\n";
-    var ba_dot_decrease = "<button onClick = 'breakawayDecrease(" + ba_data.id + ")' class='btn btn-sm btn-dark'  title='Decrease Splot Dot'><i class='fa-solid fa-minus-circle'></i></button>" + "\n";
-    var ba_edit = "<button onClick = 'popEditBreakawayModal(" + ba_data.id + ")' class='btn btn-sm btn-dark'  title='Edit Breakaway'><i class='fa-solid fa-pen'></i></button>" + "\n";
-    var innerHTML = '<div class="row">' +
-            '<div class="col-md-8">' +
-              '<h3><span id=\'breakawayName_' + ba_data.id + '\'>'+ ba_data.name + '</span> Breakaways</h3>' +
-            '</div>' +
-            '<div class="col-md-1">' +
-              '<span class="fa-stack float-right fa-beat">' +
-                '<span class="fa-regular fa-circle fa-stack-2x"></span>' +
-                '<strong class="fa-stack-1x" id="ba_dot_' + ba_data.id + '">' +
-                  ba_data.ba_dots +
-                '</strong>' +
-              '</span>' +
-            '</div>' +
-            '<div class="col-md-3">' +
-              ba_dot_increase +
-              ba_dot_decrease +
-              ba_edit +
-              "<button class='btn btn-sm btn-dark fart-button'  title='Careful'><i class='fa-solid fa-poop'></i></button>" +
-            '</div>' +
-            '</div>' + "\n";
-        
-    var this_ba = document.getElementById('breakaway_' + ba_data.id);
+  function updateBreakaways(ba_data){
+    const id = ba_data.id;
+    const name = escapeHtml(ba_data.name);
+    const dots = parseInt(ba_data.ba_dots, 10) || 0;
+    const innerHTML =
+      '<small class="ba-kicker">BREAKAWAY</small>' +
+      '<div class="ba-row">' +
+        '<h3 id="breakawayName_' + id + '">' + name + '</h3>' +
+        '<span class="ba-count" id="ba_dot_' + id + '">' + dots + '</span>' +
+      '</div>' +
+      '<div class="ba-actions">' +
+        '<button class="ibtn ibtn--sm" title="Decrease" onclick="breakawayDecrease(\'' + id + '\')">&minus;</button>' +
+        '<button class="ibtn ibtn--sm" title="Increase" onclick="breakawayIncrease(\'' + id + '\')">&#43;</button>' +
+        '<span class="splot-spacer"></span>' +
+        '<button class="ibtn ibtn--sm" title="Edit" onclick="popEditBreakawayModal(' + id + ')">&#9998;</button>' +
+      '</div>';
 
+    var this_ba = document.getElementById('breakaway_' + id);
     if (this_ba) {
-        this_ba.innerHTML = innerHTML;
+      this_ba.innerHTML = innerHTML;
     } else {
-      var div = document.createElement("div");
-      div.className = "col-md-6";
-      div.id = 'breakaway_' + ba_data.id;
-      div.innerHTML = innerHTML;
-      document.getElementById("breakaways").appendChild(div);
+      var article = document.createElement("article");
+      article.className = "ba";
+      article.id = 'breakaway_' + id;
+      article.innerHTML = innerHTML;
+      document.getElementById("breakaways").appendChild(article);
     }
+    updateBaCount();
+  }
+
+  function updateBaCount() {
+    const el = document.getElementById('ba-count');
+    if (!el) return;
+    const n = document.getElementById('breakaways').childElementCount;
+    el.textContent = n + ' tracked';
   }
 
   function getBreakawayData(ba_id){
@@ -670,10 +769,26 @@ $(document).ready(function() {
 
   let activeSplotId = null;
 
+  function setActiveSplotUI(splot_id) {
+    document.querySelectorAll('.splot').forEach(el => el.classList.remove('is-active'));
+    document.querySelectorAll('.activate-splot-btn').forEach(btn => {
+      btn.innerHTML = '&#9654;';
+      btn.title = 'Activate (Now Playing)';
+    });
+    if (splot_id != null) {
+      const container = document.getElementById('splot_' + splot_id);
+      if (container) container.classList.add('is-active');
+      const activeBtn = document.getElementById('activate_splot_' + splot_id);
+      if (activeBtn) {
+        activeBtn.innerHTML = '&#9632;';
+        activeBtn.title = 'Stop (Deactivate)';
+      }
+    }
+  }
+
   function activateSplot(splot_id) {
     let splot_data = getSplotData(splot_id);
     if (activeSplotId === splot_id) {
-      // Deactivate if clicking the same splot
       deactivateSplot();
       return;
     }
@@ -681,20 +796,7 @@ $(document).ready(function() {
     socket.emit('splot_activated', { entry: splot_data.entry, splot_id: splot_id }, (response) => {
       console.log(response);
     });
-    // Update button states
-    document.querySelectorAll('.activate-splot-btn').forEach(btn => {
-      btn.classList.remove('btn-success');
-      btn.classList.add('btn-dark');
-      btn.querySelector('i').classList.remove('fa-circle-stop');
-      btn.querySelector('i').classList.add('fa-play');
-    });
-    const activeBtn = document.getElementById('activate_splot_' + splot_id);
-    if (activeBtn) {
-      activeBtn.classList.remove('btn-dark');
-      activeBtn.classList.add('btn-success');
-      activeBtn.querySelector('i').classList.remove('fa-play');
-      activeBtn.querySelector('i').classList.add('fa-circle-stop');
-    }
+    setActiveSplotUI(splot_id);
   }
 
   function deactivateSplot() {
@@ -702,12 +804,7 @@ $(document).ready(function() {
     socket.emit('splot_deactivated', {}, (response) => {
       console.log(response);
     });
-    document.querySelectorAll('.activate-splot-btn').forEach(btn => {
-      btn.classList.remove('btn-success');
-      btn.classList.add('btn-dark');
-      btn.querySelector('i').classList.remove('fa-circle-stop');
-      btn.querySelector('i').classList.add('fa-play');
-    });
+    setActiveSplotUI(null);
   }
 
   function splotDotDecrease(splot_id){

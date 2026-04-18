@@ -1,7 +1,6 @@
 import express from 'express';
 import path from 'path';
 import momentTz from 'moment-timezone';
-import jsoning from 'jsoning';
 import bodyParser from 'body-parser';
 import basicAuth from 'express-basic-auth';
 import { fileURLToPath } from 'url';
@@ -11,6 +10,7 @@ import { getAuthUrl, handleAuthCallback } from './auth.js';
 import { initializeEventSub } from './eventSub.js';
 import { hellfireSpotIds, heavenfireSpotIds } from './utils.js';
 import anniversaryRoutes from './routes/anniversary.js';
+import { JsoningPg } from './lib/jsoningPg.js';
 import {
   getTormentMeterState,
   recordContribution as recordTormentContribution
@@ -23,21 +23,26 @@ const router = express.Router();
 router.use(bodyParser.json());
 router.use(anniversaryRoutes);
 
-const settings_db = new jsoning("db/queue_settings.json");
-const queue_db = new jsoning("db/queue.json");
-const turns_db = new jsoning("db/turns.json");
-const board_db = new jsoning("db/board_db.json");
-const ratings_db = new jsoning("db/ratings_db.json");
-const breakaways_db = new jsoning("db/breakaways_db.json");
-const historical_splots_db = new jsoning("db/historical_splots.json");
-const timer_db = new jsoning("db/timer_db.json");
+const settings_db = new JsoningPg('queue_settings');
+const queue_db = new JsoningPg('queue');
+const turns_db = new JsoningPg('turns');
+const board_db = new JsoningPg('board_db');
+const ratings_db = new JsoningPg('ratings_db');
+const breakaways_db = new JsoningPg('breakaways_db');
+const historical_splots_db = new JsoningPg('historical_splots');
+const timer_db = new JsoningPg('timer_db');
+const votes_db = new JsoningPg('votes');
+const deaths_db = new JsoningPg('deaths');
+const dice_log_db = new JsoningPg('dice_log');
 
-router.get("/historical_splots.json", (req, res) => {
-  res.sendFile(path.join(__dirname, "db/historical_splots.json"));
+router.get("/historical_splots.json", async (req, res) => {
+  const rows = await historical_splots_db.all();
+  res.json(rows);
 });
 
-router.get("/dice_log.json", (req, res) => {
-  res.sendFile(path.join(__dirname, "dice_log.json"));
+router.get("/dice_log.json", async (req, res) => {
+  const rows = await dice_log_db.all();
+  res.json(rows);
 });
 
 router.get("/diceData", (req, res) => {
@@ -174,13 +179,10 @@ router.get("/menu", (req, res) => {
   });
 });
 
-router.get("/board", (req, res) => {
-  let current_breakaways = breakaways_db.get("breakaways");
-  if (current_breakaways == null) {
-    current_breakaways = [];
-  }
+router.get("/board", async (req, res) => {
+  const current_breakaways = (await breakaways_db.get("breakaways")) || [];
   res.render("integrated_board_2025.ejs", {
-    board: board_db.get("board"),
+    board: await board_db.get("board"),
     breakaways: current_breakaways,
     current_turn: state.current_turn,
     hellfireSpotIds: Array.from(hellfireSpotIds),
@@ -188,46 +190,40 @@ router.get("/board", (req, res) => {
   });
 });
 
-router.get("/board_big", (req, res) => {
+router.get("/board_big", async (req, res) => {
   res.render("board_big.ejs", {
-    board: board_db.get("board"),
+    board: await board_db.get("board"),
     current_turn: state.current_turn,
   });
 });
 
-router.get("/ratings", (req, res) => {
+router.get("/ratings", async (req, res) => {
   res.render("ratings.ejs", {
-    ratings: ratings_db.get("ratings"),
+    ratings: await ratings_db.get("ratings"),
     banner_image: process.env.banner_image,
   });
 });
 
-router.get("/bootcut_board", (req, res) => {
-  let current_breakaways = breakaways_db.get("breakaways");
-  if (current_breakaways == null) {
-    current_breakaways = [];
-  }
+router.get("/bootcut_board", async (req, res) => {
+  const current_breakaways = (await breakaways_db.get("breakaways")) || [];
   res.render("bootcut_board.ejs", {
-    board: board_db.get("board"),
+    board: await board_db.get("board"),
     breakaways: state.current_breakaways,
     current_turn: state.current_turn,
   });
 });
 
-router.get("/breakaways", (req, res) => {
-  let current_breakaways = breakaways_db.get("breakaways");
-  if (current_breakaways == null) {
-    current_breakaways = [];
-  }
+router.get("/breakaways", async (req, res) => {
+  const current_breakaways = (await breakaways_db.get("breakaways")) || [];
   res.render("breakaways.ejs", {
-    board: board_db.get("board"),
+    board: await board_db.get("board"),
     breakaways: state.current_breakaways,
     current_turn: state.current_turn,
   });
 });
 
-router.get("/splot_db", (req, res) => {
-  const historical_splots = historical_splots_db.all();
+router.get("/splot_db", async (req, res) => {
+  const historical_splots = await historical_splots_db.all();
   res.render("historical_splots.ejs", {
     splots: historical_splots,
     banner_image: process.env.banner_image,
@@ -237,19 +233,17 @@ router.get("/splot_db", (req, res) => {
 router.get("/board_admin", basicAuth({
   users: { [process.env.web_user]: process.env.web_pass },
   challenge: true,
-}), (req, res) => {
-  var breakaways = breakaways_db.get("breakaways");
-  if (breakaways == null) {
-    var breakaways = [];
-  }
-  var queue = queue_db.get("queue") || [];
-  var turns = turns_db.get("turns") || {};
+}), async (req, res) => {
+  const breakaways = (await breakaways_db.get("breakaways")) || [];
+  const queue = (await queue_db.get("queue")) || [];
+  const turns = (await turns_db.get("turns")) || {};
+  const board = (await board_db.get("board")) || [];
   res.render("board_admin.ejs", {
     data: {
-      board: board_db.get("board"),
-      breakaways: breakaways,
-      queue: queue,
-      turns: turns,
+      board,
+      breakaways,
+      queue,
+      turns,
       queue_open: state.queue_open,
       firsts_first: state.firsts_first,
       current_turn: state.current_turn,
@@ -261,19 +255,13 @@ router.get("/board_admin", basicAuth({
 });
 
 router.get("/", async (req, res) => {
-  var last_turn_id = settings_db.get("turn_count");
-  var this_turn_id = last_turn_id++;
-  var queue = queue_db.get("queue");
-  if (queue == null) {
-    var queue = [];
-  }
-  var turn_counter = turns_db.get("turns");
-  if (turn_counter == null) {
-    var turn_counter = [];
-  }
-  const endTime = await timer_db.get("end_time") || Date.now();
+  let last_turn_id = (await settings_db.get("turn_count")) || 0;
+  const this_turn_id = last_turn_id++;
+  const queue = (await queue_db.get("queue")) || [];
+  const turn_counter = (await turns_db.get("turns")) || [];
+  const endTime = (await timer_db.get("end_time")) || Date.now();
   res.render("index.ejs", {
-    queue: queue,
+    queue,
     turns: turn_counter,
     queue_open: state.queue_open,
     first_turn_first: state.firsts_first,
@@ -285,11 +273,8 @@ router.get("/", async (req, res) => {
   });
 });
 
-router.get("/deaths", (req, res) => {
-  var deaths = deaths_db.get("deaths");
-  if (deaths == null) {
-    var deaths = 0;
-  }
+router.get("/deaths", async (req, res) => {
+  const deaths = (await deaths_db.get("deaths")) || 0;
   res.render("deathcounter.ejs", {
     death_count: deaths,
   });
@@ -303,9 +288,9 @@ router.get("/crowd_sound", (req, res) => {
   res.render("crowd_sound.ejs");
 });
 
-router.get("/notification_admin", (req, res) => {
+router.get("/notification_admin", async (req, res) => {
   res.render("notification_admin", {
-    notification: settings_db.get("notification"),
+    notification: await settings_db.get("notification"),
   });
 });
 
@@ -313,9 +298,9 @@ router.get("/chaz_roll", (req, res) => {
   res.render("chaz_roll.ejs");
 });
 
-router.get("/notification", (req, res) => {
+router.get("/notification", async (req, res) => {
   res.render("notification", {
-    notification: settings_db.get("notification"),
+    notification: await settings_db.get("notification"),
   });
 });
 
@@ -393,12 +378,11 @@ router.get("/auth/twitch/callback", async (req, res) => {
   }
 });
 
-router.get("/sub_tracker", (req, res) => {
-  // Get subsTracker from settings_db
-  const subsTracker = settings_db.get("subsTracker");
-  const bitsTracker = settings_db.get("bitsTracker");
-  const donationsTracker = settings_db.get("donationsTracker");
-  const completed_spins = settings_db.get("completedSpins") || 0;
+router.get("/sub_tracker", async (req, res) => {
+  const subsTracker = await settings_db.get("subsTracker");
+  const bitsTracker = await settings_db.get("bitsTracker");
+  const donationsTracker = await settings_db.get("donationsTracker");
+  const completed_spins = (await settings_db.get("completedSpins")) || 0;
 
   res.render("sub_tracker", {
     current_subcount: subsTracker,

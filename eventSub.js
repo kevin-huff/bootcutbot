@@ -2,12 +2,12 @@ import { ApiClient } from '@twurple/api';
 import { EventSubWsListener } from '@twurple/eventsub-ws';
 import { RefreshingAuthProvider } from '@twurple/auth';
 import dotenv from 'dotenv';
-import jsoning from 'jsoning';
+import { JsoningPg } from './lib/jsoningPg.js';
 import fetch from 'node-fetch';
 
 dotenv.config();
 
-const tokenDb = new jsoning("db/twitch_tokens.json");
+const tokenDb = new JsoningPg('twitch_tokens');
 let io;
 let authProvider;
 

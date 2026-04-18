@@ -1,39 +1,41 @@
-
 <!DOCTYPE html>
-<html>
- 
+<html lang="en">
 <head>
+  <meta charset="utf-8" />
   <title>Board Admin</title>
-    <!-- Bootstrap CSS -->
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- Bootstrap (kept for modals + toasts) -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous" />
-  <!-- Dark mode CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@forevolve/bootstrap-dark@1.0.0/dist/css/bootstrap-dark.min.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
+  <!-- Arcade fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Legacy site css first, then arcade overrides -->
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/arcade-board-admin.css">
+
   <script src="https://kit.fontawesome.com/5a69a86b05.js" crossorigin="anonymous"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.1/js/bootstrap.bundle.min.js" ></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.1/js/bootstrap.bundle.min.js"></script>
   <script src="/tmi.min.js"></script>
   <script src="https://stephenlb.github.io/spoken/spoken.js"></script>
   <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
   <script src="godice.js"></script>
-	<script src="main.js" data="<%= JSON.stringify(data) %>"></script>
-</head> 
-<body>
-    <!-- Position it -->
-  <div id="messages-list">
-  </div>
-<div class="container bootstrap-dark">
-  <!-- hero banner.png -->
-  <div class="row">
-    <div class="col-12">
-      <img src="banner.png" class="img-fluid" alt="Responsive image">
-    </div>
-  </div>
-  <!-- Load fart_0 through fart_9 --> 
+  <script src="main.js" data="<%= JSON.stringify(data) %>"></script>
+</head>
+<body class="arcade-admin">
+
+  <!-- toast container -->
+  <div id="messages-list"></div>
+
+  <!-- audio tags preserved -->
   <audio id="fart_0" src="/farts/fart_0.wav"></audio>
   <audio id="fart_1" src="/farts/fart_1.wav"></audio>
   <audio id="fart_2" src="/farts/fart_2.wav"></audio>
@@ -47,386 +49,457 @@
   <audio id="win_sound" src="/win.mp3"></audio>
   <audio id="lose_sound" src="/lose.mp3"></audio>
 
-  <div class="row py-3" id="board">
-    <% data.board.forEach(function(dataRow, idxOfRow, orgnlAryObject) { %>
-      <div class="col-md-6" id='splot_<%= dataRow.id %>'>
-        <div class="row py-3">
-          <div class="col-md-8">
-            <h3><%= dataRow.id %>: <span id='splotEntry_<%= dataRow.id %>'><%= dataRow.entry %></span></h3>
-            <% if (dataRow.alt_entry) { %>
-              <p>ALT SPLOT: <span id='altSplotEntry_<%= dataRow.id %>'><%= dataRow.alt_entry %></span> : <span id='alt_splot_dot_<%= dataRow.id %>'><%= dataRow.alt_splot_dot %></span> dots</p>
+  <!-- ============ STATUS BAR ============ -->
+  <header class="status-bar">
+    <div class="sb-logo">
+      <span class="sb-mark">B</span>
+      <span class="sb-title">
+        <small>BOOTCUTBOT / ADMIN</small>
+        <span>Board Control</span>
+      </span>
+    </div>
+    <div class="sb-cell sb-live">
+      <span class="led led--live"></span>
+      <div>
+        <small>STREAM</small>
+        <span class="sb-value" id="sb-stream">LIVE</span>
+      </div>
+    </div>
+    <div class="sb-cell">
+      <span class="led <%= data.queue_open ? 'on' : '' %>" id="sb-queue-led"></span>
+      <div>
+        <small>QUEUE</small>
+        <span class="sb-value" id="sb-queue"><%= (data.queue && data.queue.length) || 0 %> &middot; <%= data.queue_open ? 'OPEN' : 'CLOSED' %></span>
+      </div>
+    </div>
+    <div class="sb-cell">
+      <span class="led" id="sb-dice-led"></span>
+      <div>
+        <small>GODICE</small>
+        <span class="sb-value" id="sb-dice">0/0</span>
+      </div>
+    </div>
+    <div class="sb-cell">
+      <span class="led on" id="sb-ai-led"></span>
+      <div>
+        <small>AI</small>
+        <span class="sb-value" id="sb-ai">Abbadabbabot</span>
+      </div>
+    </div>
+    <div class="sb-cell">
+      <span class="led on"></span>
+      <div>
+        <small>TURN</small>
+        <span class="sb-value" id="sb-turn"><%= data.current_turn %></span>
+      </div>
+    </div>
+    <div class="sb-spacer"></div>
+    <div class="sb-actions">
+      <button class="pill pill--ghost pill--sm" id="open-commands" type="button"><span>&#x2318;</span> Commands</button>
+      <button class="pill pill--danger pill--ghost pill--sm" onclick="clearBoard()" type="button">Clear Board</button>
+    </div>
+  </header>
+
+  <!-- ============ MAIN SHELL ============ -->
+  <div class="arcade-shell">
+
+    <!-- Player + Timer row -->
+    <section class="player-timer">
+      <div class="player">
+        <div class="kicker"><span class="led led--live"></span> NOW UP</div>
+        <h1 id="current_player"></h1>
+        <small class="player-meta">turn <span id="player-turn-num"><%= data.current_turn %></span></small>
+        <div class="pill-row">
+          <button type="button" class="pill pill--hot pill--lg" id="nextPick">&#9654; Next</button>
+          <button type="button" class="pill pill--lg" id="randomPick">&#9830; Random</button>
+          <button type="button" class="pill pill--lg" id="autoPick">&#9678; Auto Pick</button>
+          <span class="splot-spacer"></span>
+          <button type="button" class="pill" data-toggle="modal" data-target="#addSplot">&#43; Add Splot</button>
+          <button type="button" class="pill pill--ghost" data-toggle="modal" data-target="#addBreakaway">&#43; Breakaway</button>
+          <button type="button" class="pill pill--ghost" id="toggle_ai">AI &middot; Toggle</button>
+        </div>
+      </div>
+      <div class="timer">
+        <div class="timer-head">
+          <span class="led led--warn"></span>
+          <small>TURN TIMER</small>
+          <span class="grow"></span>
+          <input type="text" id="timer" placeholder="4:00" value="4:00">
+        </div>
+        <h2 id="timer_display">0:00</h2>
+        <div class="timer-bar"><span id="timer-bar-fill"></span></div>
+        <div class="pill-row">
+          <button class="pill pill--sm pill--ghost d-none" id="resume">&#9654; Resume</button>
+          <button class="pill pill--sm pill--ghost d-none" id="pause">&#x2016; Pause</button>
+          <button class="pill pill--sm pill--ghost" id="reset" onclick="startTimer()">&#8635; Reset</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main grid: splot board + right rail -->
+    <div class="arcade-main">
+
+      <!-- Splot board -->
+      <section>
+        <div class="arcade-section-head">
+          <span class="title">Board</span>
+          <span class="count" id="splot-count"><%= (data.board && data.board.length) || 0 %> splots</span>
+          <span class="grow"></span>
+          <button class="pill pill--sm" data-toggle="modal" data-target="#addSplot" type="button">&#43; Add Splot</button>
+        </div>
+
+        <div id="board">
+          <% (data.board || []).forEach(function(dataRow) { %>
+            <article class="splot" id="splot_<%= dataRow.id %>">
+              <span class="splot-id">#<%= String(dataRow.id).padStart(2, '0') %></span>
+              <div class="splot-body">
+                <p class="splot-entry" id="splotEntry_<%= dataRow.id %>"><%= dataRow.entry %></p>
+
+                <% if (dataRow.alt_entry) { %>
+                  <div class="splot-alt">
+                    <small>ALT &middot; <span id="alt_splot_dot_<%= dataRow.id %>"><%= dataRow.alt_splot_dot %></span> DOTS</small>
+                    <span id="altSplotEntry_<%= dataRow.id %>"><%= dataRow.alt_entry %></span>
+                  </div>
+                <% } %>
+
+                <div class="splot-dots">
+                  <small>DOTS</small>
+                  <span class="dots" data-value="<%= dataRow.splot_dot %>">
+                    <% for (var i = 0; i < 10; i++) { %>
+                      <span class="dot <%= i < dataRow.splot_dot ? 'filled' : '' %>"></span>
+                    <% } %>
+                  </span>
+                  <span class="splot-dot-n"><strong id="splot_dot_<%= dataRow.id %>"><%= dataRow.splot_dot %></strong>/10</span>
+                </div>
+
+                <div class="splot-actions">
+                  <button class="ibtn" title="Decrease" onclick="splotDotDecrease('<%= dataRow.id %>')">&minus;</button>
+                  <button class="ibtn" title="Increase" onclick="splotDotIncrease('<%= dataRow.id %>')">&#43;</button>
+                  <button class="ibtn ibtn--hot activate-splot-btn" id="activate_splot_<%= dataRow.id %>" title="Activate (Now Playing)" onclick="activateSplot('<%= dataRow.id %>')">&#9654;</button>
+                  <button class="ibtn" title="Complete" onclick="completeSplot(<%= dataRow.id %>)">&#10003;</button>
+                  <span class="splot-spacer"></span>
+                  <button class="ibtn" title="Edit" onclick="popEditModal(<%= dataRow.id %>)">&#9998;</button>
+                  <button class="ibtn swap_splot" title="Swap Alt" onclick="swapSplot(<%= dataRow.id %>)">&#8646;</button>
+                  <button class="ibtn" title="BA Replace" onclick="breakAwaySplot('<%= dataRow.id %>')">&#9856;</button>
+                </div>
+              </div>
+            </article>
+          <% }); %>
+        </div>
+
+        <% if (!data.board || data.board.length === 0) { %>
+          <div class="queue-empty">Board is empty &middot; press + Add Splot to begin</div>
+        <% } %>
+      </section>
+
+      <!-- Right rail -->
+      <aside class="side-rail">
+        <!-- Dice panel -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="led" id="dice-led"></span>
+            <small id="dice-panel-label">GODICE &middot; DISCONNECTED</small>
+            <span class="grow"></span>
+            <label class="fake-rolls">
+              <input type="checkbox" id="fakeRollsOnly" autocomplete="off">
+              Fake Rolls
+            </label>
+          </div>
+          <div class="panel-body">
+            <button type="button" class="pill pill--sm" onclick="openConnectionDialog()">Connect GoDice</button>
+            <div id="dice-host" style="margin-top: 12px;"></div>
+          </div>
+          <div id="roll-log"></div>
+          <div id="dice-message-container"></div>
+        </div>
+
+        <!-- Queue panel -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="led <%= data.queue_open ? 'on' : '' %>"></span>
+            <small>QUEUE &middot; <%= (data.queue && data.queue.length) || 0 %> &middot; <%= data.queue_open ? 'OPEN' : 'CLOSED' %></small>
+            <span class="grow"></span>
+            <% if (data.firsts_first) { %>
+              <span class="first-tag" style="font-family: var(--font-mono); font-size: 9px; color: var(--accent); border: 1px solid var(--accent); padding: 2px 6px; letter-spacing: 1.4px; border-radius: 3px;">FIRSTS FIRST</span>
             <% } %>
-          </div>          
-          <div class="col-md-1">
-            <span class="fa-stack float-right fa-beat">
-              <span class="fa-regular fa-circle fa-stack-2x"></span>
-              <strong class="fa-stack-1x" id="splot_dot_<%= dataRow.id %>">
-                <%= dataRow.splot_dot %>
-              </strong>
-            </span>
           </div>
-          <div class="col-md-3">
-            <div class="row">
-              <div class="col-md-12">
-                <div class="btn-group" role="group">
-                  <button onClick = 'splotDotIncrease("<%= dataRow.id %>")' class="btn btn-sm btn-dark" title='Increase Splot Dot'><i class='fa-solid fa-plus-circle'></i></button>
-                  <button onClick = 'breakAwaySplot("<%= dataRow.id %>")' class="btn btn-sm btn-dark" title='BA Replace Splot'><i class='fa-solid fa-dice-one'></i></button>
-                  <button onClick = 'completeSplot(<%= dataRow.id %>)' class="btn btn-sm btn-dark" title='Complete Splot'><i class='fa-solid fa-circle-check'></i></button>
-                  <button onClick = 'activateSplot("<%= dataRow.id %>")' id='activate_splot_<%= dataRow.id %>' class="btn btn-sm btn-dark activate-splot-btn" title='Activate Splot (Now Playing)'><i class='fa-solid fa-play'></i></button>
+          <div class="queue-list" id="queue-list">
+            <% if (data.queue && data.queue.length > 0) { %>
+              <% data.queue.forEach(function(q, i) {
+                   var name = q['display-name'] || q.username || 'unknown';
+                   var turns = (q.turn_count != null) ? q.turn_count : 0;
+                   var isFirst = turns === 0;
+              %>
+                <div class="queue-row <%= i === 0 ? 'is-next' : '' %>">
+                  <span class="pos"><%= String(i + 1).padStart(2, '0') %></span>
+                  <span class="name">
+                    <%= name %>
+                    <% if (isFirst) { %><span class="first-tag">1ST</span><% } %>
+                  </span>
+                  <span class="turns"><%= turns %> turn<%= turns === 1 ? '' : 's' %></span>
                 </div>
-              </div>
-              <div class="col-md-12">
-                <div class="btn-group" role="group">
-                  <button onClick = 'splotDotDecrease("<%= dataRow.id %>")' class="btn btn-sm btn-dark"  title='Decrease Splot Dot'><i class='fa-solid fa-minus-circle'></i></button>
-                  <button onClick = 'popEditModal(<%= dataRow.id %>)' class="btn btn-sm btn-dark"  title='Edit Splot'><i class='fa-solid fa-pen'></i></button>
-                  <button onClick = 'swapSplot(<%= dataRow.id %>)'class="btn btn-sm btn-dark swap_splot"  title='Swap Splot'><i class="fa-solid fa-arrow-right-arrow-left"></i></button>
-                </div>
-              </div>
+              <% }); %>
+            <% } else { %>
+              <div class="queue-empty">Queue is empty</div>
+            <% } %>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Breakaways row -->
+    <section>
+      <div class="arcade-section-head">
+        <span class="title">Breakaways</span>
+        <span class="count" id="ba-count"><%= (data.breakaways && data.breakaways.length) || 0 %> tracked</span>
+        <span class="grow"></span>
+        <button class="pill pill--sm" data-toggle="modal" data-target="#addBreakaway" type="button">&#43; Add Breakaway</button>
+      </div>
+      <div id="breakaways">
+        <% (data.breakaways || []).forEach(function(dataRow) { %>
+          <article class="ba" id="breakaway_<%= dataRow.id %>">
+            <small class="ba-kicker">BREAKAWAY</small>
+            <div class="ba-row">
+              <h3 id="breakawayName_<%= dataRow.id %>"><%= dataRow.name %></h3>
+              <span class="ba-count" id="ba_dot_<%= dataRow.id %>"><%= dataRow.ba_dots %></span>
             </div>
-          </div>
-        </div>
-      </div>
-    <% }); %>
-  </div>
-  <div class="row py-3" id="breakaways">
-    <% data.breakaways.forEach(function(dataRow, idxOfRow, orgnlAryObject) { %>
-      <div class="col-md-6" id='breakaway_<%= dataRow.id %>'>
-        <div class="row">
-          <div class="col-md-8">
-            <h3><span id='breakawayName_<%= dataRow.id %>'><%= dataRow.name %></span> Breakaways</h3>
-          </div>
-          <div class="col-md-1">
-            <span class="fa-stack float-right fa-beat">
-              <span class="fa-regular fa-circle fa-stack-2x"></span>
-              <strong class="fa-stack-1x" id="ba_dot_<%= dataRow.id %>">
-                <%= dataRow.ba_dots %>
-              </strong>
-            </span>
-          </div>
-          <div class="col-md-3">
-              <button onClick = 'breakawayIncrease("<%= dataRow.id %>")' class="btn btn-sm btn-dark"  title='Increase BA Dot'><i class='fa-solid fa-plus-circle'></i></button>
-              <button onClick = 'breakawayDecrease("<%= dataRow.id %>")' class="btn btn-sm btn-dark"  title='Decrease BA Dot'><i class='fa-solid fa-minus-circle'></i></button>
-              <button onClick = 'popEditBreakawayModal(<%= dataRow.id %>)' class="btn btn-sm btn-dark"  title='Edit Splot'><i class='fa-solid fa-pen'></i></button>
-          </div>
-        </div>
-      </div>
-    <% }); %>
-  </div>
-  <div class="accordion" id="diceAccordian">
-    <div class="card">
-      <div class="card-header" id="headingOne">
-        <h2 class="mb-0">
-          <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-            Dice Connection
-          </button>
-        </h2>
-      </div>  
-      <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#diceAccordian">
-        <button onclick="openConnectionDialog()" type="button" class="btn btn-outline-primary">Connect GoDice</button>
-        <input type="checkbox" class="btn-check" id="fakeRollsOnly" autocomplete="off">
-        <label class="btn btn-outline-primary" for="fakeRollsOnly">Fake Rolls Only</label><br>
-        <div class="card-body" id="dice-host">
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header" id="headingTwo">
-        <h2 class="mb-0">
-          <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-            Dice Logs
-          </button>
-        </h2>
-      </div>
-      <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#diceAccordian">
-        <div class="card-body terminal-log" id="roll-log">
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header" id="dice-message-container">
-      </div>
-  </div>
-  <div class="row py-3">
-    <div class="col-md-9">
-      <div class="row py-3">
-        <div class="col-12">
-          <div class="card">
-            <div class="card-body">
-              <span class="text-center"><h1 id='current_player' style="font-size: 42px;"></h1></span>
-              <div class="row">
-                <div class="col-7 mx-auto">
-                  <button type="button" class="btn-lg btn-primary btn-warning" id="autoPick"><i class="fa-solid fa-robot"></i> Auto Pick <i class="fa-solid fa-robot"></i></button>
-                  <button type="button" class="btn-lg btn-primary btn-info" id="nextPick"></i>Next <i class="fa-solid fa-forward"></i></button>
-                  <button type="button" class="btn-lg btn-primary btn-secondary" id="randomPick"></i>Random <i class="fa-solid fa-shuffle"></i></button>
-                </div>
-              </div>
+            <div class="ba-actions">
+              <button class="ibtn ibtn--sm" title="Decrease" onclick="breakawayDecrease('<%= dataRow.id %>')">&minus;</button>
+              <button class="ibtn ibtn--sm" title="Increase" onclick="breakawayIncrease('<%= dataRow.id %>')">&#43;</button>
+              <span class="splot-spacer"></span>
+              <button class="ibtn ibtn--sm" title="Edit" onclick="popEditBreakawayModal(<%= dataRow.id %>)">&#9998;</button>
             </div>
-          </div>
-        </div>
+          </article>
+        <% }); %>
       </div>
+    </section>
+
+    <!-- Footer status strip -->
+    <div class="arcade-footer">
+      <span id="foot-socket">SOCKET.IO CONNECTED</span>
+      <span>&middot;</span>
+      <span id="foot-sync">SYNC 00:00:00</span>
+      <span class="grow"></span>
+      <span>PRESS <span class="hotkey">&#x2318;K</span> FOR COMMANDS</span>
     </div>
-    
-    <div class="col-md-3">
-      <div class="col-md-3">
-        <div class="card" style="width: 18rem;">
-          <div class="card-body">
-            <h5 class="card-title">Turn Timer</h5>
-          </div>
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item"><span class="text-center"><h1 id='timer_display' style="font-size: 42px;">0:00</h1></span></li>
-          </ul>
-          <div class="card-body">
-            <div class="input-group">
-              <div class="input-group-prepend">
-                <div class="input-group-text" id="btnGroupAddon"><i class='fa-solid fa-stopwatch'></i></div>
-              </div>
-              <input type="text" class="form-control form-control-sm" id="timer" placeholder="4:00" value="4:00">
-              <div class="input-group-append">
-                <div class="btn-group" role="group" aria-label="Timer commands">
-                  <button class="btn btn-success btn-sm d-none" id="resume"><i class='fa-solid fa-circle-play'></i></button>
-                  <button class="btn btn-warning btn-sm d-none" id="pause"><i class='fa-solid fa-circle-pause'></i></button>
-                  <button class="btn btn-danger btn-sm" id="reset" onClick = 'startTimer()' ><i class='fa-solid fa-refresh'></i></button>
-                </div>  
-              </div>
-            </div>    
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="row py-3">
-    <div class="col-md-12">
-        <div class="btn-group-sm btn-group float-right">
-          <button type="button" class="btn btn-primary btn-info" id="toggle_ai">Toggle AI</button>
-          <button type="button" class="btn btn-primary btn-success" data-toggle="modal" data-target="#addSplot">Add a Splot</button>
-          <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addBreakaway">Add a Breakaway</button>
-          <button type="button" class="btn btn-danger"onclick="clearBoard()">Clear Board</button>
-        </div>
-    </div>
-  </div>    
-  <div class="row">
-      <div class="col-md-4">
-		<div class="card" style="width: 18rem;">
-		  <div class="card-body">
-			<h5 class="card-title">Queue Admin Commands</h5>
-				<ul class="list-group list-group-flush">
-					<li class="list-group-item"><pre>!clear_all</pre>Clears both queue and turns</li>
-					<li class="list-group-item"><pre>!clear_queue</pre>Clears just the queue (Leaves turn counts but clears queue)</li>
-					<li class="list-group-item"><pre>!open</pre>Opens the queue allows people to join.</li>
-					<li class="list-group-item"><pre>!close</pre>Closes the queue no one new can join.</li>
-					<li class="list-group-item"><pre>!firsts_first</pre>Toggles Firsts Turns First Mode on or off.</li>
-					<li class="list-group-item"><pre>!ap</pre>Auto pick (switches between !random and !next)</li>
-					<li class="list-group-item"><pre>!next</pre>Picks next user in queue</li>
-					<li class="list-group-item"><pre>!random</pre>Randomly picks a user from the queue.</li>
-					<li class="list-group-item"><pre>!abbadabbabot</pre>Will send any text after the command to Abbadabbabot for completition.</li>
-					<li class="list-group-item"><pre>!warn</pre>Will have abbadabbabot send a cheeky warning message to any user after the command</li>					
-				</ul>
-		  </div>
-		</div>
-    </div>
-	<div class="col-md-4">
-		<div class="card" style="width: 18rem;">
-		  <div class="card-body">
-			<h5 class="card-title">Queue User Commands</h5>
-				<ul class="list-group list-group-flush">
-					<li class="list-group-item"><pre>!join</pre>Joins a user to the queue.</li>
-					<li class="list-group-item"><pre>!leave</pre>Removes a user from  the queue.</li>
-					<li class="list-group-item"><pre>!position</pre>Tells the user their place in the queue.</li>
-					<li class="list-group-item"><pre>!close</pre>Closes the queue no one new can join.</li>
-					<li class="list-group-item"><pre>!auto_splot</pre>If it's your turn abbadabbabot will suggest a spot for you.</li>
-					<li class="list-group-item"><pre>!dn_count</pre>Gives count of detected Deeze Nutz Jokies from chat.</li>
-					<li class="list-group-item"><pre>!deeznutz</pre>Will send any text after the command to Abbadabbabot for to make a deeznutz jokes from..</li>
-					<li class="list-group-item"><pre>!justice</pre>Reminds chat about old justice.</li>
-					<li class="list-group-item"><pre>!cherish</pre>Abbadabbabot will tell you how much Abbabox cherishes your butt.</li>
-				</ul>
-			<a href="https://bootcutbot.glitch.me/" class="card-link">The List</a>
-		  </div>
-		</div>
-    </div>
-	<div class="col-md-4">
-		<div class="card" style="width: 18rem;">
-		  <div class="card-body">
-			<h5 class="card-title">Other Admin Commands</h5>
-				<ul class="list-group list-group-flush">
-          <li class="list-group-item"><pre>!open_ratings</pre>Allows uncapped !rating commands by users. (defaults to 1 per 5 minutes)</li>
-					<li class="list-group-item"><pre>!close_ratings</pre>Caps !rating commands by users. (defaults to 1 per 5 minutes)</li>
-          <li class="list-group-item"><pre>!rate {title_of_thing}|{rating}</pre>Saves a rating for a title_of_thing.</li>
-          <li class="list-group-item"><pre>!rating {title_of_thing}</pre>Searches for a rating for title_of_thing.</li>
-          <li class="list-group-item"><pre>!ratings</pre>Links to abba's ratings page.</li>
-          <h3>
-            Youtube
-          </h3>
-          <li class="list-group-item"><pre>!open_yt</pre>Opens the youtube queue any youtube links seen in chat will be added to the youtube queue</li>
-					<li class="list-group-item"><pre>!close_yt</pre>Closes the youtube queue.</li>
-					<li class="list-group-item"><pre>!list_yt</pre>shows the non-admin youtube queue </li>
-				</ul>
-			<a href="https://bootcutbot.glitch.me/youtube" class="card-link">YT Admin</a>
-		  </div>
-		</div>
-    </div>
-      <button id="listening_button">Start listening</button>
+
+    <!-- spoken.js controls (less prominent) -->
+    <div style="margin-top: 4px;">
+      <button id="listening_button" type="button">Start listening</button>
       <div id="listening_result"></div>
     </div>
   </div>
-</div>
-<div class="modal fade" id="addSplot" tabindex="-1" role="dialog" aria-labelledby="addSplot" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="addSplot">Add a Splot</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form id="addSplot">
-          <div class="form-group">
-            <label for="addSplotEntry">Splot Entry</label>
-            <textarea class="form-control splotEntry" id="addSplotEntry" rows="3">Blank Splot</textarea>
-          </div>
-          <div class="form-group">
-            <label for="addSplotDot">Splot Dots</label>
-            <select class="form-control" id="addSplotDot">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-              <option value="8">8</option>
-              <option value="9">9</option>
-              <option value="10">10</option>
-            </select>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" onClick='addSplot()' class="btn btn-success">Add Splot</button>
-        <button type="button" onClick='get_random_splot()' class="btn btn-primary">Random Splot</button>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="modal fade" id="addBreakaway" tabindex="-1" role="dialog" aria-labelledby="addBreakaway" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="addBreakaway">Add Breakaways</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form id="addBreakaway">
-          <div class="form-group">
-            <label for="addBreakawayName">Breakaway Name</label>
-            <textarea class="form-control" id="addBreakawayName" rows="3">Custom Breakaway</textarea>
-          </div>
-          <div class="form-group">
-            <label for="addBreakawayDots">Breakaway Dots</label>
-            <input type="number" class="form-control" id="breakawayDots" rows="3" value="10">
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" onClick='addBreakaway()' class="btn btn-success">Add Breakaway</button>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="modal fade" id="editBreakaway" tabindex="-1" role="dialog" aria-labelledby="editBreakaway" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="editBreakaway">Edit a Breakaway</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form id="addBreakaway">
-          <input type="hidden" name="editBreakawayId" id='editBreakawayId' value="0" />
-          <div class="form-group">
-            <label for="addBreakawayName">Breakaway Name</label>
-            <textarea class="form-control" id="editBreakawayName" rows="3">Custom Breakaway</textarea>
-          </div>
-          <div class="form-group">
-            <label for="addBreakawayDots">Breakaway Dots</label>
-            <input type="number" class="form-control" id="addBreakawayDots" rows="3" value="10">
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" onClick='editSplot()' class="btn btn-dark">Save changes</button>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="modal fade" id="editSplot" tabindex="-1" role="dialog" aria-labelledby="editSplot" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="editSplot">Edit a Splot</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form id="editSplot">
-          <input type="hidden" name="editSplotId" id='editSplotId' value="0" />
-          <div class="form-group">
-            <label for="editSplotEntry">Splot Entry</label>
-            <textarea class="form-control splotEntry" id="editSplotEntry" rows="3"></textarea>
-          </div>
-          <div class="form-group">
-            <label for="editSplotDot">Splot Dots</label>
-            <select class="form-control" id="editSplotDot">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-              <option value="8">8</option>
-              <option value="9">9</option>
-              <option value="10">10</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="editSplotEntry">Alt Splot</label>
-            <textarea class="form-control altSplotEntry" id="editAltSplotEntry" rows="3"></textarea>
-          </div>
-          <div class="form-group">
-            <label for="editAltSplotDot">Alt Splot Dots</label>
-            <select class="form-control" id="editAltSplotDot">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-              <option value="8">8</option>
-              <option value="9">9</option>
-              <option value="10">10</option>
-            </select>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" onClick='get_random_splot()' class="btn btn-primary">Random Splot</button>
-        <button type="button" onClick='editSplot()' class="btn btn-success">Save changes</button>
-      </div>
-    </div>
-  </div>
-</div>
-</body>
 
- 
+  <!-- ============ COMMANDS DRAWER ============ -->
+  <div class="arcade-drawer-backdrop" id="commands-backdrop"></div>
+  <aside class="arcade-drawer" id="commands-drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <span class="title">Commands</span>
+      <span class="kbd">&#x2318;K</span>
+      <span class="grow"></span>
+      <button type="button" class="esc" id="close-commands">ESC</button>
+    </div>
+    <div class="drawer-search">
+      <div class="drawer-search-inner">
+        <span class="slash">/</span>
+        <input type="text" id="commands-search" placeholder="search commands&hellip;" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+    <div class="drawer-body" id="drawer-body">
+      <%
+        var commandGroups = [
+          { title: 'QUEUE · ADMIN', cmds: [
+            ['!clear_all', 'Clear queue and turn counts'],
+            ['!clear_queue', 'Clear queue only'],
+            ['!open', 'Open queue to joiners'],
+            ['!close', 'Close queue'],
+            ['!firsts_first', 'Toggle firsts-turns-first mode'],
+            ['!ap', 'Toggle auto-pick'],
+            ['!next', 'Pick next user'],
+            ['!random', 'Pick random user'],
+            ['!abbadabbabot', 'Send prompt to Abbadabbabot'],
+            ['!warn', 'Cheeky warning DM']
+          ]},
+          { title: 'QUEUE · USER', cmds: [
+            ['!join', 'Join the queue'],
+            ['!leave', 'Leave the queue'],
+            ['!position', 'Tell caller their position'],
+            ['!auto_splot', 'AI suggests a splot on your turn'],
+            ['!dn_count', 'Deeze Nutz jokie count'],
+            ['!deeznutz', 'AI deeznutz joke'],
+            ['!justice', 'Reminds chat about old justice'],
+            ['!cherish', 'Abbabox cherishes your butt']
+          ]},
+          { title: 'RATINGS & YOUTUBE', cmds: [
+            ['!open_ratings', 'Uncap !rating commands'],
+            ['!close_ratings', 'Cap !rating commands'],
+            ['!rate {t}|{n}', 'Save a rating'],
+            ['!rating {t}', 'Look up a rating'],
+            ['!ratings', 'Link to ratings page'],
+            ['!open_yt', 'Open YouTube link capture'],
+            ['!close_yt', 'Close YouTube capture'],
+            ['!list_yt', 'Show YT queue']
+          ]}
+        ];
+      %>
+      <% commandGroups.forEach(function(group) { %>
+        <div class="drawer-group">
+          <div class="group-title"><%= group.title %></div>
+          <% group.cmds.forEach(function(row) { %>
+            <div class="drawer-cmd" data-cmd="<%= row[0].toLowerCase() %>" data-desc="<%= row[1].toLowerCase() %>">
+              <code><%= row[0] %></code>
+              <span><%= row[1] %></span>
+            </div>
+          <% }); %>
+        </div>
+      <% }); %>
+    </div>
+    <div class="drawer-foot">
+      <span>ESC TO CLOSE</span>
+      <span class="grow"></span>
+      <a href="https://bootcutbot.glitch.me/" style="color: var(--ink-2); text-decoration: none;">THE LIST</a>
+      <a href="https://bootcutbot.glitch.me/youtube" style="color: var(--ink-2); text-decoration: none;">YT ADMIN</a>
+    </div>
+  </aside>
+
+  <!-- ============ MODALS (arcade skin, same IDs/handlers) ============ -->
+  <div class="modal fade arcade" id="addSplot" tabindex="-1" role="dialog" aria-labelledby="addSplotTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <span class="modal-kicker">+ NEW</span>
+          <h5 class="modal-title" id="addSplotTitle">Add a Splot</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="addSplotForm">
+            <div class="form-group">
+              <label for="addSplotEntry">Splot Entry</label>
+              <textarea class="form-control splotEntry" id="addSplotEntry" rows="3">Blank Splot</textarea>
+            </div>
+            <div class="form-group">
+              <label for="addSplotDot">Splot Dots</label>
+              <select class="form-control" id="addSplotDot">
+                <% for (var i = 1; i <= 10; i++) { %><option value="<%= i %>"><%= i %></option><% } %>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="pill pill--ghost" data-dismiss="modal">Close</button>
+          <button type="button" onclick="get_random_splot()" class="pill">&#9856; Random Splot</button>
+          <button type="button" onclick="addSplot()" class="pill pill--hot">Add Splot</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade arcade" id="addBreakaway" tabindex="-1" role="dialog" aria-labelledby="addBreakawayTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <span class="modal-kicker">+ NEW</span>
+          <h5 class="modal-title" id="addBreakawayTitle">Add a Breakaway</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="addBreakawayForm">
+            <div class="form-group">
+              <label for="addBreakawayName">Breakaway Name</label>
+              <textarea class="form-control" id="addBreakawayName" rows="2">Custom Breakaway</textarea>
+            </div>
+            <div class="form-group">
+              <label for="breakawayDots">Breakaway Dots</label>
+              <input type="number" class="form-control" id="breakawayDots" value="10">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="pill pill--ghost" data-dismiss="modal">Close</button>
+          <button type="button" onclick="addBreakaway()" class="pill pill--hot">Add Breakaway</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade arcade" id="editBreakaway" tabindex="-1" role="dialog" aria-labelledby="editBreakawayTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <span class="modal-kicker">EDIT</span>
+          <h5 class="modal-title" id="editBreakawayTitle">Edit Breakaway</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="editBreakawayForm">
+            <input type="hidden" name="editBreakawayId" id="editBreakawayId" value="0" />
+            <div class="form-group">
+              <label for="editBreakawayName">Breakaway Name</label>
+              <textarea class="form-control" id="editBreakawayName" rows="2">Custom Breakaway</textarea>
+            </div>
+            <div class="form-group">
+              <label for="addBreakawayDots">Breakaway Dots</label>
+              <input type="number" class="form-control" id="addBreakawayDots" value="10">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="pill pill--ghost" data-dismiss="modal">Close</button>
+          <button type="button" onclick="editSplot()" class="pill pill--hot">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade arcade" id="editSplot" tabindex="-1" role="dialog" aria-labelledby="editSplotTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <span class="modal-kicker">EDIT</span>
+          <h5 class="modal-title" id="editSplotTitle">Edit Splot</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="editSplotForm">
+            <input type="hidden" name="editSplotId" id="editSplotId" value="0" />
+            <div class="form-group">
+              <label for="editSplotEntry">Splot Entry</label>
+              <textarea class="form-control splotEntry" id="editSplotEntry" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="editSplotDot">Splot Dots</label>
+              <select class="form-control" id="editSplotDot">
+                <% for (var i = 1; i <= 10; i++) { %><option value="<%= i %>"><%= i %></option><% } %>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="editAltSplotEntry">Alt Splot</label>
+              <textarea class="form-control altSplotEntry" id="editAltSplotEntry" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="editAltSplotDot">Alt Splot Dots</label>
+              <select class="form-control" id="editAltSplotDot">
+                <% for (var i = 1; i <= 10; i++) { %><option value="<%= i %>"><%= i %></option><% } %>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="pill pill--ghost" data-dismiss="modal">Close</button>
+          <button type="button" onclick="get_random_splot()" class="pill">&#9856; Random Splot</button>
+          <button type="button" onclick="editSplot()" class="pill pill--hot">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
 </html>

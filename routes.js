@@ -242,10 +242,16 @@ router.get("/board_admin", basicAuth({
   if (breakaways == null) {
     var breakaways = [];
   }
+  var queue = queue_db.get("queue") || [];
+  var turns = turns_db.get("turns") || {};
   res.render("board_admin.ejs", {
     data: {
       board: board_db.get("board"),
       breakaways: breakaways,
+      queue: queue,
+      turns: turns,
+      queue_open: state.queue_open,
+      firsts_first: state.firsts_first,
       current_turn: state.current_turn,
       username: process.env.bot_account,
       password: process.env.oauth,

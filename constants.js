@@ -1,16 +1,11 @@
 import dotenv from 'dotenv';
-import jsoning from 'jsoning';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { JsoningPg } from './lib/jsoningPg.js';
 
 dotenv.config();
 
-const settings_db = new jsoning(join(__dirname, 'db/queue_settings.json'));
+const settings_db = new JsoningPg('queue_settings');
 let queueOpen = await settings_db.get('queue_open');
-if (queueOpen === undefined) {
+if (queueOpen === null || queueOpen === undefined) {
   queueOpen = false;
   await settings_db.set('queue_open', queueOpen);
 }

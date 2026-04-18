@@ -1,10 +1,10 @@
-import jsoning from 'jsoning';
+import { JsoningPg } from './lib/jsoningPg.js';
 import dotenv from 'dotenv';
 import fetch from 'node-fetch';
 
 dotenv.config();
 
-const tokenDb = new jsoning("db/twitch_tokens.json");
+const tokenDb = new JsoningPg('twitch_tokens');
 
 export async function handleAuthCallback(code) {
     const clientId = process.env.EVENTSUB_CLIENT_ID;

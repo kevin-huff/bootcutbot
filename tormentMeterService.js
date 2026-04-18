@@ -1,7 +1,7 @@
-import jsoning from 'jsoning';
+import { JsoningPg } from './lib/jsoningPg.js';
 import { randomUUID } from 'crypto';
 
-const meterDb = new jsoning('db/torment_meter.json');
+const meterDb = new JsoningPg('torment_meter');
 const DECAY_MINUTES = 60;
 const DECAY_MS = DECAY_MINUTES * 60 * 1000;
 const REDUCTION_FACTOR = 0.9;

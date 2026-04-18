@@ -1,18 +1,13 @@
-import jsoning from 'jsoning';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { JsoningPg } from '../lib/jsoningPg.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Database instances
-const settings_db = new jsoning(join(__dirname, "../db/queue_settings.json"));
-const queue_db = new jsoning(join(__dirname, "../db/queue.json"));
-const turns_db = new jsoning(join(__dirname, "../db/turns.json"));
-const deaths_db = new jsoning(join(__dirname, "../db/deaths.json"));
-const ratings_db = new jsoning(join(__dirname, "../db/ratings.json"));
-const historical_turns_db = new jsoning(join(__dirname, "../db/historical_turns.json"));
-const crowd_sound_db = new jsoning(join(__dirname, "../db/crowd_sounds.json"));
+// Namespaces mirror the old db/<name>.json filenames (minus extension).
+const settings_db = new JsoningPg('queue_settings');
+const queue_db = new JsoningPg('queue');
+const turns_db = new JsoningPg('turns');
+const deaths_db = new JsoningPg('deaths');
+const ratings_db = new JsoningPg('ratings');
+const historical_turns_db = new JsoningPg('historical_turns');
+const crowd_sound_db = new JsoningPg('crowd_sounds');
 
 // Lock mechanism for concurrent operations
 const lock = { isLocked: false };

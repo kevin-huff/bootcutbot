@@ -3,10 +3,12 @@ import { CensorSensor } from 'censor-sensor';
 import ElevenLabs from 'elevenlabs-node';
 import fetch from 'node-fetch';
 import crypto from 'crypto';
-import jsoning from 'jsoning';
+import { JsoningPg } from './lib/jsoningPg.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { state } from './constants.js';
+
+const historical_splots_db = new JsoningPg('historical_splots');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -34,13 +36,12 @@ const initializeSettings = () => {
   // Initialize settings from DB or environment variables
 };
 
-const get_random_splot = () => {
-  const historical_splots_db = new jsoning("db/historical_splots.json");
-  const historical_splots = historical_splots_db.all();
+const get_random_splot = async () => {
+  const historical_splots = await historical_splots_db.all();
   const splot_values = Object.keys(historical_splots);
+  if (splot_values.length === 0) return null;
   const randomIndex = crypto.randomInt(splot_values.length);
-  const random_splot = splot_values[randomIndex];
-  return random_splot;
+  return splot_values[randomIndex];
 };
 
 const abbadabbabotSay = async (channel, client, tags, message, prefix = "", postfix = "") => {

@@ -1,4 +1,4 @@
-import jsoning from 'jsoning';
+import { JsoningPg } from './lib/jsoningPg.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { splotStates, hellfireSpotIds, heavenfireSpotIds, initializeSettings, get_random_splot, abbadabbabotSay, say } from './utils.js';
@@ -16,15 +16,15 @@ import { state } from './constants.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const board_db = new jsoning("db/board_db.json");
-const breakaways_db = new jsoning("db/breakaways_db.json");
-const action_log_db = new jsoning("db/action_log.json");
-const dice_log_db = new jsoning("db/dice_log.json");
-const votes_db = new jsoning("db/votes.json");
-const settings_db = new jsoning("db/settings.json");
-const historical_splots_db = new jsoning("db/historical_splots.json");
-const timer_db = new jsoning("db/timer_db.json");
-const wheel_db = new jsoning("db/wheel_db.json");
+const board_db = new JsoningPg('board_db');
+const breakaways_db = new JsoningPg('breakaways_db');
+const action_log_db = new JsoningPg('action_log');
+const dice_log_db = new JsoningPg('dice_log');
+const votes_db = new JsoningPg('votes');
+const settings_db = new JsoningPg('settings');
+const historical_splots_db = new JsoningPg('historical_splots');
+const timer_db = new JsoningPg('timer_db');
+const wheel_db = new JsoningPg('wheel_db');
 
 const WHEEL_COLOR_PALETTE = [
   "#ff4444",  // red
@@ -1735,8 +1735,8 @@ export const initializeSocketHandlers = (io) => {
       console.log(`Loaded saved timer with ${remainingSeconds} seconds remaining, paused: ${isPaused}, multiplier: ${multiplierEnabled ? multiplierValue + 'x' : 'disabled'}`);
     });
 
-    socket.on("get_random_splot", (arg, callback) => {
-      var random_splot = get_random_splot();
+    socket.on("get_random_splot", async (arg, callback) => {
+      const random_splot = await get_random_splot();
       callback(random_splot);
     });
 

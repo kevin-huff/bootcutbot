@@ -54,18 +54,18 @@ npm run build:board # Build React board → public/board-assets/
 - `src/board/` — React component (built with Vite) for the interactive game board. Output goes to `public/board-assets/`.
 - `public/` — Static assets (CSS, JS, images, sounds).
 
-**Data**: `db/` contains JSON files managed by the `jsoning` library (simple key-value JSON store). No traditional database — all state is in flat JSON files. Key files: `queue.json`, `turns.json`, `board_db.json`, `settings.json`, `twitch_tokens.json`.
+**Data**: persistence is Postgres via a custom KV shim (`lib/jsoningPg.js`) that matches the old `jsoning` API (`.get/.set/.push/.math/.all/.clear`) plus `.update(key, fn)` for transactional read-modify-write with `SELECT … FOR UPDATE` + per-key in-process serialization (protects against !join rushes). One table, `kv_store(namespace, key, value jsonb)`. The `namespace` argument is the old filename minus `.json` (e.g. `new JsoningPg('queue')` replaces `new jsoning("db/queue.json")`). `db/*.json` files are historical snapshots only — not read or written by the running app. Apply schema with `npm run db:schema`; seed from local JSON snapshots with `npm run db:migrate` (idempotent; UPSERTs).
 
 ## Environment
 
-Requires a `.env` file with Twitch credentials (bot account, OAuth, EventSub client ID/secret, channel ID), Streamlabs socket token, web basic auth credentials, and optionally R2/S3 keys for asset storage. See README for R2 setup.
+Requires a `.env` file with `DATABASE_URL` (Postgres), Twitch credentials (bot account, OAuth, EventSub client ID/secret, channel ID), Streamlabs socket token, web basic auth credentials, and optionally R2/S3 keys for asset storage. See README for R2 setup.
 
 ## Key Patterns
 
 - Real-time communication between admin dashboards and overlays happens through Socket.IO events, not REST APIs.
 - The `state` object in `constants.js` is shared mutable state across modules — imported by reference.
 - Admin pages (board_admin, timer_admin, torment_meter_admin) are behind basic auth and control overlays in real time.
-- The `jsoning` library is used everywhere for persistence — `new jsoning("db/file.json")` then `.get()` / `.set()`.
+- Persistence goes through `JsoningPg` from `lib/jsoningPg.js`. Use `new JsoningPg('<namespace>')` (namespace = old filename without `.json`) and the standard `.get/.set/.push/.math/.all/.clear` methods. For any read-modify-write under concurrency (queue-mutation in particular), use `.update(key, fn)` — it wraps the whole cycle in a transaction + SELECT FOR UPDATE.
 - Queue has a "firsts first" mode that prioritizes players who haven't had a turn yet.
 - Subathon timer persists across restarts, supports pause/resume and configurable time multipliers per donation type.
 - Crowd sounds (laugh, fart, moan, clap, boo) trigger via regex matching in chat with configurable thresholds in env vars.

@@ -6,3 +6,4 @@ public/board-assets/
 
 # Runtime database files - preserve on server
 db/*
+!db/.gitkeep

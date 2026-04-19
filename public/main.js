@@ -1435,17 +1435,17 @@ function generateUUID() {
 	});
 }
 
-function triggerFakeD12Roll(spot) {
+function triggerFakeD8Roll(spot) {
   const rollValue = parseInt(spot, 10);
-  if (!Number.isFinite(rollValue) || rollValue < 1 || rollValue > 12) return;
+  if (!Number.isFinite(rollValue) || rollValue < 1 || rollValue > 8) return;
   const roll_data = {
     dice_id: 'admin-trigger',
     roll_value: rollValue,
     dice_name: 'Admin',
-    dice_type: 'D12',
+    dice_type: 'D8',
     timestamp: new Date().toLocaleString()
   };
   socket.emit('dice_roll', roll_data, (response) => {
-    console.log('force D12 roll:', rollValue, response);
+    console.log('force D8 roll:', rollValue, response);
   });
 }

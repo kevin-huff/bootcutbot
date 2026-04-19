@@ -1434,3 +1434,18 @@ function generateUUID() {
 	  return v.toString(16);
 	});
 }
+
+function triggerFakeD12Roll(spot) {
+  const rollValue = parseInt(spot, 10);
+  if (!Number.isFinite(rollValue) || rollValue < 1 || rollValue > 12) return;
+  const roll_data = {
+    dice_id: 'admin-trigger',
+    roll_value: rollValue,
+    dice_name: 'Admin',
+    dice_type: 'D12',
+    timestamp: new Date().toLocaleString()
+  };
+  socket.emit('dice_roll', roll_data, (response) => {
+    console.log('force D12 roll:', rollValue, response);
+  });
+}

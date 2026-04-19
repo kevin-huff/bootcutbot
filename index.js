@@ -5,6 +5,7 @@ process.on('unhandledRejection', (reason, promise) => {
 import express from 'express';
 import http from 'http';
 import path from 'path';
+import { execSync } from 'child_process';
 import { Server } from 'socket.io';
 import basicAuth from 'express-basic-auth';
 import dotenv from 'dotenv';
@@ -88,6 +89,21 @@ if (process.env.streamlabs_socket_token) {
 
 // Make io available to routes
 app.set('io', io);
+
+function resolveBuildVersion() {
+  const envSha =
+    process.env.RAILWAY_GIT_COMMIT_SHA ||
+    process.env.RAILWAY_DEPLOYMENT_ID ||
+    process.env.BUILD_VERSION;
+  if (envSha) return String(envSha).slice(0, 12);
+  try {
+    return execSync('git rev-parse --short HEAD', { cwd: __dirname }).toString().trim();
+  } catch {
+    return Date.now().toString(36);
+  }
+}
+app.locals.BUILD_VERSION = resolveBuildVersion();
+console.log(`Build version: ${app.locals.BUILD_VERSION}`);
 
 app.use(express.static(path.join(__dirname, "public"), { maxAge: "1d" }));
 app.set("view engine", "ejs");

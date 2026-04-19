@@ -16,8 +16,8 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Legacy site css first, then arcade overrides -->
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="css/arcade-board-admin.css">
+  <link rel="stylesheet" href="style.css?v=<%= BUILD_VERSION %>">
+  <link rel="stylesheet" href="css/arcade-board-admin.css?v=<%= BUILD_VERSION %>">
 
   <script src="https://kit.fontawesome.com/5a69a86b05.js" crossorigin="anonymous"></script>
   <script src="/socket.io/socket.io.js"></script>
@@ -27,8 +27,8 @@
   <script src="/tmi.min.js"></script>
   <script src="https://stephenlb.github.io/spoken/spoken.js"></script>
   <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
-  <script src="godice.js"></script>
-  <script src="main.js" data="<%= JSON.stringify(data) %>"></script>
+  <script src="godice.js?v=<%= BUILD_VERSION %>"></script>
+  <script src="main.js?v=<%= BUILD_VERSION %>" data="<%= JSON.stringify(data) %>"></script>
 </head>
 <body class="arcade-admin">
 

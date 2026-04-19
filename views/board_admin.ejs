@@ -210,11 +210,11 @@
             <div id="dice-host" style="margin-top: 12px;"></div>
             <div class="force-roll" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                <small style="font-family:var(--font-mono);letter-spacing:.14em;color:var(--ink-2);">FORCE D12 ROLL</small>
+                <small style="font-family:var(--font-mono);letter-spacing:.14em;color:var(--ink-2);">FORCE D8 ROLL</small>
               </div>
-              <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;">
-                <% for (var i = 1; i <= 12; i++) { %>
-                  <button type="button" class="pill pill--sm pill--ghost" onclick="triggerFakeD12Roll(<%= i %>)"><%= i %></button>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+                <% for (var i = 1; i <= 8; i++) { %>
+                  <button type="button" class="pill pill--sm pill--ghost" onclick="triggerFakeD8Roll(<%= i %>)"><%= i %></button>
                 <% } %>
               </div>
             </div>

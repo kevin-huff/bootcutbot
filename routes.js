@@ -181,8 +181,9 @@ router.get("/menu", (req, res) => {
 
 router.get("/board", async (req, res) => {
   const current_breakaways = (await breakaways_db.get("breakaways")) || [];
+  const rawBoard = (await board_db.get("board")) || [];
   res.render("integrated_board_2025.ejs", {
-    board: await board_db.get("board"),
+    board: rawBoard.slice(0, 8),
     breakaways: current_breakaways,
     current_turn: state.current_turn,
     hellfireSpotIds: Array.from(hellfireSpotIds),
@@ -237,7 +238,7 @@ router.get("/board_admin", basicAuth({
   const breakaways = (await breakaways_db.get("breakaways")) || [];
   const queue = (await queue_db.get("queue")) || [];
   const turns = (await turns_db.get("turns")) || {};
-  const board = (await board_db.get("board")) || [];
+  const board = ((await board_db.get("board")) || []).slice(0, 8);
   res.render("board_admin.ejs", {
     data: {
       board,

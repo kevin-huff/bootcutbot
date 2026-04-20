@@ -1,4 +1,4 @@
-import { queue_db, turns_db, settings_db } from './db.js';
+import { queue_db, turns_db, settings_db, historical_turns_db } from './db.js';
 import { abbadabbabotSay } from '../utils.js';
 import { state } from '../constants.js';
 
@@ -16,12 +16,24 @@ async function handleCloseCommand(channel, tags, client, io) {
   io.emit('new_turn', `Queue Closed`);
 }
 
-async function handleFirstsFirstCommand(channel, tags, client) {
+async function handleFirstsFirstCommand(channel, tags, client, io) {
   state.firsts_first = !state.firsts_first;
-  const message = state.firsts_first 
+  await settings_db.set('firsts_first', state.firsts_first);
+  const message = state.firsts_first
     ? `First Turns First Mode ACTIVATED. The queue will choose players without a turn first.`
     : `First Turns First Mode DEACTIVATED. The queue has been returned to normal.`;
   client.say(channel, message);
+  if (io) io.emit('queue_mode_state', { firsts_first: state.firsts_first, virgins_first: state.virgins_first });
+}
+
+async function handleVirginsFirstCommand(channel, tags, client, io) {
+  state.virgins_first = !state.virgins_first;
+  await settings_db.set('virgins_first', state.virgins_first);
+  const message = state.virgins_first
+    ? `✨ Virgins First Mode ACTIVATED. Auto-pick is now Virgin-Virgin-Next. First-time players will be picked before anyone else.`
+    : `Virgins First Mode DEACTIVATED. Auto-pick is back to Random-Random-Next.`;
+  client.say(channel, message);
+  if (io) io.emit('queue_mode_state', { firsts_first: state.firsts_first, virgins_first: state.virgins_first });
 }
 
 async function handleClearAllCommand(channel, tags, client, io) {
@@ -49,10 +61,12 @@ async function handleAutoPickCommand(message, tags, channel, client) {
     console.log('this_turn_id: ', this_turn_id);
     console.log('this_turn_id % 3', this_turn_id % 3);
 
+    const pickCommand = state.virgins_first ? '!virgin' : '!random';
+
     if (this_turn_id % 3 === 0) {
       client.say(channel, `!next - This is turn ${this_turn_id}`);
     } else {
-      client.say(channel, `!random - This is turn ${this_turn_id}`);
+      client.say(channel, `${pickCommand} - This is turn ${this_turn_id}`);
     }
   }
 }
@@ -61,6 +75,7 @@ export {
   handleOpenCommand,
   handleCloseCommand,
   handleFirstsFirstCommand,
+  handleVirginsFirstCommand,
   handleClearAllCommand,
   handleClearTurnsCommand,
   handleClearCommand,

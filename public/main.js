@@ -256,6 +256,40 @@ $(document).ready(function() {
       });
 
     });
+
+    function paintQueueModeButton(id, isActive, label) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.dataset.active = isActive ? '1' : '0';
+      el.classList.toggle('pill--ghost', !isActive);
+      el.textContent = `${label} ${isActive ? 'ON' : 'OFF'}`;
+    }
+
+    $('#toggle_firsts_first').click(function(){
+      socket.emit('firsts_first_toggle', null, (response) => {
+        if (response && typeof response.firsts_first === 'boolean') {
+          paintQueueModeButton('toggle_firsts_first', response.firsts_first, 'FIRSTS FIRST');
+        }
+      });
+    });
+
+    $('#toggle_virgins_first').click(function(){
+      socket.emit('virgins_first_toggle', null, (response) => {
+        if (response && typeof response.virgins_first === 'boolean') {
+          paintQueueModeButton('toggle_virgins_first', response.virgins_first, 'VIRGINS FIRST');
+        }
+      });
+    });
+
+    socket.on('queue_mode_state', function(data){
+      if (!data) return;
+      if (typeof data.firsts_first === 'boolean') {
+        paintQueueModeButton('toggle_firsts_first', data.firsts_first, 'FIRSTS FIRST');
+      }
+      if (typeof data.virgins_first === 'boolean') {
+        paintQueueModeButton('toggle_virgins_first', data.virgins_first, 'VIRGINS FIRST');
+      }
+    });
     $('#pause').click(function(){
       if (timerStatus !== 'running') { return; }
       let timer_data = {

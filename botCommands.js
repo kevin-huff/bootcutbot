@@ -16,6 +16,7 @@ import {
   handleLeaveCommand,
   handleNextCommand,
   handleRandomCommand,
+  handleVirginCommand,
   handlePositionCommand
 } from './commands/queueCommands.js';
 
@@ -23,6 +24,7 @@ import {
   handleOpenCommand,
   handleCloseCommand,
   handleFirstsFirstCommand,
+  handleVirginsFirstCommand,
   handleClearAllCommand,
   handleClearTurnsCommand,
   handleClearCommand,
@@ -352,6 +354,9 @@ function initializeBotCommands(io) {
       if (message.toLowerCase().startsWith("!random") && isModUp) {
         await handleRandomCommand(channel, tags, client, io);
       }
+      if (message.toLowerCase().startsWith("!virgin") && isModUp && !message.toLowerCase().startsWith("!virgins_first")) {
+        await handleVirginCommand(channel, tags, client, io);
+      }
       if (message.toLowerCase().startsWith("!position")) {
         await handlePositionCommand(channel, tags, client);
       }
@@ -365,7 +370,10 @@ function initializeBotCommands(io) {
         await handleCloseCommand(channel, tags, client, io);
       }
       if (message.toLowerCase() === "!firsts_first" && isModUp) {
-        await handleFirstsFirstCommand(channel, tags, client);
+        await handleFirstsFirstCommand(channel, tags, client, io);
+      }
+      if (message.toLowerCase() === "!virgins_first" && isModUp) {
+        await handleVirginsFirstCommand(channel, tags, client, io);
       }
       if (message.toLowerCase() === "!clear_all" && isModUp) {
         await handleClearAllCommand(channel, tags, client, io);

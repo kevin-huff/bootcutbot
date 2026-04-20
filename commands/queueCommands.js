@@ -14,6 +14,18 @@ function countTurns(turns, username) {
   return turns.reduce((acc, cur) => (cur && cur.username === username ? acc + 1 : acc), 0);
 }
 
+async function getHistoricalTurnsMap() {
+  const all = await historical_turns_db.all();
+  if (!all || typeof all !== 'object') return {};
+  return all;
+}
+
+function historicalCountFor(historicalMap, player) {
+  if (!player) return 0;
+  const name = String(player["display-name"] || player.username || '').toLowerCase();
+  return Number(historicalMap[name]) || 0;
+}
+
 async function handleJoinCommand(channel, tags, client) {
   if (!state.queue_open) {
     abbadabbabotSay(
@@ -53,7 +65,20 @@ async function handleJoinCommand(channel, tags, client) {
     return;
   }
 
-  if (state.firsts_first && turn_count > 0) {
+  const historicalMap = await getHistoricalTurnsMap();
+  const lifetime_turns = historicalCountFor(historicalMap, { "display-name": tags["display-name"], username: tags.username });
+
+  if (state.virgins_first && lifetime_turns === 0) {
+    client.say(
+      channel,
+      `@${tags["display-name"]}, added to queue! You're ${place_ordinal} in the queue. Virgins First Mode is on and this is your first time — you'll jump the line! 🌟`
+    );
+  } else if (state.virgins_first && lifetime_turns > 0) {
+    client.say(
+      channel,
+      `@${tags["display-name"]}, added to queue! You're ${place_ordinal} in the queue. Heads up: Virgins First Mode is on, so first-time players will be picked before you.`
+    );
+  } else if (state.firsts_first && turn_count > 0) {
     const turn_ordinal = ordinal_suffix_of(turn_count + 1);
     client.say(
       channel,
@@ -110,12 +135,17 @@ function pickNext(queue, turn_counter) {
   return head ? { player: head, usedFallback: false } : null;
 }
 
-async function finishTurn(channel, tags, client, io, player, turn_count_before, logLabel) {
+async function finishTurn(channel, tags, client, io, player, turn_count_before, logLabel, { isVirgin = false } = {}) {
   state.current_turn = player["display-name"];
   await turns_db.push("turns", player);
   io.emit('new_turn', `${player["display-name"]}`);
 
-  if (turn_count_before > 0) {
+  if (isVirgin) {
+    client.say(
+      channel,
+      `🌟 VIRGIN PICK — @abbabox, @${player["display-name"]} is stepping up to the board for their very first Bootcut turn! Be gentle. ✨`
+    );
+  } else if (turn_count_before > 0) {
     const turn_ordinal = ordinal_suffix_of(turn_count_before + 1);
     client.say(
       channel,
@@ -242,6 +272,54 @@ async function handleRandomCommand(channel, tags, client, io) {
   }
 }
 
+async function handleVirginCommand(channel, tags, client, io) {
+  const queueNow = (await queue_db.get("queue")) || [];
+  const historicalMap = await getHistoricalTurnsMap();
+  const hasVirgin = queueNow.some((p) => historicalCountFor(historicalMap, p) === 0);
+
+  if (!hasVirgin) {
+    client.say(channel, `No virgins in the queue — picking a random player instead.`);
+    await handleRandomCommand(channel, tags, client, io);
+    return;
+  }
+
+  const turn_counter = (await turns_db.get("turns")) || [];
+  const outcome = { player: null };
+
+  await queue_db.update("queue", (queue) => {
+    const arr = Array.isArray(queue) ? queue.slice() : [];
+    const candidates = [];
+    for (let i = 0; i < arr.length; i++) {
+      if (historicalCountFor(historicalMap, arr[i]) === 0) candidates.push(i);
+    }
+    if (candidates.length === 0) return arr;
+    const idx = candidates[Math.floor(Math.random() * candidates.length)];
+    const [player] = arr.splice(idx, 1);
+    outcome.player = player;
+    return arr;
+  });
+
+  if (!outcome.player) {
+    client.say(channel, `No virgins in the queue — picking a random player instead.`);
+    await handleRandomCommand(channel, tags, client, io);
+    return;
+  }
+
+  const player = outcome.player;
+  const session_turn_count = countTurns(turn_counter, player.username);
+  const in_chat = await isUserInChat(player.username);
+
+  if (in_chat) {
+    await finishTurn(channel, tags, client, io, player, session_turn_count, 'first-ever turn', { isVirgin: true });
+  } else {
+    await requeuePlayer(player);
+    client.say(
+      channel,
+      `@abbabox - @${player["display-name"]} hasn't been in chat for a while, moving them to the back of the queue. Please run !virgin again`
+    );
+  }
+}
+
 async function handlePositionCommand(channel, tags, client) {
   const queue = (await queue_db.get("queue")) || [];
 
@@ -263,5 +341,6 @@ export {
   handleLeaveCommand,
   handleNextCommand,
   handleRandomCommand,
+  handleVirginCommand,
   handlePositionCommand
 };

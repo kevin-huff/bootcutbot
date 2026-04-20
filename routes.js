@@ -247,6 +247,7 @@ router.get("/board_admin", basicAuth({
       turns,
       queue_open: state.queue_open,
       firsts_first: state.firsts_first,
+      virgins_first: state.virgins_first,
       current_turn: state.current_turn,
       username: process.env.bot_account,
       password: process.env.oauth,

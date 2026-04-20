@@ -2,6 +2,7 @@ import { JsoningPg } from './lib/jsoningPg.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { splotStates, hellfireSpotIds, heavenfireSpotIds, initializeSettings, get_random_splot, abbadabbabotSay, say } from './utils.js';
+import { settings_db as queue_settings_db } from './commands/db.js';
 import {
   getTormentMeterState,
   recordContribution as recordTormentContribution,
@@ -1755,6 +1756,20 @@ export const initializeSocketHandlers = (io) => {
       state.ai_enabled = !state.ai_enabled;
       console.log("ai_enabled:", state.ai_enabled);
       callback(state.ai_enabled);
+    });
+
+    socket.on("firsts_first_toggle", async (arg, callback) => {
+      state.firsts_first = !state.firsts_first;
+      await queue_settings_db.set('firsts_first', state.firsts_first);
+      io.emit('queue_mode_state', { firsts_first: state.firsts_first, virgins_first: state.virgins_first });
+      if (typeof callback === 'function') callback({ firsts_first: state.firsts_first });
+    });
+
+    socket.on("virgins_first_toggle", async (arg, callback) => {
+      state.virgins_first = !state.virgins_first;
+      await queue_settings_db.set('virgins_first', state.virgins_first);
+      io.emit('queue_mode_state', { firsts_first: state.firsts_first, virgins_first: state.virgins_first });
+      if (typeof callback === 'function') callback({ virgins_first: state.virgins_first });
     });
 
     socket.on("updateNotification", async (message) => {

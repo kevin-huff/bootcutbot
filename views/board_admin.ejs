@@ -229,9 +229,21 @@
             <span class="led <%= data.queue_open ? 'on' : '' %>"></span>
             <small>QUEUE &middot; <%= (data.queue && data.queue.length) || 0 %> &middot; <%= data.queue_open ? 'OPEN' : 'CLOSED' %></small>
             <span class="grow"></span>
-            <% if (data.firsts_first) { %>
-              <span class="first-tag" style="font-family: var(--font-mono); font-size: 9px; color: var(--accent); border: 1px solid var(--accent); padding: 2px 6px; letter-spacing: 1.4px; border-radius: 3px;">FIRSTS FIRST</span>
-            <% } %>
+            <button type="button"
+                    id="toggle_virgins_first"
+                    class="pill pill--sm <%= data.virgins_first ? '' : 'pill--ghost' %>"
+                    data-active="<%= data.virgins_first ? '1' : '0' %>"
+                    title="Prioritize players who have never played before (Virgin-Virgin-Next auto-pick)"
+                    style="margin-right:6px;">
+              VIRGINS FIRST <%= data.virgins_first ? 'ON' : 'OFF' %>
+            </button>
+            <button type="button"
+                    id="toggle_firsts_first"
+                    class="pill pill--sm <%= data.firsts_first ? '' : 'pill--ghost' %>"
+                    data-active="<%= data.firsts_first ? '1' : '0' %>"
+                    title="Prioritize players with zero turns this session">
+              FIRSTS FIRST <%= data.firsts_first ? 'ON' : 'OFF' %>
+            </button>
           </div>
           <div class="queue-list" id="queue-list">
             <% if (data.queue && data.queue.length > 0) { %>
@@ -323,10 +335,12 @@
             ['!clear_queue', 'Clear queue only'],
             ['!open', 'Open queue to joiners'],
             ['!close', 'Close queue'],
-            ['!firsts_first', 'Toggle firsts-turns-first mode'],
+            ['!firsts_first', 'Toggle firsts-turns-first mode (session)'],
+            ['!virgins_first', 'Toggle virgins-first mode (all-time)'],
             ['!ap', 'Toggle auto-pick'],
             ['!next', 'Pick next user'],
             ['!random', 'Pick random user'],
+            ['!virgin', 'Pick random first-time player (falls back to !random)'],
             ['!abbadabbabot', 'Send prompt to Abbadabbabot'],
             ['!warn', 'Cheeky warning DM']
           ]},

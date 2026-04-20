@@ -960,19 +960,24 @@ body.arcade-admin {
 
 .arcade-admin #messages-list {
   position: fixed;
-  top: 72px;
+  bottom: 24px;
   right: 18px;
   z-index: 1050;
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   gap: 8px;
   max-width: 360px;
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
+  pointer-events: none;
 }
 .arcade-admin #messages-list .toast {
+  pointer-events: auto;
   background: var(--panel);
   border: 1px solid var(--line-2);
   color: var(--ink);
   border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 .arcade-admin #messages-list .toast-header {
   background: var(--panel-2);

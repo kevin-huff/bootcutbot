@@ -22,6 +22,12 @@ if (virginsFirst === null || virginsFirst === undefined) {
   await settings_db.set('virgins_first', virginsFirst);
 }
 
+let userBaMode = await settings_db.get('user_ba_mode');
+if (userBaMode === null || userBaMode === undefined) {
+  userBaMode = false;
+  await settings_db.set('user_ba_mode', userBaMode);
+}
+
 export const state = {
   current_turn: "None... yet",
   active_splot: null,
@@ -29,6 +35,7 @@ export const state = {
   queue_open: queueOpen,
   firsts_first: firstsFirst,
   virgins_first: virginsFirst,
+  user_ba_mode: userBaMode,
   ai_enabled: true,
   death_count: 0,
   laugh_regex: /\b(l(?:mao|o+l|mfao|ul)|ro(?:fl(?:mao)?)|h[ae]h[ae]+|kek(?:w)?|lel|lolwut|LUL|KEKW|OMEGALUL|4Head|EleGiggle|Jebaited|HeyGuys)\b/gi,

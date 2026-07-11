@@ -107,6 +107,10 @@
             <span class="oracle-ba-chip-label">ABBA</span>
             <span class="oracle-ba-chip-count" id="ba_count_abba">0</span>
           </div>
+          <div class="oracle-ba-chip" id="ba_chip_player" style="display: none;">
+            <span class="oracle-ba-chip-label autofit" id="ba_label_player">PLAYER</span>
+            <span class="oracle-ba-chip-count" id="ba_count_player">–</span>
+          </div>
         </div>
       </section>
 
@@ -121,6 +125,8 @@
     const BOARD_DATA = <%- JSON.stringify(initialBoard) %>;
     const INITIAL_BA = <%- JSON.stringify(initialBreakaways) %>;
     const INITIAL_GLITCH = new Set(<%- JSON.stringify(initialGlitchIds) %>);
+    const INITIAL_USER_BA_MODE = <%- JSON.stringify(typeof user_ba_mode !== 'undefined' && !!user_ba_mode) %>;
+    const INITIAL_PLAYER_BA = <%- JSON.stringify(typeof player_ba !== 'undefined' ? player_ba : null) %>;
 
     const SPLOT_ENTRY_MAX_FONT = 18;
     const SPLOT_ENTRY_MIN_FONT = 8;
@@ -333,6 +339,57 @@
       else renderBreakaways();
     }
 
+    /* ============ Personal breakaway mode ============ */
+    // When user-BA mode is on, the pool chips give way to one chip showing the
+    // hot-seat player's own balance. Fed by ba_mode_state / user_ba_update events.
+    function baNameKey(name) {
+      return String(name || '').replace(/^@/, '').trim().toLowerCase();
+    }
+
+    function currentPlayerName() {
+      const el = document.getElementById('current_player');
+      return el ? el.textContent : '';
+    }
+
+    function applyBaMode(on) {
+      state.userBaMode = !!on;
+      document.getElementById('ba_chip_chat').style.display = on ? 'none' : '';
+      document.getElementById('ba_chip_abba').style.display = on ? 'none' : '';
+      document.getElementById('ba_chip_player').style.display = on ? '' : 'none';
+      if (on) setPlayerBa(currentPlayerName(), state.playerBa);
+    }
+
+    const BA_LABEL_MAX_FONT = 11;
+    const BA_LABEL_MIN_FONT = 6;
+    function fitBaLabel() {
+      const el = document.getElementById('ba_label_player');
+      if (!el) return;
+      let size = BA_LABEL_MAX_FONT;
+      el.style.fontSize = size + 'px';
+      while (el.scrollWidth > el.clientWidth && size > BA_LABEL_MIN_FONT) {
+        size -= 0.5;
+        el.style.fontSize = size + 'px';
+      }
+    }
+
+    function setPlayerBa(username, balance, awarded) {
+      const label = document.getElementById('ba_label_player');
+      const countEl = document.getElementById('ba_count_player');
+      const chipEl = document.getElementById('ba_chip_player');
+      if (!label || !countEl) return;
+      label.textContent = baNameKey(username) ? baNameKey(username).toUpperCase() : 'PLAYER';
+      requestAnimationFrame(fitBaLabel);
+      const prev = countEl.textContent;
+      countEl.textContent = balance == null ? '–' : String(balance);
+      state.playerBa = balance;
+      if (awarded && chipEl && prev !== countEl.textContent) {
+        chipEl.classList.remove('just-awarded');
+        void chipEl.offsetWidth;
+        chipEl.classList.add('just-awarded');
+        setTimeout(() => chipEl.classList.remove('just-awarded'), 950);
+      }
+    }
+
     /* ============ Timer ============ */
     const TIMER_CIRC = 2 * Math.PI * 46;
     function updateTimerDisplay() {
@@ -481,6 +538,8 @@
       renderBoard();
       renderBreakaways();
       setCurrentPlayer(document.getElementById('current_player').textContent || '');
+      state.playerBa = INITIAL_PLAYER_BA;
+      applyBaMode(INITIAL_USER_BA_MODE);
 
       const socket = io();
       socket.on('connect', () => console.log('board socket connected'));
@@ -513,7 +572,22 @@
 
       socket.on('ba_update', updateBreakaway);
 
-      socket.on('new_turn', (text) => setCurrentPlayer(text));
+      socket.on('ba_mode_state', (data) => {
+        applyBaMode(data && data.user_ba_mode);
+      });
+
+      socket.on('user_ba_update', (data) => {
+        if (!data || !state.userBaMode) return;
+        if (baNameKey(data.username) === baNameKey(currentPlayerName())) {
+          setPlayerBa(currentPlayerName(), data.balance, true);
+        }
+      });
+
+      socket.on('new_turn', (text) => {
+        setCurrentPlayer(text);
+        // balance arrives via the user_ba_update that follows each pick
+        if (state.userBaMode) setPlayerBa(text, null);
+      });
 
       socket.on('timer_server', handleTimerEvent);
 

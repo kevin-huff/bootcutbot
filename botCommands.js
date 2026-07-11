@@ -38,6 +38,14 @@ import {
 } from './commands/trackerCommands.js';
 
 import {
+  handleBaModeCommand,
+  handleBaCountCommand,
+  handleGiveBaCommand,
+  handleUseBaCommand,
+  handleBaCheerPurchase
+} from './commands/breakawayCommands.js';
+
+import {
   handleCrowdSoundCommand,
   handleDedCommand,
   handleDedCountCommand,
@@ -135,6 +143,9 @@ function initializeBotCommands(io) {
     if(userstate.bits == 399) io.emit('jarjar', userstate);
     if(userstate.bits == 299) io.emit('draculaAngel', userstate);
     if(userstate.bits == 450) io.emit('ash_spit', userstate);
+
+    // Personal breakaway pack purchase (exact 100-bit cheer, only in user-BA mode)
+    await handleBaCheerPurchase(userstate, channel, client, io);
 
     // Add time for bits: 100 bits = $1 = 60 seconds
     const bitAmount = parseInt(userstate.bits) || 0;
@@ -414,6 +425,20 @@ function initializeBotCommands(io) {
       if (message.toLowerCase().startsWith("!add_spin") && isModUp) {
         const spinCount = message.split(" ")[1] || "1";
         await handleSpinTracker(spinCount, io);
+      }
+
+      // Breakaway Commands
+      if (message.toLowerCase() === "!ba_mode" && isModUp) {
+        await handleBaModeCommand(channel, tags, client, io);
+      }
+      if (message.toLowerCase().startsWith("!give_ba") && isModUp) {
+        await handleGiveBaCommand(message, channel, tags, client, io);
+      }
+      if (message.toLowerCase().startsWith("!use_ba") && isModUp) {
+        await handleUseBaCommand(message, channel, tags, client, io);
+      }
+      if (message.toLowerCase() === "!ba_count") {
+        await handleBaCountCommand(channel, tags, client);
       }
 
       // Misc Commands

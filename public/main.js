@@ -290,6 +290,20 @@ $(document).ready(function() {
         paintQueueModeButton('toggle_virgins_first', data.virgins_first, 'VIRGINS FIRST');
       }
     });
+
+    $('#toggle_user_ba').click(function(){
+      socket.emit('user_ba_mode', null, (response) => {
+        if (response && typeof response.user_ba_mode === 'boolean') {
+          paintQueueModeButton('toggle_user_ba', response.user_ba_mode, 'PERSONAL BAS');
+        }
+      });
+    });
+
+    socket.on('ba_mode_state', function(data){
+      if (data && typeof data.user_ba_mode === 'boolean') {
+        paintQueueModeButton('toggle_user_ba', data.user_ba_mode, 'PERSONAL BAS');
+      }
+    });
     $('#pause').click(function(){
       if (timerStatus !== 'running') { return; }
       let timer_data = {
@@ -648,6 +662,41 @@ $(document).ready(function() {
     return splot_data;
   }
   
+  // Personal breakaways (per-user balances)
+  function userBaStatus(text) {
+    const el = document.getElementById('userBaStatus');
+    if (el) el.textContent = text;
+  }
+  function userBaGrant() {
+    const username = ($('#userBaName').val() || '').trim();
+    const amount = parseInt($('#userBaAmount').val(), 10);
+    if (!username || !Number.isFinite(amount) || amount === 0) {
+      userBaStatus('Need a username and a non-zero amount.');
+      return;
+    }
+    socket.emit('user_ba_admin', { username, amount }, (response) => {
+      if (response && response.ok) {
+        userBaStatus(`@${response.username} now holds ${response.balance} breakaways.`);
+      } else {
+        userBaStatus((response && response.error) || 'Grant failed.');
+      }
+    });
+  }
+  function userBaLookup() {
+    const username = ($('#userBaName').val() || '').trim();
+    if (!username) {
+      userBaStatus('Enter a username to check.');
+      return;
+    }
+    socket.emit('user_ba_lookup', { username }, (response) => {
+      if (response && response.ok) {
+        userBaStatus(`@${response.username} holds ${response.balance} breakaways.`);
+      } else {
+        userBaStatus('No balance found.');
+      }
+    });
+  }
+
   // Breakaway Editing
   function breakawayDecrease(ba_id){
     let baData = getBreakawayData(ba_id);

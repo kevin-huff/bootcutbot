@@ -320,6 +320,13 @@
   line-height: 1;
   text-align: left;
 }
+/* player-name label autosizes: nowrap + min-width 0 so the grid cell bounds it
+   and the JS fit loop can compare scrollWidth against a real clientWidth */
+.oracle-ba-chip-label.autofit {
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
 .oracle-ba-chip-count {
   grid-row: 1; grid-column: 3;
   font-family: var(--font-display);

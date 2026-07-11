@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { splotStates, hellfireSpotIds, heavenfireSpotIds, initializeSettings, get_random_splot, abbadabbabotSay, say } from './utils.js';
 import { settings_db as queue_settings_db } from './commands/db.js';
+import { addToBalance, peekBalance, emitUserBaUpdate } from './commands/breakawayCommands.js';
 import {
   getTormentMeterState,
   recordContribution as recordTormentContribution,
@@ -1314,6 +1315,39 @@ export const initializeSocketHandlers = (io) => {
       }
       callback("got it");
       io.emit("ba_update", arg);
+    });
+
+    // Personal breakaway mode — board admin surface for the !ba_mode / !give_ba flows
+    socket.on("user_ba_mode", async (arg, callback) => {
+      state.user_ba_mode = !state.user_ba_mode;
+      await queue_settings_db.set('user_ba_mode', state.user_ba_mode);
+      io.emit('ba_mode_state', { user_ba_mode: state.user_ba_mode });
+      if (state.user_ba_mode) {
+        emitUserBaUpdate(io, state.current_turn, await peekBalance(state.current_turn));
+      }
+      if (typeof callback === 'function') callback({ ok: true, user_ba_mode: state.user_ba_mode });
+    });
+
+    socket.on("user_ba_admin", async (arg = {}, callback) => {
+      try {
+        const username = String(arg.username || '').replace(/^@/, '').trim().toLowerCase();
+        const amount = parseInt(arg.amount, 10);
+        if (!username || !Number.isFinite(amount) || amount === 0) {
+          throw new Error('Need a username and a non-zero amount.');
+        }
+        const balance = await addToBalance(username, amount);
+        emitUserBaUpdate(io, username, balance);
+        if (typeof callback === 'function') callback({ ok: true, username, balance });
+      } catch (error) {
+        console.error('user_ba_admin failed:', error);
+        if (typeof callback === 'function') callback({ ok: false, error: error.message });
+      }
+    });
+
+    socket.on("user_ba_lookup", async (arg = {}, callback) => {
+      const username = String(arg.username || '').replace(/^@/, '').trim().toLowerCase();
+      const balance = username ? await peekBalance(username) : null;
+      if (typeof callback === 'function') callback({ ok: balance !== null, username, balance });
     });
 
     socket.on("alt_splot_swap", (splotData, callback) => {

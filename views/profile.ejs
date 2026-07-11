@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/site-head', {
+    title: profile ? ('Bootcut — ' + profile.display + "'s Contestant Record") : 'Bootcut — Unknown Contestant',
+    description: profile
+      ? (profile.display + "'s Bootcut contestant record — turns taken, queue position, and breakaways on Abbabox's interactive Twitch game show.")
+      : 'Bootcut contestant records for Abbabox\'s interactive Twitch game show.'
+  }) %>
+</head>
+<body class="os-body">
+  <%- include('partials/site-nav', { active: 'queue' }) %>
+  <main class="os-main">
+
+    <div class="os-prof-crumb">
+      <a href="/">The Queue</a>
+      <span class="sep">✦</span>
+      <span class="here">u/<%= profile ? profile.display : requested %></span>
+    </div>
+
+    <% if (!profile) { %>
+    <section class="os-prof-hero">
+      <%- include('partials/lamps', { n: 30 }) %>
+      <div class="who">
+        <div class="os-avatar"><span class="face">??</span></div>
+        <div class="idcol">
+          <span class="os-kicker"><span class="star">✦</span>The Records Are Silent<span class="star">✦</span></span>
+          <span class="name">No Such Contestant</span>
+          <span class="meta"><span>The archive holds no record of “<%= requested %>”.</span></span>
+        </div>
+      </div>
+    </section>
+    <% } else { %>
+    <section class="os-prof-hero">
+      <%- include('partials/lamps', { n: 30 }) %>
+      <div class="who">
+        <div class="os-avatar">
+          <span class="face"><%= profile.display.slice(0, 2).toUpperCase() %></span>
+          <% if (profile.is_current) { %>
+          <span class="flag">Hot Seat</span>
+          <% } else if (profile.in_queue) { %>
+          <span class="flag">In Queue</span>
+          <% } %>
+        </div>
+        <div class="idcol">
+          <span class="os-kicker"><span class="star">✦</span>Contestant Record<span class="star">✦</span></span>
+          <span class="name"><%= profile.display %></span>
+          <div class="meta">
+            <% if (profile.is_current) { %>
+            <span class="crimson">Now in the hot seat</span>
+            <% } else if (profile.in_queue) { %>
+            <span class="jade">Currently № <%= profile.queue_position %> in queue</span>
+            <% } else { %>
+            <span>Not in queue · queue is <%= profile.queue_open ? 'open — type !join in chat' : 'closed' %></span>
+            <% } %>
+            <% if (profile.last_turn_no) { %>
+            <span>Last turn · № <%= profile.last_turn_no %></span>
+            <% } %>
+            <% if (!profile.known) { %>
+            <span>No turns on record yet</span>
+            <% } %>
+          </div>
+        </div>
+      </div>
+      <div class="os-prof-stats" style="--prof-cols: <%= profile.user_ba_mode ? 4 : 3 %>;">
+        <div class="cell">
+          <span class="label">Turns Taken · All Time</span>
+          <span class="os-tote md"><%= profile.lifetime_turns %></span>
+        </div>
+        <div class="cell">
+          <span class="label">Turns This Stream</span>
+          <span class="os-tote md dim"><%= profile.turns_called === null ? '—' : profile.turns_called %></span>
+        </div>
+        <div class="cell">
+          <span class="label">Queue Position</span>
+          <span class="os-tote md jade"><%= profile.queue_position === null ? '—' : '№' + profile.queue_position %></span>
+        </div>
+        <% if (profile.user_ba_mode) { %>
+        <div class="cell">
+          <span class="label">Breakaways Held</span>
+          <span class="os-tote md crimson"><%= profile.ba_balance === null ? '—' : profile.ba_balance %></span>
+        </div>
+        <% } %>
+      </div>
+    </section>
+
+    <div class="os-content" style="padding-top: 34px;">
+      <div class="os-section-bar"><span class="t">Share</span></div>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+        <span class="os-cmd-code" title="Click to copy" data-copy="https://leantube.org/u/<%= profile.display.toLowerCase() %>">leantube.org/u/<%= profile.display.toLowerCase() %><span class="copy-ico">⧉</span></span>
+        <% if (profile.user_ba_mode) { %>
+        <span style="font-family: var(--font-body); font-size: 15.5px; color: var(--parchment-faint); font-style: italic;">
+          Buy 5 more breakaways with a 100-bit cheer while live.
+        </span>
+        <% } %>
+      </div>
+    </div>
+    <% } %>
+
+  </main>
+  <%- include('partials/site-footer') %>
+</body>
+</html>

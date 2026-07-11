@@ -275,7 +275,22 @@
         <span class="title">Breakaways</span>
         <span class="count" id="ba-count"><%= (data.breakaways && data.breakaways.length) || 0 %> tracked</span>
         <span class="grow"></span>
+        <button type="button"
+                id="toggle_user_ba"
+                class="pill pill--sm <%= data.user_ba_mode ? '' : 'pill--ghost' %>"
+                data-active="<%= data.user_ba_mode ? '1' : '0' %>"
+                title="Switch between the shared pool and per-user breakaway balances. Balances are kept either way."
+                style="margin-right:6px;">
+          PERSONAL BAS <%= data.user_ba_mode ? 'ON' : 'OFF' %>
+        </button>
         <button class="pill pill--sm" data-toggle="modal" data-target="#addBreakaway" type="button">&#43; Add Breakaway</button>
+      </div>
+      <div id="user-ba-tools" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0 12px;">
+        <input type="text" id="userBaName" placeholder="username" style="max-width:180px;">
+        <input type="number" id="userBaAmount" value="5" step="1" style="width:80px;">
+        <button class="pill pill--sm" type="button" onclick="userBaGrant()">&#43; Grant BAs</button>
+        <button class="pill pill--sm pill--ghost" type="button" onclick="userBaLookup()">Check Balance</button>
+        <small id="userBaStatus" style="opacity:0.8;"></small>
       </div>
       <div id="breakaways">
         <% (data.breakaways || []).forEach(function(dataRow) { %>

@@ -15,6 +15,8 @@ import {
   getTormentMeterState,
   recordContribution as recordTormentContribution
 } from './tormentMeterService.js';
+import { peekBalance } from './commands/breakawayCommands.js';
+import { historical_turns_db } from './commands/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -182,12 +184,15 @@ router.get("/menu", (req, res) => {
 router.get("/board", async (req, res) => {
   const current_breakaways = (await breakaways_db.get("breakaways")) || [];
   const rawBoard = (await board_db.get("board")) || [];
+  const player_ba = state.user_ba_mode ? await peekBalance(state.current_turn) : null;
   res.render("integrated_board_2025.ejs", {
     board: rawBoard.slice(0, 8),
     breakaways: current_breakaways,
     current_turn: state.current_turn,
     hellfireSpotIds: Array.from(hellfireSpotIds),
-    heavenFireSpotIds: Array.from(heavenfireSpotIds)
+    heavenFireSpotIds: Array.from(heavenfireSpotIds),
+    user_ba_mode: state.user_ba_mode,
+    player_ba
   });
 });
 
@@ -248,6 +253,7 @@ router.get("/board_admin", basicAuth({
       queue_open: state.queue_open,
       firsts_first: state.firsts_first,
       virgins_first: state.virgins_first,
+      user_ba_mode: state.user_ba_mode,
       current_turn: state.current_turn,
       username: process.env.bot_account,
       password: process.env.oauth,
@@ -272,6 +278,51 @@ router.get("/", async (req, res) => {
     magic_number: 3,
     end_time: endTime,
     turn_count: this_turn_id,
+  });
+});
+
+router.get("/u/:username", async (req, res) => {
+  const raw = String(req.params.username || '').replace(/^@/, '').trim();
+  const key = raw.toLowerCase();
+  if (!key || key.length > 25 || !/^[a-z0-9_]+$/.test(key)) {
+    return res.status(404).render("profile.ejs", { profile: null, requested: raw });
+  }
+
+  const queue = (await queue_db.get("queue")) || [];
+  const turns = (await turns_db.get("turns")) || [];
+  const lifetime_turns = Number(await historical_turns_db.get(key)) || 0;
+
+  const queueIndex = queue.findIndex(
+    (q) => q && String(q['display-name'] || q.username || '').toLowerCase() === key
+  );
+  const queueEntry = queueIndex >= 0 ? queue[queueIndex] : null;
+  const recentTurns = turns.filter(
+    (t) => t && String(t['display-name'] || t.username || '').toLowerCase() === key
+  );
+  const lastTurn = recentTurns.length ? recentTurns[recentTurns.length - 1] : null;
+
+  // Prefer the capitalization the bot has seen; fall back to the URL's.
+  const display = (queueEntry && queueEntry['display-name'])
+    || (lastTurn && lastTurn['display-name'])
+    || raw;
+
+  const known = !!queueEntry || recentTurns.length > 0 || lifetime_turns > 0;
+
+  res.render("profile.ejs", {
+    requested: raw,
+    profile: {
+      display,
+      known,
+      in_queue: queueIndex >= 0,
+      queue_position: queueIndex >= 0 ? queueIndex + 1 : null,
+      turns_called: queueEntry ? queueEntry.turn_count : null,
+      lifetime_turns,
+      last_turn_no: lastTurn ? lastTurn.turn_count + 1 : null,
+      is_current: String(state.current_turn || '').toLowerCase() === key,
+      user_ba_mode: state.user_ba_mode,
+      ba_balance: state.user_ba_mode ? await peekBalance(key) : null,
+      queue_open: state.queue_open
+    }
   });
 });
 

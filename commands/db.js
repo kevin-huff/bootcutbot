@@ -8,6 +8,7 @@ const deaths_db = new JsoningPg('deaths');
 const ratings_db = new JsoningPg('ratings');
 const historical_turns_db = new JsoningPg('historical_turns');
 const crowd_sound_db = new JsoningPg('crowd_sounds');
+const user_breakaways_db = new JsoningPg('user_breakaways');
 
 // Lock mechanism for concurrent operations
 const lock = { isLocked: false };
@@ -38,6 +39,7 @@ export {
   ratings_db,
   historical_turns_db,
   crowd_sound_db,
+  user_breakaways_db,
   acquireLock,
   releaseLock
 };

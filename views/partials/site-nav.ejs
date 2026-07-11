@@ -1,0 +1,38 @@
+<%
+  const navActive = typeof active !== 'undefined' ? active : '';
+  const navLive = typeof stream_live !== 'undefined' && !!stream_live;
+  const navLinks = [
+    { id: 'queue',   label: 'The Queue',  href: '/' },
+    { id: 'splots',  label: 'Splots DB',  href: '/splot_db' },
+    { id: 'ratings', label: 'Ratings DB', href: '/ratings' },
+    { id: 'dice',    label: 'Dice DB',    href: '/diceData' },
+    { id: 'menu',    label: 'Commands',   href: '/menu' },
+  ];
+%>
+<header class="os-nav">
+  <a class="os-logo" href="/">
+    <span class="mark">B</span>
+    <span class="word">
+      <span class="presents">Abbabox presents</span>
+      <span class="name">BOOTCUT</span>
+    </span>
+  </a>
+  <nav>
+    <% navLinks.forEach(function (l) { %>
+    <a href="<%= l.href %>" class="<%= l.id === navActive ? 'active' : '' %>"><span class="star">✦</span><%= l.label %></a>
+    <% }); %>
+  </nav>
+  <span class="spacer"></span>
+  <span class="os-live <%= navLive ? 'is-live' : '' %>">
+    <span class="os-led <%= navLive ? 'is-blink' : 'is-off' %>" style="--c: var(--crimson-bright)"></span>
+    <span class="txt"><%= navLive ? 'Live' : 'Dark' %></span>
+  </span>
+  <a class="os-pill sm hot nav-twitch" href="https://twitch.tv/abbabox" target="_blank" rel="noopener"><span class="ico">▶</span>Watch on Twitch</a>
+  <button class="os-nav-burger" type="button" aria-label="Menu">≡</button>
+  <div class="os-nav-sheet">
+    <% navLinks.forEach(function (l) { %>
+    <a href="<%= l.href %>" class="<%= l.id === navActive ? 'active' : '' %>"><%= l.label %></a>
+    <% }); %>
+    <a class="os-pill hot" href="https://twitch.tv/abbabox" target="_blank" rel="noopener"><span class="ico">▶</span>Watch on Twitch</a>
+  </div>
+</header>

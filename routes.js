@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'path';
 import momentTz from 'moment-timezone';
 import bodyParser from 'body-parser';
-import basicAuth from 'express-basic-auth';
+import { adminAuth } from './lib/socketAuth.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { state } from './constants.js';
@@ -116,10 +116,7 @@ router.get("/timer", async (req, res) => {
   });
 });
 
-router.get("/timer_admin", basicAuth({
-  users: { [process.env.web_user]: process.env.web_pass },
-  challenge: true,
-}), async (req, res) => {
+router.get("/timer_admin", adminAuth(), async (req, res) => {
   const isPaused = await timer_db.get("is_paused");
   let remainingTime = 0;
 
@@ -154,10 +151,7 @@ router.get('/torment_meter', async (req, res) => {
   }
 });
 
-router.get('/torment_meter_admin', basicAuth({
-  users: { [process.env.web_user]: process.env.web_pass },
-  challenge: true,
-}), async (req, res) => {
+router.get('/torment_meter_admin', adminAuth(), async (req, res) => {
   try {
     const initialState = await getTormentMeterState();
     res.render('torment_meter_admin.ejs', {
@@ -236,10 +230,7 @@ router.get("/splot_db", async (req, res) => {
   });
 });
 
-router.get("/board_admin", basicAuth({
-  users: { [process.env.web_user]: process.env.web_pass },
-  challenge: true,
-}), async (req, res) => {
+router.get("/board_admin", adminAuth(), async (req, res) => {
   const breakaways = (await breakaways_db.get("breakaways")) || [];
   const queue = (await queue_db.get("queue")) || [];
   const turns = (await turns_db.get("turns")) || {};
@@ -341,13 +332,13 @@ router.get("/crowd_sound", (req, res) => {
   res.render("crowd_sound.ejs");
 });
 
-router.get("/notification_admin", async (req, res) => {
+router.get("/notification_admin", adminAuth(), async (req, res) => {
   res.render("notification_admin", {
     notification: await settings_db.get("notification"),
   });
 });
 
-router.get("/chaz_roll", (req, res) => {
+router.get("/chaz_roll", adminAuth(), (req, res) => {
   res.render("chaz_roll.ejs");
 });
 
@@ -370,15 +361,12 @@ router.get("/progress", async (req, res) => {
   });
 });
 
-router.get("/god_dash", (req, res) => {
+router.get("/god_dash", adminAuth(), (req, res) => {
   res.render("god_dash");
 });
 
 // Auth routes
-router.get("/auth", basicAuth({
-  users: { [process.env.web_user]: process.env.web_pass },
-  challenge: true,
-}), (req, res) => {
+router.get("/auth", adminAuth(), (req, res) => {
   res.render("auth.ejs");
 });
 

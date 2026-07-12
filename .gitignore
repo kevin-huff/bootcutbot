@@ -7,3 +7,8 @@ public/board-assets/
 # Runtime database files - preserve on server
 db/*
 !db/.gitkeep
+
+# Local-only notes and secret dumps — never publish
+docs/CODE_REVIEW_2026-07.md
+*.env.b64
+*.b64

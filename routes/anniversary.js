@@ -1,5 +1,5 @@
 import express from 'express';
-import basicAuth from 'express-basic-auth';
+import { adminAuth } from '../lib/socketAuth.js';
 
 const router = express.Router();
 
@@ -19,10 +19,7 @@ router.get('/leaderboard', (req, res) => {
   renderOverlay(res, 'leaderboard');
 });
 
-router.get('/admin', basicAuth({
-  users: { [process.env.web_user]: process.env.web_pass },
-  challenge: true,
-}), (req, res) => {
+router.get('/admin', adminAuth(), (req, res) => {
   res.render('anniversary_admin');
 });
 

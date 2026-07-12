@@ -21,6 +21,7 @@ import {
 } from './tormentMeterService.js';
 import { initializeEventSub } from './eventSub.js';
 import { initializeBotCommands } from './botCommands.js';
+import { installSocketAuth } from './lib/socketAuth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -32,6 +33,9 @@ global.app = app; // Make app available globally for EventSub
 const port = 3000;
 const server = http.createServer(app);
 const io = new Server(server);
+// Gate mutating Socket.IO events behind admin auth. Must run before any
+// connection handlers register (installs io.use + a per-socket event guard).
+installSocketAuth(io);
 let eventSubClient;
 let streamlabsSocket;
 

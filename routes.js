@@ -17,6 +17,12 @@ import {
 } from './tormentMeterService.js';
 import { peekBalance } from './commands/breakawayCommands.js';
 import { historical_turns_db } from './commands/db.js';
+import {
+  pushEnabled,
+  getVapidPublicKey,
+  addSubscription,
+  removeSubscription,
+} from './lib/pushNotifications.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -276,7 +282,7 @@ router.get("/u/:username", async (req, res) => {
   const raw = String(req.params.username || '').replace(/^@/, '').trim();
   const key = raw.toLowerCase();
   if (!key || key.length > 25 || !/^[a-z0-9_]+$/.test(key)) {
-    return res.status(404).render("profile.ejs", { profile: null, requested: raw });
+    return res.status(404).render("profile.ejs", { profile: null, requested: raw, pushEnabled: false });
   }
 
   const queue = (await queue_db.get("queue")) || [];
@@ -301,8 +307,10 @@ router.get("/u/:username", async (req, res) => {
 
   res.render("profile.ejs", {
     requested: raw,
+    pushEnabled: pushEnabled(),
     profile: {
       display,
+      watch_key: key,
       known,
       in_queue: queueIndex >= 0,
       queue_position: queueIndex >= 0 ? queueIndex + 1 : null,
@@ -315,6 +323,34 @@ router.get("/u/:username", async (req, res) => {
       queue_open: state.queue_open
     }
   });
+});
+
+// --- Web Push: subscribe to a contestant's page to be notified on their turn ---
+router.get("/push/vapid-public-key", (req, res) => {
+  const key = getVapidPublicKey();
+  if (!key) return res.status(503).json({ error: "push_not_configured" });
+  res.type("text/plain").send(key);
+});
+
+router.post("/push/subscribe", async (req, res) => {
+  if (!pushEnabled()) return res.status(503).json({ error: "push_not_configured" });
+  try {
+    const { username, subscription } = req.body || {};
+    const watching = await addSubscription(username, subscription);
+    res.json({ ok: true, watching });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post("/push/unsubscribe", async (req, res) => {
+  try {
+    const { username, endpoint } = req.body || {};
+    await removeSubscription(username, endpoint);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 router.get("/deaths", async (req, res) => {

@@ -84,6 +84,37 @@
       </div>
     </section>
 
+    <% if (pushEnabled) { %>
+    <style>
+      .os-notify-btn {
+        font-family: var(--font-body); font-size: 16px; font-weight: 600;
+        color: var(--parchment); background: linear-gradient(180deg, var(--crimson) 0%, var(--crimson-deep) 100%);
+        border: 1px solid var(--crimson-bright); border-radius: 8px;
+        padding: 11px 18px; cursor: pointer; transition: filter .15s ease, transform .05s ease;
+        box-shadow: 0 2px 0 rgba(0,0,0,.35);
+      }
+      .os-notify-btn:hover:not(:disabled) { filter: brightness(1.12); }
+      .os-notify-btn:active:not(:disabled) { transform: translateY(1px); }
+      .os-notify-btn:disabled { opacity: .55; cursor: default; }
+      .os-notify-btn.is-on {
+        background: linear-gradient(180deg, var(--jade) 0%, #23503f 100%);
+        border-color: #6fcea8;
+      }
+    </style>
+    <div class="os-content" style="padding-top: 34px;">
+      <div class="os-section-bar"><span class="t">Get Notified</span></div>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <button type="button" id="push-subscribe-btn" class="os-notify-btn"
+          data-username="<%= profile.watch_key %>">🔔 Notify me when it's their turn</button>
+        <span id="push-status" role="status" aria-live="polite"
+          style="font-family: var(--font-body); font-size: 15px; color: var(--parchment-faint); font-style: italic;"></span>
+      </div>
+      <p style="font-family: var(--font-body); font-size: 14px; color: var(--parchment-faint); margin: 10px 0 0;">
+        Your browser will alert you the moment <%= profile.display %> lands in the hot seat — even if this page is closed.
+      </p>
+    </div>
+    <% } %>
+
     <div class="os-content" style="padding-top: 34px;">
       <div class="os-section-bar"><span class="t">Share</span></div>
       <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
@@ -99,5 +130,8 @@
 
   </main>
   <%- include('partials/site-footer') %>
+  <% if (pushEnabled) { %>
+  <script defer src="/js/push-subscribe.js?v=<%= BUILD_VERSION %>"></script>
+  <% } %>
 </body>
 </html>

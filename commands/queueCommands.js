@@ -2,6 +2,7 @@ import { queue_db, turns_db, settings_db, historical_turns_db } from './db.js';
 import { abbadabbabotSay, ordinal_suffix_of } from '../utils.js';
 import { state } from '../constants.js';
 import { peekBalance, emitUserBaUpdate } from './breakawayCommands.js';
+import { notifyTurn } from '../lib/pushNotifications.js';
 
 async function isUserInChat(username) {
   return true;
@@ -140,6 +141,8 @@ async function finishTurn(channel, tags, client, io, player, turn_count_before, 
   state.current_turn = player["display-name"];
   await turns_db.push("turns", player);
   io.emit('new_turn', `${player["display-name"]}`);
+  // Fire-and-forget: alert anyone who subscribed to this contestant's page.
+  notifyTurn(player).catch((err) => console.error('[push] notifyTurn error:', err));
   if (state.user_ba_mode) {
     emitUserBaUpdate(io, player["display-name"], await peekBalance(player["display-name"]));
   }

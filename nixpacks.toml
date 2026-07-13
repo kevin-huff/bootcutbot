@@ -1,0 +1,15 @@
+# Railway / Nixpacks build configuration.
+#
+# The board bundle is built with Vite, which is a devDependency. Railway runs
+# with NODE_ENV=production, so the default `npm ci` omits devDependencies and the
+# build failed with "vite: not found". Install dev deps explicitly, then build
+# from the repo root (vite.config.js lives here and resolves its own paths via
+# __dirname, so no `cd src/board` is needed).
+[phases.install]
+cmds = ["npm ci --include=dev"]
+
+[phases.build]
+cmds = ["npm run build:board"]
+
+[start]
+cmd = "npm start"

@@ -70,10 +70,17 @@ function rewardBody(def, cfg) {
 
 function describeTwitchError(error) {
   const status = error?.statusCode;
+  const message = error?.message || String(error);
   if (status === 401 || status === 403) {
     return 'Twitch token is missing channel:manage:redemptions — re-authenticate at /auth to enable reward management.';
   }
-  return error?.message || String(error);
+  if (message.includes('CREATE_CUSTOM_REWARD_TOO_MANY_REWARDS')) {
+    return "The channel is at Twitch's 50-reward cap — delete unused rewards in the Twitch dashboard (Viewer Rewards → Channel Points), then save again.";
+  }
+  if (message.includes('DUPLICATE_REWARD')) {
+    return 'A reward with this title already exists on the channel (created outside the bot) — pick a different title or delete the dashboard copy.';
+  }
+  return message;
 }
 
 export function getChannelPointsStatus() {
@@ -96,12 +103,21 @@ export function getChannelPointsStatus() {
 // Push one reward's settings at Twitch: create on first enable, otherwise PATCH
 // cost/prompt/enabled to match. Reads cfg fresh from baSettings so a reward_id
 // written mid-sync is seen.
-async function syncOneReward(key) {
+async function syncOneReward(key, getManageableRewards) {
   const def = REWARD_DEFS[key];
   const cfg = baSettings.cp_rewards[key];
   if (!cfg.reward_id) {
     // Don't create the reward until it's turned on for the first time.
     if (!cfg.enabled) return;
+    // Adopt an app-owned reward with the same title before creating a new one —
+    // repairs a lost reward_id without burning a slot of Twitch's 50-reward cap.
+    const existing = (await getManageableRewards()).find((r) => r.title === renderRewardTitle(cfg));
+    if (existing) {
+      await saveBaSettings({ cp_rewards: { [key]: { reward_id: existing.id } } });
+      await apiClient.channelPoints.updateCustomReward(broadcasterId, existing.id, rewardBody(def, cfg));
+      console.log(`[CP] Adopted existing "${renderRewardTitle(cfg)}" reward (${existing.id})`);
+      return;
+    }
     const reward = await apiClient.channelPoints.createCustomReward(broadcasterId, rewardBody(def, cfg));
     await saveBaSettings({ cp_rewards: { [key]: { reward_id: reward.id } } });
     console.log(`[CP] Created "${renderRewardTitle(cfg)}" reward (${reward.id}) at ${cfg.cost} points`);
@@ -115,7 +131,7 @@ async function syncOneReward(key) {
     if (error?.statusCode === 404) {
       console.warn(`[CP] Stored reward id for ${key} is gone on Twitch, recreating`);
       await saveBaSettings({ cp_rewards: { [key]: { reward_id: null } } });
-      return syncOneReward(key);
+      return syncOneReward(key, getManageableRewards);
     }
     throw error;
   }
@@ -128,10 +144,24 @@ export async function syncBreakawayRewards() {
     lastError = 'Twitch API not connected (EventSub not initialized).';
     return getChannelPointsStatus();
   }
+  // Rewards this app's client ID owns on Twitch — fetched at most once per sync,
+  // and only when a create/adopt is actually needed.
+  let manageable = null;
+  const getManageableRewards = async () => {
+    if (manageable === null) {
+      try {
+        manageable = await apiClient.channelPoints.getCustomRewards(broadcasterId, true);
+      } catch (error) {
+        console.error('[CP] Could not list manageable rewards:', describeTwitchError(error));
+        manageable = [];
+      }
+    }
+    return manageable;
+  };
   let firstError = null;
   for (const key of Object.keys(REWARD_DEFS)) {
     try {
-      await syncOneReward(key);
+      await syncOneReward(key, getManageableRewards);
     } catch (error) {
       const described = describeTwitchError(error);
       console.error(`[CP] Reward sync failed (${key}):`, described);

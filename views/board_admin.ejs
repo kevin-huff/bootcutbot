@@ -290,6 +290,9 @@
         <input type="number" id="userBaAmount" value="5" step="1" style="width:80px;">
         <button class="pill pill--sm" type="button" onclick="userBaGrant()">&#43; Grant BAs</button>
         <button class="pill pill--sm pill--ghost" type="button" onclick="userBaLookup()">Check Balance</button>
+        <span style="align-self:stretch; width:1px; background:rgba(255,255,255,0.08);"></span>
+        <input type="number" id="baRainAmount" value="1" min="1" max="100" step="1" style="width:70px;" title="Breakaways per person">
+        <button class="pill pill--sm" type="button" onclick="userBaRain()" title="Give this many BAs to everyone currently in the queue or who took a turn this stream">&#127783; Rain on Queue</button>
         <small id="userBaStatus" style="opacity:0.8;"></small>
       </div>
 
@@ -421,6 +424,7 @@
             ['!ba_count', 'Check your breakaway balance'],
             ['!give_ba {u} {n}', 'Grant (or remove) breakaways'],
             ['!gift_ba {u} {n}', 'Gift your own breakaways (any chatter)'],
+            ['!rain_ba {n}', 'Rain n BAs on everyone in/through the queue'],
             ['!use_ba [u]', 'Burn a breakaway (defaults to hot seat)']
           ]},
           { title: 'RATINGS & YOUTUBE', cmds: [

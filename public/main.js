@@ -682,6 +682,21 @@ $(document).ready(function() {
       }
     });
   }
+  function userBaRain() {
+    const amount = parseInt($('#baRainAmount').val(), 10);
+    if (!Number.isFinite(amount) || amount < 1) {
+      userBaStatus('Rain needs an amount of at least 1.');
+      return;
+    }
+    userBaStatus('Raining…');
+    socket.emit('user_ba_rain', { amount }, (response) => {
+      if (response && response.ok) {
+        userBaStatus(`🌧️ Rained ${response.amount} BA${response.amount === 1 ? '' : 's'} on ${response.count} chatter${response.count === 1 ? '' : 's'}.`);
+      } else {
+        userBaStatus((response && response.error) || 'Rain failed.');
+      }
+    });
+  }
   function userBaLookup() {
     const username = ($('#userBaName').val() || '').trim();
     if (!username) {

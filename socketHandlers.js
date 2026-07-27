@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { splotStates, hellfireSpotIds, heavenfireSpotIds, initializeSettings, get_random_splot, abbadabbabotSay, say } from './utils.js';
 import { settings_db as queue_settings_db } from './commands/db.js';
-import { addToBalance, peekBalance, emitUserBaUpdate, baSettings, saveBaSettings } from './commands/breakawayCommands.js';
+import { addToBalance, peekBalance, emitUserBaUpdate, baSettings, saveBaSettings, rainBreakaways } from './commands/breakawayCommands.js';
 import { syncBreakawayRewards } from './channelPointsService.js';
 import {
   getTormentMeterState,
@@ -1404,6 +1404,25 @@ export const initializeSocketHandlers = (io) => {
         if (typeof callback === 'function') callback({ ok: true, username, balance });
       } catch (error) {
         console.error('user_ba_admin failed:', error);
+        if (typeof callback === 'function') callback({ ok: false, error: error.message });
+      }
+    });
+
+    // Rain X breakaways on everyone in (or through) the queue this stream.
+    socket.on("user_ba_rain", async (arg = {}, callback) => {
+      try {
+        const result = await rainBreakaways(parseInt(arg.amount, 10), io);
+        if (result.ok) {
+          try {
+            const { client } = await import('./botCommands.js');
+            await client.say(process.env.twitch_channel, `🌧️ IT'S RAINING BREAKAWAYS! ${result.amount} to each of the ${result.count} chatters who braved the queue this stream — check yours with !ba_count.`);
+          } catch (error) {
+            console.error('user_ba_rain chat announce failed:', error);
+          }
+        }
+        if (typeof callback === 'function') callback(result);
+      } catch (error) {
+        console.error('user_ba_rain failed:', error);
         if (typeof callback === 'function') callback({ ok: false, error: error.message });
       }
     });

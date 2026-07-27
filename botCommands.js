@@ -43,6 +43,7 @@ import {
   handleGiveBaCommand,
   handleUseBaCommand,
   handleGiftBaCommand,
+  handleRainBaCommand,
   handleBaCheerPurchase
 } from './commands/breakawayCommands.js';
 
@@ -437,6 +438,9 @@ function initializeBotCommands(io) {
       }
       if (message.toLowerCase().startsWith("!gift_ba")) {
         await handleGiftBaCommand(message, channel, tags, client, io);
+      }
+      if (message.toLowerCase().startsWith("!rain_ba") && isModUp) {
+        await handleRainBaCommand(message, channel, tags, client, io);
       }
       if (message.toLowerCase().startsWith("!use_ba") && isModUp) {
         await handleUseBaCommand(message, channel, tags, client, io);

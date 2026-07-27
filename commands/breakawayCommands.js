@@ -1,4 +1,4 @@
-import { settings_db, user_breakaways_db } from './db.js';
+import { settings_db, user_breakaways_db, queue_db, turns_db } from './db.js';
 import { state } from '../constants.js';
 import { profileUrl } from '../utils.js';
 import { recordBaEvent } from '../lib/baLedger.js';
@@ -253,6 +253,48 @@ async function handleGiftBaCommand(message, channel, tags, client, io) {
   client.say(channel, `🎁 @${tags['display-name']} gifts ${amount} breakaway${amount === 1 ? '' : 's'} to @${target} — they now hold ${targetBalance}!`);
 }
 
+// Universal grant: X breakaways to everyone currently in the queue plus everyone
+// who took a turn this stream. (Chatters who joined and left without a turn aren't
+// tracked anywhere, so they miss the rain.) Used by !rain_ba and the board admin.
+async function rainBreakaways(amount, io) {
+  if (!state.user_ba_mode) {
+    return { ok: false, error: 'Personal Breakaway Mode is off.' };
+  }
+  if (!Number.isFinite(amount) || amount < 1 || amount > 100) {
+    return { ok: false, error: 'Amount must be 1-100.' };
+  }
+  const queue = (await queue_db.get('queue')) || [];
+  const turns = (await turns_db.get('turns')) || [];
+  const recipients = new Set();
+  for (const entry of [...queue, ...turns]) {
+    const key = baKey(entry?.username || entry?.['display-name']);
+    if (key && /^[a-z0-9_]{1,25}$/.test(key)) recipients.add(key);
+  }
+  if (!recipients.size) {
+    return { ok: false, error: 'No one has been in the queue yet this stream.' };
+  }
+  for (const name of recipients) {
+    const balance = await addToBalance(name, amount, 'mod_grant');
+    emitUserBaUpdate(io, name, balance);
+  }
+  return { ok: true, count: recipients.size, amount };
+}
+
+// !rain_ba <amount> — mods only.
+async function handleRainBaCommand(message, channel, tags, client, io) {
+  const amount = parseInt(message.trim().split(/\s+/)[1], 10);
+  if (!Number.isFinite(amount)) {
+    client.say(channel, `Usage: !rain_ba <amount>`);
+    return;
+  }
+  const result = await rainBreakaways(amount, io);
+  if (!result.ok) {
+    client.say(channel, `@${tags['display-name']} no rain today: ${result.error}`);
+    return;
+  }
+  client.say(channel, `🌧️ IT'S RAINING BREAKAWAYS! ${result.amount} to each of the ${result.count} chatters who braved the queue this stream — check yours with !ba_count.`);
+}
+
 // Called from the cheer handler. A cheer of exactly bits_pack_cost buys a pack —
 // exact match only, so 300/400-bit cheers (SDBAs, turn buys) don't trigger it.
 async function handleBaCheerPurchase(userstate, channel, client, io) {
@@ -274,6 +316,8 @@ export {
   handleGiveBaCommand,
   handleUseBaCommand,
   handleGiftBaCommand,
+  handleRainBaCommand,
+  rainBreakaways,
   handleBaCheerPurchase,
   getBalance,
   peekBalance,

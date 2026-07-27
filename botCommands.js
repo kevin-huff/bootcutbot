@@ -17,7 +17,8 @@ import {
   handleNextCommand,
   handleRandomCommand,
   handleVirginCommand,
-  handlePositionCommand
+  handlePositionCommand,
+  handleGiveTurnCommand
 } from './commands/queueCommands.js';
 
 import {
@@ -372,6 +373,9 @@ function initializeBotCommands(io) {
       }
       if (message.toLowerCase().startsWith("!position")) {
         await handlePositionCommand(channel, tags, client);
+      }
+      if (message.toLowerCase().startsWith("!give_turn") && isModUp) {
+        await handleGiveTurnCommand(message, channel, tags, client, io);
       }
 
       // Queue Management Commands

@@ -32,8 +32,6 @@
 </head>
 <body class="arcade-admin">
 
-  <!-- toast container -->
-  <div id="messages-list"></div>
 
   <!-- audio tags preserved -->
   <audio id="fart_0" src="/farts/fart_0.wav"></audio>
@@ -113,9 +111,11 @@
           <button type="button" class="pill pill--hot pill--lg" id="nextPick">&#9654; Next</button>
           <button type="button" class="pill pill--lg" id="randomPick">&#9830; Random</button>
           <button type="button" class="pill pill--lg" id="autoPick">&#9678; Auto Pick</button>
+          <input type="text" id="manualTurnName" placeholder="username" style="max-width:150px;" title="Bonus turn: hot seat only — queue position and turn counts untouched">
+          <button type="button" class="pill" onclick="manualTurnGive()" title="Bonus turn: hot seat only — queue position and turn counts untouched">&#127903; Give Turn</button>
           <span class="splot-spacer"></span>
           <button type="button" class="pill" data-toggle="modal" data-target="#addSplot">&#43; Add Splot</button>
-          <button type="button" class="pill pill--ghost" data-toggle="modal" data-target="#addBreakaway">&#43; Breakaway</button>
+          <button type="button" class="pill pill--ghost ba-shared-only" data-toggle="modal" data-target="#addBreakaway" style="<%= data.user_ba_mode ? 'display:none;' : '' %>">&#43; Breakaway</button>
           <button type="button" class="pill pill--ghost" id="toggle_ai">AI &middot; Toggle</button>
         </div>
       </div>
@@ -266,6 +266,20 @@
             <% } %>
           </div>
         </div>
+
+        <!-- Hot seat chat: the current player's messages, docked so they never
+             cover the board. Replaces the old floating toast stack. -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="led on"></span>
+            <small id="hotseat-chat-label">HOT SEAT CHAT</small>
+            <span class="grow"></span>
+            <button type="button" class="pill pill--sm pill--ghost" onclick="hotseatChatClear()">Clear</button>
+          </div>
+          <div class="queue-list" id="hotseat-chat-list" style="max-height:240px; overflow-y:auto;">
+            <div class="queue-empty">Waiting for the hot seat to speak&hellip;</div>
+          </div>
+        </div>
       </aside>
     </div>
 
@@ -283,81 +297,133 @@
                 style="margin-right:6px;">
           PERSONAL BAS <%= data.user_ba_mode ? 'ON' : 'OFF' %>
         </button>
-        <button class="pill pill--sm" data-toggle="modal" data-target="#addBreakaway" type="button">&#43; Add Breakaway</button>
-      </div>
-      <div id="user-ba-tools" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0 12px;">
-        <input type="text" id="userBaName" placeholder="username" style="max-width:180px;">
-        <input type="number" id="userBaAmount" value="5" step="1" style="width:80px;">
-        <button class="pill pill--sm" type="button" onclick="userBaGrant()">&#43; Grant BAs</button>
-        <button class="pill pill--sm pill--ghost" type="button" onclick="userBaLookup()">Check Balance</button>
-        <span style="align-self:stretch; width:1px; background:rgba(255,255,255,0.08);"></span>
-        <input type="number" id="baRainAmount" value="1" min="1" max="100" step="1" style="width:70px;" title="Breakaways per person">
-        <button class="pill pill--sm" type="button" onclick="userBaRain()" title="Give this many BAs to everyone currently in the queue or who took a turn this stream">&#127783; Rain on Queue</button>
-        <small id="userBaStatus" style="opacity:0.8;"></small>
+        <button class="pill pill--sm ba-shared-only" data-toggle="modal" data-target="#addBreakaway" type="button" style="<%= data.user_ba_mode ? 'display:none;' : '' %>">&#43; Add Breakaway</button>
       </div>
 
-      <!-- Purchase rates: persisted server-side, applied live (channel point reward is re-priced via Helix on save) -->
-      <div id="ba-settings" style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; margin:0 0 14px; padding:12px 14px; border:1px solid rgba(255,255,255,0.08); border-radius:10px;">
-        <label class="ba-set-field" style="display:flex; flex-direction:column; gap:4px;">
-          <small style="font-family:var(--font-mono); letter-spacing:.14em; color:var(--ink-2);">STARTING BAS</small>
-          <input type="number" id="baStartingBas" value="<%= data.ba_settings.starting_bas %>" min="0" step="1" style="width:90px;">
-        </label>
-        <label class="ba-set-field" style="display:flex; flex-direction:column; gap:4px;">
-          <small style="font-family:var(--font-mono); letter-spacing:.14em; color:var(--ink-2);">BITS &middot; PACK SIZE</small>
-          <input type="number" id="baBitsPackSize" value="<%= data.ba_settings.bits_pack_size %>" min="1" step="1" style="width:90px;">
-        </label>
-        <label class="ba-set-field" style="display:flex; flex-direction:column; gap:4px;">
-          <small style="font-family:var(--font-mono); letter-spacing:.14em; color:var(--ink-2);">BITS &middot; PACK COST</small>
-          <input type="number" id="baBitsPackCost" value="<%= data.ba_settings.bits_pack_cost %>" min="1" step="1" style="width:100px;">
-        </label>
-        <div style="flex-basis:100%; display:flex; flex-direction:column; gap:6px;">
-          <small style="font-family:var(--font-mono); letter-spacing:.14em; color:var(--ink-2);">CHANNEL POINT REWARDS</small>
-          <%
-            var cpRows = [
-              { key: 'self_pack',   label: 'Pack (redeemer)',   prefix: 'baCpSelfPack',   sized: true },
-              { key: 'self_single', label: 'Single (redeemer)', prefix: 'baCpSelfSingle', sized: false },
-              { key: 'abba_pack',   label: 'Pack (Abbabox)',    prefix: 'baCpAbbaPack',   sized: true },
-              { key: 'abba_single', label: 'Single (Abbabox)',  prefix: 'baCpAbbaSingle', sized: false },
-            ];
-          %>
-          <div style="display:grid; grid-template-columns: 140px 40px minmax(220px, 1fr) 110px 80px; gap:6px 10px; align-items:center;">
-            <small style="opacity:.7;">Reward</small><small style="opacity:.7;">On</small><small style="opacity:.7;">Title on Twitch</small><small style="opacity:.7;">Cost (pts)</small><small style="opacity:.7;">BAs</small>
-            <% cpRows.forEach(function (row) { var cfg = data.ba_settings.cp_rewards[row.key]; %>
-            <span style="font-size:13px;"><%= row.label %></span>
-            <input type="checkbox" id="<%= row.prefix %>Enabled" <%= cfg.enabled ? 'checked' : '' %>>
-            <input type="text" id="<%= row.prefix %>Title" value="<%= cfg.title %>" maxlength="45">
-            <input type="number" id="<%= row.prefix %>Cost" value="<%= cfg.cost %>" min="1" step="1" style="width:110px;">
-            <% if (row.sized) { %>
-            <input type="number" id="<%= row.prefix %>Size" value="<%= cfg.amount %>" min="1" step="1" style="width:80px;">
-            <% } else { %>
-            <span style="opacity:.6; font-family:var(--font-mono);">1</span>
-            <% } %>
-            <% }); %>
+      <div class="ba-admin-stack">
+        <!-- Balances: personal cards or the shared pool, plus quick tools -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="led on"></span>
+            <small>BALANCES &middot; <span id="ba-balances-mode"><%= data.user_ba_mode ? 'PERSONAL' : 'SHARED POOL' %></span></small>
           </div>
-          <small style="opacity:.6;">{n} in a title renders as the reward's BA count. Titles must be unique — Twitch rejects duplicates. Max 45 chars.</small>
-        </div>
-        <button class="pill pill--sm pill--hot" type="button" onclick="baSettingsSave()">Save Rates</button>
-        <div style="display:flex; flex-direction:column; gap:2px;">
-          <small id="baSettingsStatus" style="opacity:0.8;"></small>
-          <small id="baCpStatus" style="opacity:0.8; font-family:var(--font-mono);"></small>
-        </div>
+          <div class="panel-body">
+            <!-- Personal-mode balance cards: same quick −/+ workflow as the shared-pool
+                 cards, but against the hot seat player's and the house's own balances. -->
+            <div id="personal-ba-cards" class="ba-cards" style="<%= data.user_ba_mode ? '' : 'display:none;' %>">
+        <article class="ba">
+          <small class="ba-kicker">HOT SEAT</small>
+          <div class="ba-row">
+            <h3 id="personal_ba_hotseat_name"><%= data.current_turn %></h3>
+            <span class="ba-count" id="personal_ba_hotseat_count"><%= data.hot_seat_ba === null ? '&ndash;' : data.hot_seat_ba %></span>
+          </div>
+          <div class="ba-actions">
+            <button class="ibtn ibtn--sm" title="Spend one (breakaway used)" onclick="personalBaAdjust('hotseat', -1)">&minus;</button>
+            <button class="ibtn ibtn--sm" title="Grant one" onclick="personalBaAdjust('hotseat', 1)">&#43;</button>
+          </div>
+        </article>
+        <article class="ba">
+          <small class="ba-kicker">THE HOUSE</small>
+          <div class="ba-row">
+            <h3><%= data.abba_login %></h3>
+            <span class="ba-count" id="personal_ba_abba_count"><%= data.abba_ba === null ? '&ndash;' : data.abba_ba %></span>
+          </div>
+          <div class="ba-actions">
+            <button class="ibtn ibtn--sm" title="Spend one" onclick="personalBaAdjust('abba', -1)">&minus;</button>
+            <button class="ibtn ibtn--sm" title="Grant one" onclick="personalBaAdjust('abba', 1)">&#43;</button>
+          </div>
+        </article>
       </div>
-      <div id="breakaways">
-        <% (data.breakaways || []).forEach(function(dataRow) { %>
-          <article class="ba" id="breakaway_<%= dataRow.id %>">
-            <small class="ba-kicker">BREAKAWAY</small>
-            <div class="ba-row">
-              <h3 id="breakawayName_<%= dataRow.id %>"><%= dataRow.name %></h3>
-              <span class="ba-count" id="ba_dot_<%= dataRow.id %>"><%= dataRow.ba_dots %></span>
+
+            <div id="breakaways" style="<%= data.user_ba_mode ? 'display:none;' : '' %>">
+              <% (data.breakaways || []).forEach(function(dataRow) { %>
+                <article class="ba" id="breakaway_<%= dataRow.id %>">
+                  <small class="ba-kicker">BREAKAWAY</small>
+                  <div class="ba-row">
+                    <h3 id="breakawayName_<%= dataRow.id %>"><%= dataRow.name %></h3>
+                    <span class="ba-count" id="ba_dot_<%= dataRow.id %>"><%= dataRow.ba_dots %></span>
+                  </div>
+                  <div class="ba-actions">
+                    <button class="ibtn ibtn--sm" title="Decrease" onclick="breakawayDecrease('<%= dataRow.id %>')">&minus;</button>
+                    <button class="ibtn ibtn--sm" title="Increase" onclick="breakawayIncrease('<%= dataRow.id %>')">&#43;</button>
+                    <span class="splot-spacer"></span>
+                    <button class="ibtn ibtn--sm" title="Edit" onclick="popEditBreakawayModal(<%= dataRow.id %>)">&#9998;</button>
+                  </div>
+                </article>
+              <% }); %>
             </div>
-            <div class="ba-actions">
-              <button class="ibtn ibtn--sm" title="Decrease" onclick="breakawayDecrease('<%= dataRow.id %>')">&minus;</button>
-              <button class="ibtn ibtn--sm" title="Increase" onclick="breakawayIncrease('<%= dataRow.id %>')">&#43;</button>
-              <span class="splot-spacer"></span>
-              <button class="ibtn ibtn--sm" title="Edit" onclick="popEditBreakawayModal(<%= dataRow.id %>)">&#9998;</button>
+            <div id="user-ba-tools" class="ba-tools" style="<%= data.user_ba_mode ? '' : 'display:none;' %>">
+              <input type="text" id="userBaName" placeholder="username" style="max-width:180px;">
+              <input type="number" id="userBaAmount" value="5" step="1" style="width:80px;">
+              <button class="pill pill--sm" type="button" onclick="userBaGrant()">&#43; Grant BAs</button>
+              <button class="pill pill--sm pill--ghost" type="button" onclick="userBaLookup()">Check Balance</button>
+              <span class="tool-divider"></span>
+              <input type="number" id="baRainAmount" value="1" min="1" max="100" step="1" style="width:70px;" title="Breakaways per person">
+              <button class="pill pill--sm" type="button" onclick="userBaRain()" title="Give this many BAs to everyone currently in the queue or who took a turn this stream">&#127783; Rain on Queue</button>
+              <small id="userBaStatus" class="ba-status"></small>
             </div>
-          </article>
-        <% }); %>
+          </div>
+        </div>
+
+        <!-- Rates & rewards: set-and-forget config, collapsed by default.
+             Persisted server-side, applied live (rewards re-priced via Helix on save). -->
+        <div class="panel">
+          <div class="panel-head" id="ba-rates-head" onclick="toggleBaRates()" title="Purchase rates and channel point rewards">
+            <span class="led"></span>
+            <small>RATES &amp; REWARDS</small>
+            <span class="grow"></span>
+            <small id="ba-rates-chevron">&#9656; EXPAND</small>
+          </div>
+          <div class="panel-body ba-rates" id="ba-rates-body" style="display:none;">
+            <div class="rate-row">
+              <label class="rate-field">
+                <small class="mono-label">STARTING BAS</small>
+                <input type="number" id="baStartingBas" value="<%= data.ba_settings.starting_bas %>" min="0" step="1" style="width:90px;">
+              </label>
+              <label class="rate-field">
+                <small class="mono-label">BITS &middot; PACK SIZE</small>
+                <input type="number" id="baBitsPackSize" value="<%= data.ba_settings.bits_pack_size %>" min="1" step="1" style="width:90px;">
+              </label>
+              <label class="rate-field">
+                <small class="mono-label">BITS &middot; PACK COST</small>
+                <input type="number" id="baBitsPackCost" value="<%= data.ba_settings.bits_pack_cost %>" min="1" step="1" style="width:100px;">
+              </label>
+            </div>
+            <div class="rate-col">
+              <small class="mono-label">CHANNEL POINT REWARDS</small>
+              <%
+                var cpRows = [
+                  { key: 'self_pack',   label: 'Pack (redeemer)',   prefix: 'baCpSelfPack',   sized: true },
+                  { key: 'self_single', label: 'Single (redeemer)', prefix: 'baCpSelfSingle', sized: false },
+                  { key: 'abba_pack',   label: 'Pack (Abbabox)',    prefix: 'baCpAbbaPack',   sized: true },
+                  { key: 'abba_single', label: 'Single (Abbabox)',  prefix: 'baCpAbbaSingle', sized: false },
+                ];
+              %>
+              <div class="ba-cp-grid">
+                <small class="grid-head">Reward</small><small class="grid-head">On</small><small class="grid-head">Title on Twitch</small><small class="grid-head">Cost (pts)</small><small class="grid-head">BAs</small>
+                <% cpRows.forEach(function (row) { var cfg = data.ba_settings.cp_rewards[row.key]; %>
+                <span class="row-label"><%= row.label %></span>
+                <input type="checkbox" id="<%= row.prefix %>Enabled" <%= cfg.enabled ? 'checked' : '' %>>
+                <input type="text" id="<%= row.prefix %>Title" value="<%= cfg.title %>" maxlength="45">
+                <input type="number" id="<%= row.prefix %>Cost" value="<%= cfg.cost %>" min="1" step="1" style="width:110px;">
+                <% if (row.sized) { %>
+                <input type="number" id="<%= row.prefix %>Size" value="<%= cfg.amount %>" min="1" step="1" style="width:80px;">
+                <% } else { %>
+                <span class="ba-note" style="font-family:var(--font-mono);">1</span>
+                <% } %>
+                <% }); %>
+              </div>
+              <small class="ba-note">{n} in a title renders as the reward's BA count. Titles must be unique — Twitch rejects duplicates. Max 45 chars.</small>
+            </div>
+            <div class="rate-row">
+              <button class="pill pill--sm pill--hot" type="button" onclick="baSettingsSave()">Save Rates</button>
+              <div class="rate-col" style="gap:2px;">
+                <small id="baSettingsStatus" class="ba-status"></small>
+                <small id="baCpStatus" class="ba-status" style="font-family:var(--font-mono);"></small>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -405,6 +471,7 @@
             ['!ap', 'Toggle auto-pick'],
             ['!next', 'Pick next user'],
             ['!random', 'Pick random user'],
+            ['!give_turn {u}', 'Bonus turn — queue spot & turn counts untouched'],
             ['!virgin', 'Pick random first-time player (falls back to !random)'],
             ['!abbadabbabot', 'Send prompt to Abbadabbabot'],
             ['!warn', 'Cheeky warning DM']

@@ -1015,3 +1015,21 @@ body.arcade-admin {
   .sb-logo { border-right: none; min-width: auto; flex: 1 0 100%; }
   .sb-actions { padding: 6px 14px; flex-wrap: wrap; }
 }
+
+/* --- breakaways admin panels ------------------------------------------ */
+
+.arcade-admin .ba-admin-stack { display: flex; flex-direction: column; gap: 14px; margin-top: 10px; }
+.arcade-admin .ba-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 320px)); gap: 12px; }
+.arcade-admin .ba-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+.arcade-admin .ba-tools .tool-divider { align-self: stretch; width: 1px; background: rgba(255, 255, 255, 0.08); }
+.arcade-admin .ba-rates { display: flex; flex-direction: column; gap: 14px; }
+.arcade-admin .ba-rates .rate-row { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+.arcade-admin .ba-rates .rate-field { display: flex; flex-direction: column; gap: 4px; }
+.arcade-admin .ba-rates .rate-col { display: flex; flex-direction: column; gap: 6px; }
+.arcade-admin .mono-label { font-family: var(--font-mono); letter-spacing: 0.14em; color: var(--ink-2); }
+.arcade-admin .ba-cp-grid { display: grid; grid-template-columns: 140px 40px minmax(220px, 1fr) 110px 80px; gap: 6px 10px; align-items: center; }
+.arcade-admin .ba-cp-grid .grid-head { opacity: 0.7; }
+.arcade-admin .ba-cp-grid .row-label { font-size: 13px; }
+.arcade-admin .ba-note { opacity: 0.6; }
+.arcade-admin .ba-status { opacity: 0.8; }
+.arcade-admin #ba-rates-head { cursor: pointer; user-select: none; }

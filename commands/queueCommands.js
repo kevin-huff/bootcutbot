@@ -333,6 +333,38 @@ async function handleVirginCommand(channel, tags, client, io) {
   }
 }
 
+// Bonus turn: put someone in the hot seat without touching the queue, session
+// turn counts (firsts-first), or lifetime records (virgins-first). For purchased
+// turns and guest turns. Returns { ok, display } — chat announcing is the caller's.
+async function grantManualTurn(rawName, io) {
+  const display = String(rawName || '').replace(/^@/, '').trim();
+  const key = display.toLowerCase();
+  if (!key || !/^[a-z0-9_]{1,25}$/.test(key)) {
+    return { ok: false, error: 'Need a valid username.' };
+  }
+  state.current_turn = display;
+  io.emit('new_turn', display);
+  notifyTurn({ username: key, 'display-name': display }).catch((err) => console.error('[push] notifyTurn error:', err));
+  if (state.user_ba_mode) {
+    emitUserBaUpdate(io, key, await peekBalance(key));
+  }
+  return { ok: true, display };
+}
+
+// !give_turn <user> — mods only.
+async function handleGiveTurnCommand(message, channel, tags, client, io) {
+  const target = message.trim().split(/\s+/)[1];
+  const result = await grantManualTurn(target, io);
+  if (!result.ok) {
+    client.say(channel, `Usage: !give_turn <user>`);
+    return;
+  }
+  client.say(
+    channel,
+    `🎟️ @abbabox - @${result.display} has been granted a bonus turn — step on up to the board! (Queue spots and turn counts are untouched.)`
+  );
+}
+
 async function handlePositionCommand(channel, tags, client) {
   const queue = (await queue_db.get("queue")) || [];
 
@@ -355,5 +387,7 @@ export {
   handleNextCommand,
   handleRandomCommand,
   handleVirginCommand,
-  handlePositionCommand
+  handlePositionCommand,
+  handleGiveTurnCommand,
+  grantManualTurn
 };

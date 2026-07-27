@@ -187,6 +187,8 @@ router.get("/board", async (req, res) => {
   const current_breakaways = (await breakaways_db.get("breakaways")) || [];
   const rawBoard = (await board_db.get("board")) || [];
   const player_ba = state.user_ba_mode ? await peekBalance(state.current_turn) : null;
+  const abba_login = String(process.env.twitch_channel || '').replace(/^#/, '').toLowerCase();
+  const abba_ba = state.user_ba_mode ? await peekBalance(abba_login) : null;
   res.render("integrated_board_2025.ejs", {
     board: rawBoard.slice(0, 8),
     breakaways: current_breakaways,
@@ -194,7 +196,9 @@ router.get("/board", async (req, res) => {
     hellfireSpotIds: Array.from(hellfireSpotIds),
     heavenFireSpotIds: Array.from(heavenfireSpotIds),
     user_ba_mode: state.user_ba_mode,
-    player_ba
+    player_ba,
+    abba_ba,
+    abba_login
   });
 });
 
@@ -243,8 +247,12 @@ router.get("/board_admin", adminAuth(), async (req, res) => {
   const queue = (await queue_db.get("queue")) || [];
   const turns = (await turns_db.get("turns")) || {};
   const board = ((await board_db.get("board")) || []).slice(0, 8);
+  const abba_login = String(process.env.twitch_channel || '').replace(/^#/, '').toLowerCase();
   res.render("board_admin.ejs", {
     data: {
+      abba_login,
+      hot_seat_ba: state.user_ba_mode ? await peekBalance(state.current_turn) : null,
+      abba_ba: state.user_ba_mode ? await peekBalance(abba_login) : null,
       board,
       breakaways,
       queue,

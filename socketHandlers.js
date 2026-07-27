@@ -4,6 +4,7 @@ import { dirname } from 'path';
 import { splotStates, hellfireSpotIds, heavenfireSpotIds, initializeSettings, get_random_splot, abbadabbabotSay, say } from './utils.js';
 import { settings_db as queue_settings_db } from './commands/db.js';
 import { addToBalance, peekBalance, emitUserBaUpdate, baSettings, saveBaSettings, rainBreakaways } from './commands/breakawayCommands.js';
+import { grantManualTurn } from './commands/queueCommands.js';
 import { syncBreakawayRewards } from './channelPointsService.js';
 import {
   getTormentMeterState,
@@ -1404,6 +1405,25 @@ export const initializeSocketHandlers = (io) => {
         if (typeof callback === 'function') callback({ ok: true, username, balance });
       } catch (error) {
         console.error('user_ba_admin failed:', error);
+        if (typeof callback === 'function') callback({ ok: false, error: error.message });
+      }
+    });
+
+    // Bonus turn from the admin page: hot seat only — queue and counts untouched.
+    socket.on("manual_turn", async (arg = {}, callback) => {
+      try {
+        const result = await grantManualTurn(arg.username, io);
+        if (result.ok) {
+          try {
+            const { client } = await import('./botCommands.js');
+            await client.say(process.env.twitch_channel, `🎟️ @abbabox - @${result.display} has been granted a bonus turn — step on up to the board! (Queue spots and turn counts are untouched.)`);
+          } catch (error) {
+            console.error('manual_turn chat announce failed:', error);
+          }
+        }
+        if (typeof callback === 'function') callback(result);
+      } catch (error) {
+        console.error('manual_turn failed:', error);
         if (typeof callback === 'function') callback({ ok: false, error: error.message });
       }
     });

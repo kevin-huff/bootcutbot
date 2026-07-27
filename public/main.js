@@ -153,7 +153,6 @@ $(document).ready(function() {
   let lastTenMessages = [];
   // Variable to store the desired username
   let desiredUsername = templateData.current_turn;
-  let isChatOpen = true;
   // Listen for new messages in the chat
   client.on("message", (channel, tags, message, self) => {
     // Check if the message is from the desired user
@@ -170,11 +169,18 @@ $(document).ready(function() {
   });
 
   document.addEventListener('DOMContentLoaded', function () {
+    updatePage(lastTenMessages);
     socket.on("new_turn", function(msg){
       console.log("new_turn");
       desiredUsername = msg;
       lastTenMessages = [];
+      updatePage(lastTenMessages);
       updateTurn(msg);
+      // Personal-mode hot seat card: new name, balance arrives via user_ba_update.
+      const nameEl = document.getElementById('personal_ba_hotseat_name');
+      if (nameEl) nameEl.textContent = msg;
+      const countEl = document.getElementById('personal_ba_hotseat_count');
+      if (countEl) countEl.textContent = '–';
     });
     socket.on("random_splot", function(msg){
       console.log("random_splot",msg);
@@ -301,7 +307,33 @@ $(document).ready(function() {
 
     socket.on('ba_mode_state', function(data){
       if (data && typeof data.user_ba_mode === 'boolean') {
-        paintQueueModeButton('toggle_user_ba', data.user_ba_mode, 'PERSONAL BAS');
+        const on = data.user_ba_mode;
+        paintQueueModeButton('toggle_user_ba', on, 'PERSONAL BAS');
+        // Swap what's visible: personal cards + tools vs the shared pool + its buttons.
+        const cards = document.getElementById('personal-ba-cards');
+        if (cards) cards.style.display = on ? 'grid' : 'none';
+        const pool = document.getElementById('breakaways');
+        if (pool) pool.style.display = on ? 'none' : '';
+        const tools = document.getElementById('user-ba-tools');
+        if (tools) tools.style.display = on ? '' : 'none';
+        document.querySelectorAll('.ba-shared-only').forEach(function(el){
+          el.style.display = on ? 'none' : '';
+        });
+        const modeEl = document.getElementById('ba-balances-mode');
+        if (modeEl) modeEl.textContent = on ? 'PERSONAL' : 'SHARED POOL';
+      }
+    });
+
+    socket.on('user_ba_update', function(data){
+      if (!data) return;
+      const name = String(data.username || '').toLowerCase();
+      if (name === String(templateData.abba_login || '').toLowerCase()) {
+        const el = document.getElementById('personal_ba_abba_count');
+        if (el) el.textContent = data.balance;
+      }
+      if (name === personalBaTargetName('hotseat')) {
+        const el = document.getElementById('personal_ba_hotseat_count');
+        if (el) el.textContent = data.balance;
       }
     });
     $('#pause').click(function(){
@@ -680,6 +712,46 @@ $(document).ready(function() {
       } else {
         userBaStatus((response && response.error) || 'Grant failed.');
       }
+    });
+  }
+  // Bonus turn: hot seat only — queue position and turn counts untouched.
+  function manualTurnGive() {
+    const username = ($('#manualTurnName').val() || '').replace(/^@/, '').trim();
+    if (!username) return;
+    socket.emit('manual_turn', { username }, (response) => {
+      if (response && response.ok) {
+        $('#manualTurnName').val('');
+        // hot seat display updates via the new_turn broadcast
+      } else {
+        alert((response && response.error) || 'Could not give the turn.');
+      }
+    });
+  }
+  // Rates & Rewards panel: set-and-forget config, collapsed by default.
+  function toggleBaRates() {
+    const body = document.getElementById('ba-rates-body');
+    const chevron = document.getElementById('ba-rates-chevron');
+    if (!body) return;
+    const open = body.style.display === 'none';
+    body.style.display = open ? '' : 'none';
+    if (chevron) chevron.innerHTML = open ? '&#9662; COLLAPSE' : '&#9656; EXPAND';
+  }
+  // Personal-mode balance cards (hot seat + the house): −/+ against user_ba_admin.
+  function personalBaTargetName(target) {
+    if (target === 'abba') return String(templateData.abba_login || '').toLowerCase();
+    return String(desiredUsername || '').replace(/^@/, '').trim().toLowerCase();
+  }
+  function personalBaAdjust(target, delta) {
+    const username = personalBaTargetName(target);
+    if (!/^[a-z0-9_]{1,25}$/.test(username)) {
+      userBaStatus('No valid player in the hot seat.');
+      return;
+    }
+    socket.emit('user_ba_admin', { username, amount: delta }, (response) => {
+      if (!(response && response.ok)) {
+        userBaStatus((response && response.error) || 'Adjust failed.');
+      }
+      // Card counts repaint via the user_ba_update broadcast that follows.
     });
   }
   function userBaRain() {
@@ -1156,42 +1228,35 @@ $(document).ready(function() {
         playFart();
       }
     }
-    // Toggle the chat window
-    function toggleChat() {
-      isChatOpen = !isChatOpen;
-      document.querySelector("#messages-list").style.display = isChatOpen ? "block" : "none";
-      document.querySelector("#chat-toggle").className = isChatOpen ? "fas fa-chevron-down" : "fas fa-chevron-up";
-    }
-
-    // Update the page with the new messages
+    // Render the hot seat player's recent messages into the docked side-rail
+    // panel (replaces the old floating toast stack that covered the screen).
     function updatePage(messages) {
-      // Clear any existing messages
-      document.querySelector("#messages-list").innerHTML = "";
-
-      // Loop through each message and add a bootstrap toast for the message
-      messages.forEach(({ username, message }) => {
-		const toast = document.createElement("div");
-		toast.className = "toast";
-		toast.setAttribute("role", "alert");
-		toast.setAttribute("aria-live", "assertive");
-		toast.setAttribute("aria-atomic", "true");
-		toast.setAttribute("data-delay", "45000");
-		toast.innerHTML = `
-		  <div class="toast-header">
-			<strong class="mr-auto">${username}</strong>
-			<small class="text-muted">just now</small>
-			<button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
-			  <span aria-hidden="true">&times;</span>
-			</button>
-		  </div>
-		  <div class="toast-body">
-			${message}
-		  </div>
-		`;
-
-		document.querySelector("#messages-list").appendChild(toast);
-		new bootstrap.Toast(toast).show();
+      const list = document.getElementById('hotseat-chat-list');
+      if (!list) return;
+      const label = document.getElementById('hotseat-chat-label');
+      if (label) {
+        const who = (desiredUsername || '').trim();
+        label.textContent = 'HOT SEAT CHAT' + (who ? ' · @' + who.toUpperCase() : '');
+      }
+      list.innerHTML = '';
+      if (!messages.length) {
+        const empty = document.createElement('div');
+        empty.className = 'queue-empty';
+        empty.textContent = 'Waiting for the hot seat to speak…';
+        list.appendChild(empty);
+        return;
+      }
+      messages.forEach(({ message }) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'padding:7px 12px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:14px; line-height:1.35; overflow-wrap:anywhere;';
+        row.textContent = message; // textContent — chat can't inject HTML
+        list.appendChild(row);
       });
+      list.scrollTop = list.scrollHeight;
+    }
+    function hotseatChatClear() {
+      lastTenMessages = [];
+      updatePage(lastTenMessages);
     }
 /**
  * @fileoverview GoDice class for connecting to and controlling a GoDice Bluetooth die.

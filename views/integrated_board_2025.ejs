@@ -127,6 +127,8 @@
     const INITIAL_GLITCH = new Set(<%- JSON.stringify(initialGlitchIds) %>);
     const INITIAL_USER_BA_MODE = <%- JSON.stringify(typeof user_ba_mode !== 'undefined' && !!user_ba_mode) %>;
     const INITIAL_PLAYER_BA = <%- JSON.stringify(typeof player_ba !== 'undefined' ? player_ba : null) %>;
+    const INITIAL_ABBA_BA = <%- JSON.stringify(typeof abba_ba !== 'undefined' ? abba_ba : null) %>;
+    const ABBA_LOGIN = <%- JSON.stringify(typeof abba_login !== 'undefined' ? abba_login : '') %>;
 
     const SPLOT_ENTRY_MAX_FONT = 18;
     const SPLOT_ENTRY_MIN_FONT = 8;
@@ -351,12 +353,18 @@
       return el ? el.textContent : '';
     }
 
+    // The ABBA chip stays up in both modes: shared-pool dots normally, Abbabox's
+    // own personal stash (fed by gift redemptions etc.) when personal mode is on.
     function applyBaMode(on) {
       state.userBaMode = !!on;
       document.getElementById('ba_chip_chat').style.display = on ? 'none' : '';
-      document.getElementById('ba_chip_abba').style.display = on ? 'none' : '';
       document.getElementById('ba_chip_player').style.display = on ? '' : 'none';
-      if (on) setPlayerBa(currentPlayerName(), state.playerBa);
+      if (on) {
+        setBaCount('abba', state.abbaBa == null ? 0 : state.abbaBa, false);
+        setPlayerBa(currentPlayerName(), state.playerBa);
+      } else {
+        renderBreakaways();
+      }
     }
 
     const BA_LABEL_MAX_FONT = 11;
@@ -539,6 +547,7 @@
       renderBreakaways();
       setCurrentPlayer(document.getElementById('current_player').textContent || '');
       state.playerBa = INITIAL_PLAYER_BA;
+      state.abbaBa = INITIAL_ABBA_BA;
       applyBaMode(INITIAL_USER_BA_MODE);
 
       const socket = io();
@@ -577,7 +586,13 @@
       });
 
       socket.on('user_ba_update', (data) => {
-        if (!data || !state.userBaMode) return;
+        if (!data) return;
+        // Track Abbabox's stash in both modes so the chip isn't stale after a toggle.
+        if (ABBA_LOGIN && baNameKey(data.username) === ABBA_LOGIN) {
+          state.abbaBa = data.balance;
+          if (state.userBaMode) setBaCount('abba', data.balance, true);
+        }
+        if (!state.userBaMode) return;
         if (baNameKey(data.username) === baNameKey(currentPlayerName())) {
           setPlayerBa(currentPlayerName(), data.balance, true);
         }

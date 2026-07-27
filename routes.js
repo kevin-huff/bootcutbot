@@ -281,7 +281,7 @@ router.get("/", async (req, res) => {
     turn_count: this_turn_id,
     user_ba_mode: state.user_ba_mode,
     ba: baSettings,
-    cp_live: getChannelPointsStatus().live,
+    cp: getChannelPointsStatus(),
   });
 });
 
@@ -321,7 +321,7 @@ router.get("/economy", async (req, res) => {
   res.render("economy.ejs", {
     user_ba_mode: state.user_ba_mode,
     ba: baSettings,
-    cp_live: getChannelPointsStatus().live,
+    cp: getChannelPointsStatus(),
     circulation,
     holder_count: holders.length,
     top_holders: holders.slice(0, 10),
@@ -367,7 +367,7 @@ router.get("/u/:username", async (req, res) => {
     requested: raw,
     pushEnabled: pushEnabled(),
     ba: baSettings,
-    cp_live: getChannelPointsStatus().live,
+    cp: getChannelPointsStatus(),
     profile: {
       display,
       watch_key: key,

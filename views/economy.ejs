@@ -76,7 +76,7 @@
             <span class="mono os-right">—</span>
           </div>
           <div class="os-lrow">
-            <span class="entry strong">Channel Points <span class="os-tag"><%= cp_live ? (ba.cp_cost + ' pts · ' + ba.cp_pack_size + ' BAs') : 'resting' %></span></span>
+            <span class="entry strong">Channel Points <span class="os-tag"><%= cp.any_live ? ('pack ' + ba.cp_rewards.self_pack.cost + ' · single ' + ba.cp_rewards.self_single.cost + ' pts') : 'resting' %></span></span>
             <span class="mono os-right"><%= flows.cp.events %></span>
             <span class="mono os-right">+<%= flows.cp.credited %></span>
             <span class="mono os-right">—</span>

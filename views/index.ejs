@@ -138,10 +138,11 @@
               <span class="entry">Cheer exactly <%= ba.bits_pack_cost %> bits for a pack of <%= ba.bits_pack_size %></span>
               <span class="mono os-right"><%= ba.bits_pack_cost %> bits</span>
             </div>
+            <% const cpr = ba.cp_rewards; const cpResting = !cp.any_live ? ' — resting between streams' : ''; %>
             <div class="os-lrow">
               <span class="entry strong">Channel Points</span>
-              <span class="entry">Redeem “Buy Breakaways” for <%= ba.cp_pack_size %> more<%= cp_live ? '' : ' — resting between streams' %></span>
-              <span class="mono os-right"><%= ba.cp_cost %> pts</span>
+              <span class="entry">Redeem “Buy Breakaways” for a pack of <%= cpr.self_pack.amount %>, or “Buy a Breakaway” for a single<%= cpResting %></span>
+              <span class="mono os-right"><%= cpr.self_pack.cost %> / <%= cpr.self_single.cost %> pts</span>
             </div>
             <div class="os-lrow">
               <span class="entry strong">The Board</span>
@@ -152,6 +153,11 @@
               <span class="entry strong">Gifts</span>
               <span class="entry">Any chatter can share their stash — mercy is legal tender</span>
               <span class="mono os-right">gifted</span>
+            </div>
+            <div class="os-lrow">
+              <span class="entry strong">For Abbabox</span>
+              <span class="entry">Bless the house — redeem channel points to stock Abbabox's own stash<%= cpResting %></span>
+              <span class="mono os-right"><%= cpr.abba_pack.cost %> / <%= cpr.abba_single.cost %> pts</span>
             </div>
           </div>
         </div>

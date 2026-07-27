@@ -8,23 +8,63 @@ import { recordBaEvent } from '../lib/baLedger.js';
 // and are never touched by the mode toggle, so flipping back and forth is safe.
 
 // Rates are runtime-tunable from the board admin page and persist in queue_settings
-// under 'ba_settings'. The cp_* fields drive the Twitch channel point reward managed
-// by channelPointsService.js; cp_reward_id is written by that service, not the admin.
+// under 'ba_settings'. cp_rewards drives the Twitch channel point rewards managed by
+// channelPointsService.js — one entry per reward; reward_id is written by that
+// service, not the admin. self_* credit the redeemer; abba_* credit the broadcaster.
+const CP_REWARD_DEFAULTS = {
+  self_pack:   { enabled: false, cost: 5000, amount: 5, reward_id: null },
+  self_single: { enabled: false, cost: 1200, amount: 1, reward_id: null },
+  abba_pack:   { enabled: false, cost: 5000, amount: 5, reward_id: null },
+  abba_single: { enabled: false, cost: 1200, amount: 1, reward_id: null },
+};
+
 const BA_SETTINGS_DEFAULTS = {
   starting_bas: 5,
   bits_pack_size: 5,
   bits_pack_cost: 100,
-  cp_enabled: false,
-  cp_cost: 5000,
-  cp_pack_size: 5,
-  cp_reward_id: null
+  cp_rewards: CP_REWARD_DEFAULTS,
 };
 
-const baSettings = { ...BA_SETTINGS_DEFAULTS, ...((await settings_db.get('ba_settings')) || {}) };
+const stored = (await settings_db.get('ba_settings')) || {};
+// Fold the pre-registry flat cp_* keys (a single pack reward) into cp_rewards.self_pack.
+if (stored.cp_enabled !== undefined || stored.cp_reward_id !== undefined) {
+  stored.cp_rewards = {
+    ...(stored.cp_rewards || {}),
+    self_pack: {
+      enabled: Boolean(stored.cp_enabled),
+      cost: stored.cp_cost ?? CP_REWARD_DEFAULTS.self_pack.cost,
+      amount: stored.cp_pack_size ?? CP_REWARD_DEFAULTS.self_pack.amount,
+      reward_id: stored.cp_reward_id ?? null,
+      ...((stored.cp_rewards || {}).self_pack || {}),
+    },
+  };
+  delete stored.cp_enabled;
+  delete stored.cp_cost;
+  delete stored.cp_pack_size;
+  delete stored.cp_reward_id;
+}
+
+const baSettings = {
+  ...BA_SETTINGS_DEFAULTS,
+  ...stored,
+  cp_rewards: Object.fromEntries(
+    Object.keys(CP_REWARD_DEFAULTS).map((key) => [
+      key,
+      { ...CP_REWARD_DEFAULTS[key], ...((stored.cp_rewards || {})[key] || {}) },
+    ])
+  ),
+};
 
 async function saveBaSettings(partial = {}) {
-  for (const key of Object.keys(BA_SETTINGS_DEFAULTS)) {
+  for (const key of ['starting_bas', 'bits_pack_size', 'bits_pack_cost']) {
     if (partial[key] !== undefined) baSettings[key] = partial[key];
+  }
+  if (partial.cp_rewards && typeof partial.cp_rewards === 'object') {
+    for (const key of Object.keys(CP_REWARD_DEFAULTS)) {
+      if (partial.cp_rewards[key] && typeof partial.cp_rewards[key] === 'object') {
+        baSettings.cp_rewards[key] = { ...baSettings.cp_rewards[key], ...partial.cp_rewards[key] };
+      }
+    }
   }
   await settings_db.set('ba_settings', baSettings);
   return baSettings;
@@ -33,9 +73,10 @@ async function saveBaSettings(partial = {}) {
 // "buy 5 more with a 100-bit cheer or 5000 channel points" — shared by chat replies.
 function baPurchaseHint() {
   const bits = `a ${baSettings.bits_pack_cost}-bit cheer`;
-  return baSettings.cp_enabled
-    ? `${bits} or ${baSettings.cp_cost} channel points`
-    : bits;
+  const { self_pack, self_single } = baSettings.cp_rewards;
+  if (self_pack.enabled) return `${bits} or ${self_pack.cost} channel points`;
+  if (self_single.enabled) return `${bits} (or singles for ${self_single.cost} channel points)`;
+  return bits;
 }
 
 function baKey(username) {
@@ -93,8 +134,8 @@ async function handleBaModeCommand(channel, tags, client, io) {
   // Pause/unpause the channel point reward to match the mode. Dynamic import keeps
   // this module free of an eval-time cycle (channelPointsService imports us back).
   try {
-    const { syncBreakawayReward } = await import('../channelPointsService.js');
-    const channelPoints = await syncBreakawayReward();
+    const { syncBreakawayRewards } = await import('../channelPointsService.js');
+    const channelPoints = await syncBreakawayRewards();
     if (io) io.emit('ba_settings_state', { settings: baSettings, channel_points: channelPoints });
   } catch (error) {
     console.error('[BA] reward sync after !ba_mode failed:', error);

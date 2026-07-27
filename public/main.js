@@ -702,12 +702,19 @@ $(document).ready(function() {
     const el = document.getElementById('baSettingsStatus');
     if (el) el.textContent = text;
   }
+  // Must match the reward keys in breakawayCommands.js and the input ids in board_admin.ejs.
+  const BA_CP_FIELDS = {
+    self_pack: { prefix: 'baCpSelfPack', sized: true },
+    self_single: { prefix: 'baCpSelfSingle', sized: false },
+    abba_pack: { prefix: 'baCpAbbaPack', sized: true },
+    abba_single: { prefix: 'baCpAbbaSingle', sized: false },
+  };
   function baCpStatusText(cp) {
     if (!cp) return '';
     if (cp.error) return '⚠ ' + cp.error;
-    if (cp.live) return 'CP REWARD · LIVE';
-    if (cp.reward_id) return 'CP REWARD · HIDDEN (needs reward enabled + personal mode on)';
-    return 'CP REWARD · NOT CREATED YET (enable + save to create)';
+    const liveCount = Object.values(cp.rewards || {}).filter((r) => r && r.live).length;
+    if (liveCount) return `CP REWARDS · ${liveCount} LIVE`;
+    return 'CP REWARDS · NONE LIVE (enable + personal mode on, then save)';
   }
   function paintBaSettings(payload) {
     if (!payload) return;
@@ -716,28 +723,38 @@ $(document).ready(function() {
       $('#baStartingBas').val(s.starting_bas);
       $('#baBitsPackSize').val(s.bits_pack_size);
       $('#baBitsPackCost').val(s.bits_pack_cost);
-      $('#baCpEnabled').prop('checked', Boolean(s.cp_enabled));
-      $('#baCpCost').val(s.cp_cost);
-      $('#baCpPackSize').val(s.cp_pack_size);
+      Object.entries(BA_CP_FIELDS).forEach(([key, field]) => {
+        const cfg = (s.cp_rewards || {})[key];
+        if (!cfg) return;
+        $(`#${field.prefix}Enabled`).prop('checked', Boolean(cfg.enabled));
+        $(`#${field.prefix}Cost`).val(cfg.cost);
+        if (field.sized) $(`#${field.prefix}Size`).val(cfg.amount);
+      });
     }
     const cpEl = document.getElementById('baCpStatus');
     if (cpEl) cpEl.textContent = baCpStatusText(payload.channel_points);
   }
   function baSettingsSave() {
+    const cp_rewards = {};
+    Object.entries(BA_CP_FIELDS).forEach(([key, field]) => {
+      cp_rewards[key] = {
+        enabled: $(`#${field.prefix}Enabled`).is(':checked'),
+        cost: parseInt($(`#${field.prefix}Cost`).val(), 10),
+      };
+      if (field.sized) cp_rewards[key].amount = parseInt($(`#${field.prefix}Size`).val(), 10);
+    });
     const payload = {
       starting_bas: parseInt($('#baStartingBas').val(), 10),
       bits_pack_size: parseInt($('#baBitsPackSize').val(), 10),
       bits_pack_cost: parseInt($('#baBitsPackCost').val(), 10),
-      cp_enabled: $('#baCpEnabled').is(':checked'),
-      cp_cost: parseInt($('#baCpCost').val(), 10),
-      cp_pack_size: parseInt($('#baCpPackSize').val(), 10),
+      cp_rewards,
     };
     baSettingsStatus('Saving…');
     socket.emit('ba_settings_update', payload, (response) => {
       if (response && response.ok) {
         paintBaSettings(response);
         const cpError = response.channel_points && response.channel_points.error;
-        baSettingsStatus(cpError ? 'Saved, but the Twitch reward did not sync.' : 'Saved — rates are live.');
+        baSettingsStatus(cpError ? 'Saved, but the Twitch rewards did not sync.' : 'Saved — rates are live.');
       } else {
         baSettingsStatus((response && response.error) || 'Save failed.');
       }

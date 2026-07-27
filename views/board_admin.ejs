@@ -307,22 +307,30 @@
           <small style="font-family:var(--font-mono); letter-spacing:.14em; color:var(--ink-2);">BITS &middot; PACK COST</small>
           <input type="number" id="baBitsPackCost" value="<%= data.ba_settings.bits_pack_cost %>" min="1" step="1" style="width:100px;">
         </label>
-        <span style="align-self:stretch; width:1px; background:rgba(255,255,255,0.08);"></span>
-        <label class="ba-set-field" style="display:flex; flex-direction:column; gap:4px;">
-          <small style="font-family:var(--font-mono); letter-spacing:.14em; color:var(--ink-2);">CHANNEL POINTS</small>
-          <label style="display:flex; align-items:center; gap:6px; margin:0; padding:6px 0;">
-            <input type="checkbox" id="baCpEnabled" <%= data.ba_settings.cp_enabled ? 'checked' : '' %>>
-            <small>Reward enabled</small>
-          </label>
-        </label>
-        <label class="ba-set-field" style="display:flex; flex-direction:column; gap:4px;">
-          <small style="font-family:var(--font-mono); letter-spacing:.14em; color:var(--ink-2);">CP &middot; COST</small>
-          <input type="number" id="baCpCost" value="<%= data.ba_settings.cp_cost %>" min="1" step="1" style="width:110px;">
-        </label>
-        <label class="ba-set-field" style="display:flex; flex-direction:column; gap:4px;">
-          <small style="font-family:var(--font-mono); letter-spacing:.14em; color:var(--ink-2);">CP &middot; PACK SIZE</small>
-          <input type="number" id="baCpPackSize" value="<%= data.ba_settings.cp_pack_size %>" min="1" step="1" style="width:90px;">
-        </label>
+        <div style="flex-basis:100%; display:flex; flex-direction:column; gap:6px;">
+          <small style="font-family:var(--font-mono); letter-spacing:.14em; color:var(--ink-2);">CHANNEL POINT REWARDS</small>
+          <%
+            var cpRows = [
+              { key: 'self_pack',   label: 'Buy Breakaways (pack, redeemer)', prefix: 'baCpSelfPack',   sized: true },
+              { key: 'self_single', label: 'Buy a Breakaway (single)',        prefix: 'baCpSelfSingle', sized: false },
+              { key: 'abba_pack',   label: 'Gift Abbabox (pack)',             prefix: 'baCpAbbaPack',   sized: true },
+              { key: 'abba_single', label: 'Gift Abbabox (single)',           prefix: 'baCpAbbaSingle', sized: false },
+            ];
+          %>
+          <div style="display:grid; grid-template-columns: 240px 50px 120px 90px; gap:6px 10px; align-items:center;">
+            <small style="opacity:.7;">Reward</small><small style="opacity:.7;">On</small><small style="opacity:.7;">Cost (pts)</small><small style="opacity:.7;">BAs</small>
+            <% cpRows.forEach(function (row) { var cfg = data.ba_settings.cp_rewards[row.key]; %>
+            <span style="font-size:13px;"><%= row.label %></span>
+            <input type="checkbox" id="<%= row.prefix %>Enabled" <%= cfg.enabled ? 'checked' : '' %>>
+            <input type="number" id="<%= row.prefix %>Cost" value="<%= cfg.cost %>" min="1" step="1" style="width:110px;">
+            <% if (row.sized) { %>
+            <input type="number" id="<%= row.prefix %>Size" value="<%= cfg.amount %>" min="1" step="1" style="width:80px;">
+            <% } else { %>
+            <span style="opacity:.6; font-family:var(--font-mono);">1</span>
+            <% } %>
+            <% }); %>
+          </div>
+        </div>
         <button class="pill pill--sm pill--hot" type="button" onclick="baSettingsSave()">Save Rates</button>
         <div style="display:flex; flex-direction:column; gap:2px;">
           <small id="baSettingsStatus" style="opacity:0.8;"></small>

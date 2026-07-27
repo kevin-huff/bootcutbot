@@ -121,7 +121,7 @@
         <span class="os-cmd-code" title="Click to copy" data-copy="https://leantube.org/u/<%= profile.display.toLowerCase() %>">leantube.org/u/<%= profile.display.toLowerCase() %><span class="copy-ico">⧉</span></span>
         <% if (profile.user_ba_mode) { %>
         <span style="font-family: var(--font-body); font-size: 15.5px; color: var(--parchment-faint); font-style: italic;">
-          Buy <%= ba.bits_pack_size %> more breakaways with a <%= ba.bits_pack_cost %>-bit cheer<%= cp_live ? ' or ' + ba.cp_cost + ' channel points' : '' %> while live — or receive them as gifts via !gift_ba.
+          Buy <%= ba.bits_pack_size %> more breakaways with a <%= ba.bits_pack_cost %>-bit cheer<%= cp.rewards.self_pack.live ? ' or ' + ba.cp_rewards.self_pack.cost + ' channel points' : '' %> while live — or receive them as gifts via !gift_ba.
         </span>
         <% } %>
       </div>

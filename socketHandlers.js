@@ -4,7 +4,7 @@ import { dirname } from 'path';
 import { splotStates, hellfireSpotIds, heavenfireSpotIds, initializeSettings, get_random_splot, abbadabbabotSay, say } from './utils.js';
 import { settings_db as queue_settings_db } from './commands/db.js';
 import { addToBalance, peekBalance, emitUserBaUpdate, baSettings, saveBaSettings } from './commands/breakawayCommands.js';
-import { syncBreakawayReward } from './channelPointsService.js';
+import { syncBreakawayRewards } from './channelPointsService.js';
 import {
   getTormentMeterState,
   recordContribution as recordTormentContribution,
@@ -1326,8 +1326,8 @@ export const initializeSocketHandlers = (io) => {
       if (state.user_ba_mode) {
         emitUserBaUpdate(io, state.current_turn, await peekBalance(state.current_turn));
       }
-      // The channel point reward is only redeemable while the mode is on.
-      const channel_points = await syncBreakawayReward();
+      // The channel point rewards are only redeemable while the mode is on.
+      const channel_points = await syncBreakawayRewards();
       io.emit('ba_settings_state', { settings: baSettings, channel_points });
       if (typeof callback === 'function') callback({ ok: true, user_ba_mode: state.user_ba_mode, channel_points });
     });
@@ -1340,8 +1340,6 @@ export const initializeSocketHandlers = (io) => {
           starting_bas: [0, 1000],
           bits_pack_size: [1, 100],
           bits_pack_cost: [1, 100000],
-          cp_cost: [1, 10000000],
-          cp_pack_size: [1, 100],
         };
         const partial = {};
         for (const [key, [min, max]] of Object.entries(bounds)) {
@@ -1352,9 +1350,33 @@ export const initializeSocketHandlers = (io) => {
           }
           partial[key] = value;
         }
-        if (arg.cp_enabled !== undefined) partial.cp_enabled = Boolean(arg.cp_enabled);
+        if (arg.cp_rewards && typeof arg.cp_rewards === 'object') {
+          const cpPartial = {};
+          for (const key of ['self_pack', 'self_single', 'abba_pack', 'abba_single']) {
+            const row = arg.cp_rewards[key];
+            if (!row || typeof row !== 'object') continue;
+            const clean = {};
+            if (row.enabled !== undefined) clean.enabled = Boolean(row.enabled);
+            if (row.cost !== undefined) {
+              const cost = parseInt(row.cost, 10);
+              if (!Number.isFinite(cost) || cost < 1 || cost > 10000000) {
+                throw new Error(`${key} cost must be between 1 and 10000000.`);
+              }
+              clean.cost = cost;
+            }
+            if (row.amount !== undefined) {
+              const amount = parseInt(row.amount, 10);
+              if (!Number.isFinite(amount) || amount < 1 || amount > 100) {
+                throw new Error(`${key} amount must be between 1 and 100.`);
+              }
+              clean.amount = amount;
+            }
+            if (Object.keys(clean).length) cpPartial[key] = clean;
+          }
+          if (Object.keys(cpPartial).length) partial.cp_rewards = cpPartial;
+        }
         const settings = await saveBaSettings(partial);
-        const channel_points = await syncBreakawayReward();
+        const channel_points = await syncBreakawayRewards();
         io.emit('ba_settings_state', { settings, channel_points });
         if (typeof callback === 'function') callback({ ok: true, settings, channel_points });
       } catch (error) {

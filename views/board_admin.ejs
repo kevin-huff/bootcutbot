@@ -292,6 +292,43 @@
         <button class="pill pill--sm pill--ghost" type="button" onclick="userBaLookup()">Check Balance</button>
         <small id="userBaStatus" style="opacity:0.8;"></small>
       </div>
+
+      <!-- Purchase rates: persisted server-side, applied live (channel point reward is re-priced via Helix on save) -->
+      <div id="ba-settings" style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; margin:0 0 14px; padding:12px 14px; border:1px solid rgba(255,255,255,0.08); border-radius:10px;">
+        <label class="ba-set-field" style="display:flex; flex-direction:column; gap:4px;">
+          <small style="font-family:var(--font-mono); letter-spacing:.14em; color:var(--ink-2);">STARTING BAS</small>
+          <input type="number" id="baStartingBas" value="<%= data.ba_settings.starting_bas %>" min="0" step="1" style="width:90px;">
+        </label>
+        <label class="ba-set-field" style="display:flex; flex-direction:column; gap:4px;">
+          <small style="font-family:var(--font-mono); letter-spacing:.14em; color:var(--ink-2);">BITS &middot; PACK SIZE</small>
+          <input type="number" id="baBitsPackSize" value="<%= data.ba_settings.bits_pack_size %>" min="1" step="1" style="width:90px;">
+        </label>
+        <label class="ba-set-field" style="display:flex; flex-direction:column; gap:4px;">
+          <small style="font-family:var(--font-mono); letter-spacing:.14em; color:var(--ink-2);">BITS &middot; PACK COST</small>
+          <input type="number" id="baBitsPackCost" value="<%= data.ba_settings.bits_pack_cost %>" min="1" step="1" style="width:100px;">
+        </label>
+        <span style="align-self:stretch; width:1px; background:rgba(255,255,255,0.08);"></span>
+        <label class="ba-set-field" style="display:flex; flex-direction:column; gap:4px;">
+          <small style="font-family:var(--font-mono); letter-spacing:.14em; color:var(--ink-2);">CHANNEL POINTS</small>
+          <label style="display:flex; align-items:center; gap:6px; margin:0; padding:6px 0;">
+            <input type="checkbox" id="baCpEnabled" <%= data.ba_settings.cp_enabled ? 'checked' : '' %>>
+            <small>Reward enabled</small>
+          </label>
+        </label>
+        <label class="ba-set-field" style="display:flex; flex-direction:column; gap:4px;">
+          <small style="font-family:var(--font-mono); letter-spacing:.14em; color:var(--ink-2);">CP &middot; COST</small>
+          <input type="number" id="baCpCost" value="<%= data.ba_settings.cp_cost %>" min="1" step="1" style="width:110px;">
+        </label>
+        <label class="ba-set-field" style="display:flex; flex-direction:column; gap:4px;">
+          <small style="font-family:var(--font-mono); letter-spacing:.14em; color:var(--ink-2);">CP &middot; PACK SIZE</small>
+          <input type="number" id="baCpPackSize" value="<%= data.ba_settings.cp_pack_size %>" min="1" step="1" style="width:90px;">
+        </label>
+        <button class="pill pill--sm pill--hot" type="button" onclick="baSettingsSave()">Save Rates</button>
+        <div style="display:flex; flex-direction:column; gap:2px;">
+          <small id="baSettingsStatus" style="opacity:0.8;"></small>
+          <small id="baCpStatus" style="opacity:0.8; font-family:var(--font-mono);"></small>
+        </div>
+      </div>
       <div id="breakaways">
         <% (data.breakaways || []).forEach(function(dataRow) { %>
           <article class="ba" id="breakaway_<%= dataRow.id %>">
@@ -368,6 +405,13 @@
             ['!deeznutz', 'AI deeznutz joke'],
             ['!justice', 'Reminds chat about old justice'],
             ['!cherish', 'Abbabox cherishes your butt']
+          ]},
+          { title: 'BREAKAWAYS', cmds: [
+            ['!ba_mode', 'Toggle personal breakaway mode'],
+            ['!ba_count', 'Check your breakaway balance'],
+            ['!give_ba {u} {n}', 'Grant (or remove) breakaways'],
+            ['!gift_ba {u} {n}', 'Gift your own breakaways (any chatter)'],
+            ['!use_ba [u]', 'Burn a breakaway (defaults to hot seat)']
           ]},
           { title: 'RATINGS & YOUTUBE', cmds: [
             ['!open_ratings', 'Uncap !rating commands'],

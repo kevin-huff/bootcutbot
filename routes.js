@@ -15,8 +15,10 @@ import {
   getTormentMeterState,
   recordContribution as recordTormentContribution
 } from './tormentMeterService.js';
-import { peekBalance } from './commands/breakawayCommands.js';
-import { historical_turns_db } from './commands/db.js';
+import { peekBalance, baSettings } from './commands/breakawayCommands.js';
+import { getChannelPointsStatus } from './channelPointsService.js';
+import { historical_turns_db, user_breakaways_db } from './commands/db.js';
+import { getBaLedger } from './lib/baLedger.js';
 import {
   pushEnabled,
   getVapidPublicKey,
@@ -251,6 +253,8 @@ router.get("/board_admin", adminAuth(), async (req, res) => {
       firsts_first: state.firsts_first,
       virgins_first: state.virgins_first,
       user_ba_mode: state.user_ba_mode,
+      ba_settings: baSettings,
+      channel_points: getChannelPointsStatus(),
       current_turn: state.current_turn,
       username: process.env.bot_account,
       password: process.env.oauth,
@@ -275,6 +279,60 @@ router.get("/", async (req, res) => {
     magic_number: 3,
     end_time: endTime,
     turn_count: this_turn_id,
+    user_ba_mode: state.user_ba_mode,
+    ba: baSettings,
+    cp_live: getChannelPointsStatus().live,
+  });
+});
+
+// Public dashboard for the personal-breakaway economy: circulation, per-source
+// flows from the ledger, and recent activity.
+router.get("/economy", async (req, res) => {
+  const balances = (await user_breakaways_db.all()) || {};
+  const holders = Object.entries(balances)
+    .filter(([, v]) => typeof v === 'number' && Number.isFinite(v))
+    .sort((a, b) => b[1] - a[1]);
+  const circulation = holders.reduce((sum, [, v]) => sum + v, 0);
+
+  const { totals, recent } = await getBaLedger();
+  const sourceRow = (key) => ({ events: 0, credited: 0, debited: 0, ...(totals[key] || {}) });
+  const bits = sourceRow('bits_pack');
+  const cp = sourceRow('channel_points');
+  const gifts = sourceRow('gift');
+  const grants = sourceRow('mod_grant');
+  const used = sourceRow('breakaway_used');
+
+  const ago = (ts) => {
+    const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+    if (s < 60) return `${s}s ago`;
+    if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+    if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+    return `${Math.floor(s / 86400)}d ago`;
+  };
+  const SOURCE_LABELS = {
+    bits_pack: 'Bits Pack',
+    channel_points: 'Channel Points',
+    gift: 'Gift',
+    mod_grant: 'The House',
+    breakaway_used: 'Breakaway Used',
+    adjustment: 'Adjustment',
+  };
+
+  res.render("economy.ejs", {
+    user_ba_mode: state.user_ba_mode,
+    ba: baSettings,
+    cp_live: getChannelPointsStatus().live,
+    circulation,
+    holder_count: holders.length,
+    top_holders: holders.slice(0, 10),
+    flows: { bits, cp, gifts, grants, used },
+    bought: bits.credited + cp.credited,
+    burned: used.debited,
+    recent: recent.slice(0, 40).map((e) => ({
+      ...e,
+      ago: ago(e.ts),
+      label: SOURCE_LABELS[e.source] || e.source,
+    })),
   });
 });
 
@@ -308,6 +366,8 @@ router.get("/u/:username", async (req, res) => {
   res.render("profile.ejs", {
     requested: raw,
     pushEnabled: pushEnabled(),
+    ba: baSettings,
+    cp_live: getChannelPointsStatus().live,
     profile: {
       display,
       watch_key: key,

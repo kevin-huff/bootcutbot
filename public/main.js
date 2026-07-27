@@ -697,6 +697,57 @@ $(document).ready(function() {
     });
   }
 
+  // Breakaway purchase rates (bits + channel point reward)
+  function baSettingsStatus(text) {
+    const el = document.getElementById('baSettingsStatus');
+    if (el) el.textContent = text;
+  }
+  function baCpStatusText(cp) {
+    if (!cp) return '';
+    if (cp.error) return '⚠ ' + cp.error;
+    if (cp.live) return 'CP REWARD · LIVE';
+    if (cp.reward_id) return 'CP REWARD · HIDDEN (needs reward enabled + personal mode on)';
+    return 'CP REWARD · NOT CREATED YET (enable + save to create)';
+  }
+  function paintBaSettings(payload) {
+    if (!payload) return;
+    const s = payload.settings;
+    if (s) {
+      $('#baStartingBas').val(s.starting_bas);
+      $('#baBitsPackSize').val(s.bits_pack_size);
+      $('#baBitsPackCost').val(s.bits_pack_cost);
+      $('#baCpEnabled').prop('checked', Boolean(s.cp_enabled));
+      $('#baCpCost').val(s.cp_cost);
+      $('#baCpPackSize').val(s.cp_pack_size);
+    }
+    const cpEl = document.getElementById('baCpStatus');
+    if (cpEl) cpEl.textContent = baCpStatusText(payload.channel_points);
+  }
+  function baSettingsSave() {
+    const payload = {
+      starting_bas: parseInt($('#baStartingBas').val(), 10),
+      bits_pack_size: parseInt($('#baBitsPackSize').val(), 10),
+      bits_pack_cost: parseInt($('#baBitsPackCost').val(), 10),
+      cp_enabled: $('#baCpEnabled').is(':checked'),
+      cp_cost: parseInt($('#baCpCost').val(), 10),
+      cp_pack_size: parseInt($('#baCpPackSize').val(), 10),
+    };
+    baSettingsStatus('Saving…');
+    socket.emit('ba_settings_update', payload, (response) => {
+      if (response && response.ok) {
+        paintBaSettings(response);
+        const cpError = response.channel_points && response.channel_points.error;
+        baSettingsStatus(cpError ? 'Saved, but the Twitch reward did not sync.' : 'Saved — rates are live.');
+      } else {
+        baSettingsStatus((response && response.error) || 'Save failed.');
+      }
+    });
+  }
+  socket.on('ba_settings_state', paintBaSettings);
+  if (templateData && templateData.channel_points) {
+    paintBaSettings({ channel_points: templateData.channel_points });
+  }
+
   // Breakaway Editing
   function breakawayDecrease(ba_id){
     let baData = getBreakawayData(ba_id);

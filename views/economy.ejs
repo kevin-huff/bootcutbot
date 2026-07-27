@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/site-head', {
+    title: 'Bootcut — The Breakaway Economy',
+    description: 'The live breakaway economy of Bootcut — how many breakaways chat holds, where they come from, and who is hoarding them. Bits, channel points, splot rewards, and gifts.'
+  }) %>
+</head>
+<body class="os-body">
+  <%- include('partials/site-nav', { active: 'economy' }) %>
+  <main class="os-main">
+
+    <div class="os-pagehead">
+      <div class="lead">
+        <span class="os-kicker"><span class="star">✦</span>The Treasury<span class="star">✦</span></span>
+        <h1>The Breakaway Economy</h1>
+        <p>
+          Every chatter holds their own stash of breakaways — spend one to escape a splot
+          you'd rather not face. This ledger tracks the whole economy: what's in circulation,
+          how it was earned, and what's been burned dodging fate.
+        </p>
+      </div>
+    </div>
+
+    <% if (!user_ba_mode) { %>
+    <div class="os-status-row">
+      <span class="os-badge is-off"><span class="os-led sm is-off"></span>Personal Breakaways · Dormant — the shared pool is in play right now. Balances below are safe and waiting.</span>
+    </div>
+    <% } else { %>
+    <div class="os-status-row">
+      <span class="os-badge jade"><span class="os-led sm is-blink" style="--c: var(--jade)"></span>Personal Breakaways · Active</span>
+    </div>
+    <% } %>
+
+    <!-- Headline figures -->
+    <section class="os-hotseat" style="margin-top: 22px;">
+      <%- include('partials/lamps', { n: 30 }) %>
+      <div class="inner">
+        <div class="who">
+          <span class="k">
+            <span class="os-led <%= user_ba_mode ? 'is-blink' : 'is-off' %>"></span>
+            <span class="os-kicker">In circulation</span>
+          </span>
+          <span class="name"><%= circulation %> breakaways</span>
+          <span class="meta">held by <%= holder_count %> known chatter<%= holder_count === 1 ? '' : 's' %> · new arrivals start with <%= ba.starting_bas %></span>
+        </div>
+        <div class="totes">
+          <div class="cell">
+            <span class="k">Bought</span>
+            <span class="os-tote xl jade">+<%= bought %></span>
+          </div>
+          <div class="cell">
+            <span class="k">Gifted</span>
+            <span class="os-tote xl">+<%= flows.gifts.credited %></span>
+          </div>
+          <div class="cell">
+            <span class="k">Burned</span>
+            <span class="os-tote xl crimson">−<%= burned %></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Flows + Top holders -->
+    <div class="os-home-tables" style="margin-top: 34px;">
+      <div>
+        <div class="os-section-bar"><span class="t">Where Breakaways Come From · and go</span></div>
+        <div class="os-ledger" style="--cols: 1fr 90px 90px 90px;">
+          <div class="os-lhead">
+            <span>Source</span><span class="os-right">Events</span><span class="os-right">In</span><span class="os-right">Out</span>
+          </div>
+          <div class="os-lrow">
+            <span class="entry strong">Bits Pack <span class="os-tag"><%= ba.bits_pack_cost %> bits · <%= ba.bits_pack_size %> BAs</span></span>
+            <span class="mono os-right"><%= flows.bits.events %></span>
+            <span class="mono os-right">+<%= flows.bits.credited %></span>
+            <span class="mono os-right">—</span>
+          </div>
+          <div class="os-lrow">
+            <span class="entry strong">Channel Points <span class="os-tag"><%= cp_live ? (ba.cp_cost + ' pts · ' + ba.cp_pack_size + ' BAs') : 'resting' %></span></span>
+            <span class="mono os-right"><%= flows.cp.events %></span>
+            <span class="mono os-right">+<%= flows.cp.credited %></span>
+            <span class="mono os-right">—</span>
+          </div>
+          <div class="os-lrow">
+            <span class="entry strong">Gifts <span class="os-tag">!gift_ba</span></span>
+            <span class="mono os-right"><%= flows.gifts.events %></span>
+            <span class="mono os-right">+<%= flows.gifts.credited %></span>
+            <span class="mono os-right">−<%= flows.gifts.debited %></span>
+          </div>
+          <div class="os-lrow">
+            <span class="entry strong">The House <span class="os-tag">splot rewards &amp; mod grants</span></span>
+            <span class="mono os-right"><%= flows.grants.events %></span>
+            <span class="mono os-right">+<%= flows.grants.credited %></span>
+            <span class="mono os-right">−<%= flows.grants.debited %></span>
+          </div>
+          <div class="os-lrow">
+            <span class="entry strong">Breakaways Used <span class="os-tag">fate dodged</span></span>
+            <span class="mono os-right"><%= flows.used.events %></span>
+            <span class="mono os-right">—</span>
+            <span class="mono os-right">−<%= flows.used.debited %></span>
+          </div>
+        </div>
+        <p style="font-family: var(--font-body); font-size: 13.5px; color: var(--parchment-faint); font-style: italic; margin: 10px 2px 0;">
+          Figures count breakaways moved since the ledger opened, not chatters' starting stashes.
+        </p>
+      </div>
+      <div>
+        <div class="os-section-bar"><span class="t">The Hoarders · top balances</span></div>
+        <div class="os-ledger hl-first" style="--cols: 48px 1fr 110px;">
+          <div class="os-lhead">
+            <span>№</span><span>Contestant</span><span class="os-right">Held</span>
+          </div>
+          <% top_holders.forEach(function (h, index) { %>
+          <div class="os-lrow">
+            <span class="num"><%= String(index + 1).padStart(2, '0') %></span>
+            <span class="entry strong"><a href="/u/<%= encodeURIComponent(h[0]) %>"><%= h[0] %></a></span>
+            <span class="mono os-right"><%= h[1] %></span>
+          </div>
+          <% }); %>
+          <% if (!top_holders.length) { %>
+          <div class="os-empty">No balances on record yet — the economy awaits its first fortune.</div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent activity -->
+    <div style="margin-top: 34px;">
+      <div class="os-section-bar"><span class="t">Recent Movements · last <%= recent.length %></span></div>
+      <div class="os-ledger" style="--cols: 90px 1fr 150px 70px 70px;">
+        <div class="os-lhead">
+          <span>When</span><span>Contestant</span><span>Source</span><span class="os-right">Δ</span><span class="os-right">Held</span>
+        </div>
+        <% recent.forEach(function (e) { %>
+        <div class="os-lrow">
+          <span class="mono"><%= e.ago %></span>
+          <span class="entry strong"><a href="/u/<%= encodeURIComponent(e.username) %>"><%= e.username %></a></span>
+          <span class="entry"><%= e.label %></span>
+          <span class="mono os-right" style="color: <%= e.delta > 0 ? 'var(--jade)' : 'var(--crimson-bright)' %>;"><%= e.delta > 0 ? '+' + e.delta : e.delta %></span>
+          <span class="mono os-right"><%= e.balance %></span>
+        </div>
+        <% }); %>
+        <% if (!recent.length) { %>
+        <div class="os-empty">Nothing moves. The vault is silent — for now.</div>
+        <% } %>
+      </div>
+    </div>
+
+  </main>
+  <%- include('partials/site-footer') %>
+</body>
+</html>

@@ -3,7 +3,8 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { splotStates, hellfireSpotIds, heavenfireSpotIds, initializeSettings, get_random_splot, abbadabbabotSay, say } from './utils.js';
 import { settings_db as queue_settings_db } from './commands/db.js';
-import { addToBalance, peekBalance, emitUserBaUpdate } from './commands/breakawayCommands.js';
+import { addToBalance, peekBalance, emitUserBaUpdate, baSettings, saveBaSettings } from './commands/breakawayCommands.js';
+import { syncBreakawayReward } from './channelPointsService.js';
 import {
   getTormentMeterState,
   recordContribution as recordTormentContribution,
@@ -1325,7 +1326,41 @@ export const initializeSocketHandlers = (io) => {
       if (state.user_ba_mode) {
         emitUserBaUpdate(io, state.current_turn, await peekBalance(state.current_turn));
       }
-      if (typeof callback === 'function') callback({ ok: true, user_ba_mode: state.user_ba_mode });
+      // The channel point reward is only redeemable while the mode is on.
+      const channel_points = await syncBreakawayReward();
+      io.emit('ba_settings_state', { settings: baSettings, channel_points });
+      if (typeof callback === 'function') callback({ ok: true, user_ba_mode: state.user_ba_mode, channel_points });
+    });
+
+    // Rate card for breakaway purchases. Persists to queue_settings and re-syncs the
+    // Twitch reward, so price changes go live immediately — no restart, no rebuild.
+    socket.on("ba_settings_update", async (arg = {}, callback) => {
+      try {
+        const bounds = {
+          starting_bas: [0, 1000],
+          bits_pack_size: [1, 100],
+          bits_pack_cost: [1, 100000],
+          cp_cost: [1, 10000000],
+          cp_pack_size: [1, 100],
+        };
+        const partial = {};
+        for (const [key, [min, max]] of Object.entries(bounds)) {
+          if (arg[key] === undefined) continue;
+          const value = parseInt(arg[key], 10);
+          if (!Number.isFinite(value) || value < min || value > max) {
+            throw new Error(`${key} must be a number between ${min} and ${max}.`);
+          }
+          partial[key] = value;
+        }
+        if (arg.cp_enabled !== undefined) partial.cp_enabled = Boolean(arg.cp_enabled);
+        const settings = await saveBaSettings(partial);
+        const channel_points = await syncBreakawayReward();
+        io.emit('ba_settings_state', { settings, channel_points });
+        if (typeof callback === 'function') callback({ ok: true, settings, channel_points });
+      } catch (error) {
+        console.error('ba_settings_update failed:', error);
+        if (typeof callback === 'function') callback({ ok: false, error: error.message });
+      }
     });
 
     socket.on("user_ba_admin", async (arg = {}, callback) => {
@@ -1335,7 +1370,7 @@ export const initializeSocketHandlers = (io) => {
         if (!username || !Number.isFinite(amount) || amount === 0) {
           throw new Error('Need a username and a non-zero amount.');
         }
-        const balance = await addToBalance(username, amount);
+        const balance = await addToBalance(username, amount, 'mod_grant');
         emitUserBaUpdate(io, username, balance);
         if (typeof callback === 'function') callback({ ok: true, username, balance });
       } catch (error) {

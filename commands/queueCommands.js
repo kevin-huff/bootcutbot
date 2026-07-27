@@ -1,8 +1,8 @@
 import { queue_db, turns_db, settings_db, historical_turns_db } from './db.js';
-import { abbadabbabotSay, ordinal_suffix_of } from '../utils.js';
+import { abbadabbabotSay, ordinal_suffix_of, profileUrl } from '../utils.js';
 import { state } from '../constants.js';
 import { peekBalance, emitUserBaUpdate } from './breakawayCommands.js';
-import { notifyTurn } from '../lib/pushNotifications.js';
+import { notifyTurn, pushEnabled } from '../lib/pushNotifications.js';
 
 async function isUserInChat(username) {
   return true;
@@ -58,11 +58,17 @@ async function handleJoinCommand(channel, tags, client) {
     return arr;
   });
 
+  // Every join reply points at the contestant's profile page — it tracks their
+  // spot live and (when push is configured) can ping their browser on their turn.
+  const profile_hint = pushEnabled()
+    ? `Track your spot & get a browser ping when you're up: ${profileUrl(tags.username)}`
+    : `Track your spot: ${profileUrl(tags.username)}`;
+
   const place_ordinal = ordinal_suffix_of(outcome.place);
   if (outcome.alreadyQueued) {
     client.say(
       channel,
-      `@${tags["display-name"]} you're already queued silly. You're ${place_ordinal} in the queue.`
+      `@${tags["display-name"]} you're already queued silly. You're ${place_ordinal} in the queue. ${profile_hint}`
     );
     return;
   }
@@ -73,23 +79,23 @@ async function handleJoinCommand(channel, tags, client) {
   if (state.virgins_first && lifetime_turns === 0) {
     client.say(
       channel,
-      `@${tags["display-name"]}, added to queue! You're ${place_ordinal} in the queue. Virgins First Mode is on and this is your first time — you'll jump the line! 🌟`
+      `@${tags["display-name"]}, added to queue! You're ${place_ordinal} in the queue. Virgins First Mode is on and this is your first time — you'll jump the line! 🌟 ${profile_hint}`
     );
   } else if (state.virgins_first && lifetime_turns > 0) {
     client.say(
       channel,
-      `@${tags["display-name"]}, added to queue! You're ${place_ordinal} in the queue. Heads up: Virgins First Mode is on, so first-time players will be picked before you.`
+      `@${tags["display-name"]}, added to queue! You're ${place_ordinal} in the queue. Heads up: Virgins First Mode is on, so first-time players will be picked before you. ${profile_hint}`
     );
   } else if (state.firsts_first && turn_count > 0) {
     const turn_ordinal = ordinal_suffix_of(turn_count + 1);
     client.say(
       channel,
-      `@${tags["display-name"]}, added to queue! You're ${place_ordinal} in the queue, this will be your ${turn_ordinal} turn. Note: Firsts Turns First Mode is on, so any players who haven't gone yet will be picked before you.`
+      `@${tags["display-name"]}, added to queue! You're ${place_ordinal} in the queue, this will be your ${turn_ordinal} turn. Note: Firsts Turns First Mode is on, so any players who haven't gone yet will be picked before you. ${profile_hint}`
     );
   } else {
     client.say(
       channel,
-      `@${tags["display-name"]}, added to queue! You're ${place_ordinal} in the queue.`
+      `@${tags["display-name"]}, added to queue! You're ${place_ordinal} in the queue. ${profile_hint}`
     );
   }
 }

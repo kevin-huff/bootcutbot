@@ -117,6 +117,12 @@ const removeURLs = (text) => {
   return text.replace(/(https?:\/\/[^\s]+)/g, "");
 };
 
+// Public contestant profile page (routes.js /u/:username).
+const profileUrl = (username) => {
+  const key = String(username || '').replace(/^@/, '').trim().toLowerCase();
+  return `${process.env.queue_list_url}/u/${key}`;
+};
+
 const ordinal_suffix_of = (i) => {
   var j = i % 10,
     k = i % 100;
@@ -174,6 +180,7 @@ export {
   abbadabbabotSay,
   say,
   removeURLs,
+  profileUrl,
   ordinal_suffix_of,
   gen_and_play_tts,
   getCustomMessage

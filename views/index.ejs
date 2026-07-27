@@ -113,6 +113,74 @@
       </div>
     </div>
 
+    <!-- Breakaway codex -->
+    <section style="margin-top: 44px;">
+      <div class="os-section-bar"><span class="t">The Breakaway Codex · escape your fate</span></div>
+      <p class="lead" style="text-align: left; margin: 0 0 18px; max-width: none;">
+        Land on a splot you'd rather not face? Spend a <strong>breakaway</strong> and roll the d6 —
+        erase it, get forced into it, or re-roll your fate.
+        <% if (user_ba_mode) { %>
+        Personal mode is on: every chatter holds their own stash and starts with
+        <strong><%= ba.starting_bas %></strong>. Check yours with <code>!ba_count</code> or on your contestant page.
+        <% } else { %>
+        Right now breakaways run from the shared pool; when Personal Breakaway Mode is on,
+        every chatter holds their own stash and starts with <strong><%= ba.starting_bas %></strong>.
+        <% } %>
+      </p>
+      <div class="os-home-tables">
+        <div>
+          <div class="os-ledger" style="--cols: 150px 1fr 130px;">
+            <div class="os-lhead">
+              <span>Way</span><span>How</span><span class="os-right">Price</span>
+            </div>
+            <div class="os-lrow">
+              <span class="entry strong">Bits</span>
+              <span class="entry">Cheer exactly <%= ba.bits_pack_cost %> bits for a pack of <%= ba.bits_pack_size %></span>
+              <span class="mono os-right"><%= ba.bits_pack_cost %> bits</span>
+            </div>
+            <div class="os-lrow">
+              <span class="entry strong">Channel Points</span>
+              <span class="entry">Redeem “Buy Breakaways” for <%= ba.cp_pack_size %> more<%= cp_live ? '' : ' — resting between streams' %></span>
+              <span class="mono os-right"><%= ba.cp_cost %> pts</span>
+            </div>
+            <div class="os-lrow">
+              <span class="entry strong">The Board</span>
+              <span class="entry">Certain splots award breakaways to whoever survives them</span>
+              <span class="mono os-right">earned</span>
+            </div>
+            <div class="os-lrow">
+              <span class="entry strong">Gifts</span>
+              <span class="entry">Any chatter can share their stash — mercy is legal tender</span>
+              <span class="mono os-right">gifted</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="os-ledger" style="--cols: 190px 1fr;">
+            <div class="os-lhead">
+              <span>Command</span><span>What it does</span>
+            </div>
+            <div class="os-lrow">
+              <span class="mono">!ba_count</span>
+              <span class="entry">How many breakaways you hold</span>
+            </div>
+            <div class="os-lrow">
+              <span class="mono">!gift_ba user 2</span>
+              <span class="entry">Gift 2 of yours to another chatter</span>
+            </div>
+            <div class="os-lrow">
+              <span class="mono">!gift_ba</span>
+              <span class="entry">Gift 1 to whoever's in the hot seat — save them from their fate</span>
+            </div>
+          </div>
+          <p style="font-family: var(--font-body); font-size: 14px; color: var(--parchment-faint); font-style: italic; margin: 12px 2px 0;">
+            The whole economy — circulation, hoarders, and every recent movement — is on public record in
+            <a href="/economy" style="color: var(--gilt);">The Breakaway Economy</a>.
+          </p>
+        </div>
+      </div>
+    </section>
+
   </main>
   <%- include('partials/site-footer') %>
   <script>

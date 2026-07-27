@@ -4,6 +4,7 @@ import { RefreshingAuthProvider } from '@twurple/auth';
 import dotenv from 'dotenv';
 import { JsoningPg } from './lib/jsoningPg.js';
 import fetch from 'node-fetch';
+import { initChannelPoints } from './channelPointsService.js';
 
 dotenv.config();
 
@@ -76,10 +77,12 @@ export async function initializeEventSub(socketIo) {
     }
 
     try {
-      // Your existing listener.on* event handlers go here...
-      // I'm skipping them for brevity but you can paste them back in unchanged.
+      // Bits/subs/raids reach the bot through tmi.js and Streamlabs (botCommands.js),
+      // so EventSub only carries what chat can't: channel point redemptions. The
+      // service also owns the "Buy Breakaways" reward (create/reprice/refund).
+      initChannelPoints({ apiClient, listener, io });
 
-      console.log('Successfully subscribed to all channel events for user:', userId);
+      console.log('Successfully subscribed to channel point redemptions for user:', userId);
     } catch (subError) {
       console.error('Failed to subscribe to EventSub events:', subError);
       console.warn('⚠️ Subscriptions failed. Bot will continue without Twitch event integrations.');

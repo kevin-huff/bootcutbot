@@ -44,6 +44,9 @@ export function getAuthUrl() {
         'channel:read:predictions',
         'channel:read:polls',
         'channel:read:redemptions',
+        // Create/update the "Buy Breakaways" reward and fulfill/refund redemptions.
+        // Added 2026-07 — tokens issued before then need a fresh /auth pass.
+        'channel:manage:redemptions',
         'channel:read:hype_train',
         'channel:read:goals',
         'moderator:read:followers',

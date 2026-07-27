@@ -118,9 +118,11 @@ const removeURLs = (text) => {
 };
 
 // Public contestant profile page (routes.js /u/:username).
+// queue_list_url may or may not carry a trailing slash — normalize it off.
 const profileUrl = (username) => {
   const key = String(username || '').replace(/^@/, '').trim().toLowerCase();
-  return `${process.env.queue_list_url}/u/${key}`;
+  const base = String(process.env.queue_list_url || '').replace(/\/+$/, '');
+  return `${base}/u/${key}`;
 };
 
 const ordinal_suffix_of = (i) => {

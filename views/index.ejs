@@ -138,10 +138,14 @@
               <span class="entry">Cheer exactly <%= ba.bits_pack_cost %> bits for a pack of <%= ba.bits_pack_size %></span>
               <span class="mono os-right"><%= ba.bits_pack_cost %> bits</span>
             </div>
-            <% const cpr = ba.cp_rewards; const cpResting = !cp.any_live ? ' — resting between streams' : ''; %>
+            <%
+              const cpr = ba.cp_rewards;
+              const cpResting = !cp.any_live ? ' — resting between streams' : '';
+              const rt = (r) => String(r.title || '').replace(/\{n\}/g, r.amount);
+            %>
             <div class="os-lrow">
               <span class="entry strong">Channel Points</span>
-              <span class="entry">Redeem “Buy Breakaways” for a pack of <%= cpr.self_pack.amount %>, or “Buy a Breakaway” for a single<%= cpResting %></span>
+              <span class="entry">Redeem “<%= rt(cpr.self_pack) %>” (<%= cpr.self_pack.amount %>) or “<%= rt(cpr.self_single) %>” (1)<%= cpResting %></span>
               <span class="mono os-right"><%= cpr.self_pack.cost %> / <%= cpr.self_single.cost %> pts</span>
             </div>
             <div class="os-lrow">

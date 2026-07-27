@@ -727,6 +727,7 @@ $(document).ready(function() {
         const cfg = (s.cp_rewards || {})[key];
         if (!cfg) return;
         $(`#${field.prefix}Enabled`).prop('checked', Boolean(cfg.enabled));
+        $(`#${field.prefix}Title`).val(cfg.title);
         $(`#${field.prefix}Cost`).val(cfg.cost);
         if (field.sized) $(`#${field.prefix}Size`).val(cfg.amount);
       });
@@ -741,6 +742,8 @@ $(document).ready(function() {
         enabled: $(`#${field.prefix}Enabled`).is(':checked'),
         cost: parseInt($(`#${field.prefix}Cost`).val(), 10),
       };
+      const title = ($(`#${field.prefix}Title`).val() || '').trim();
+      if (title) cp_rewards[key].title = title;
       if (field.sized) cp_rewards[key].amount = parseInt($(`#${field.prefix}Size`).val(), 10);
     });
     const payload = {

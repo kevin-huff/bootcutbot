@@ -503,7 +503,7 @@ function initializeBotCommands(io) {
 
       // Menu Commands
       if (message.toLowerCase() === "!menu" || message.toLowerCase() === "!commands") {
-        abbadabbabotSay(channel, client, tags, `Tell @${tags["display-name"]} they can use menu to find abbadabbabot chat commands.`, '', ' ' + process.env.queue_list_url + '/menu');
+        abbadabbabotSay(channel, client, tags, `Tell @${tags["display-name"]} they can use menu to find abbadabbabot chat commands.`, '', ' ' + String(process.env.queue_list_url || '').replace(/\/+$/, '') + '/menu');
       }
       if (message.toLowerCase() === "!list") {
         abbadabbabotSay(channel, client, tags, `Announce to @${tags["display-name"]} that we have a list that they can use to find their place in the queue.`, '', ' ' + process.env.queue_list_url);

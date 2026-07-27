@@ -311,17 +311,18 @@
           <small style="font-family:var(--font-mono); letter-spacing:.14em; color:var(--ink-2);">CHANNEL POINT REWARDS</small>
           <%
             var cpRows = [
-              { key: 'self_pack',   label: 'Buy Breakaways (pack, redeemer)', prefix: 'baCpSelfPack',   sized: true },
-              { key: 'self_single', label: 'Buy a Breakaway (single)',        prefix: 'baCpSelfSingle', sized: false },
-              { key: 'abba_pack',   label: 'Gift Abbabox (pack)',             prefix: 'baCpAbbaPack',   sized: true },
-              { key: 'abba_single', label: 'Gift Abbabox (single)',           prefix: 'baCpAbbaSingle', sized: false },
+              { key: 'self_pack',   label: 'Pack (redeemer)',   prefix: 'baCpSelfPack',   sized: true },
+              { key: 'self_single', label: 'Single (redeemer)', prefix: 'baCpSelfSingle', sized: false },
+              { key: 'abba_pack',   label: 'Pack (Abbabox)',    prefix: 'baCpAbbaPack',   sized: true },
+              { key: 'abba_single', label: 'Single (Abbabox)',  prefix: 'baCpAbbaSingle', sized: false },
             ];
           %>
-          <div style="display:grid; grid-template-columns: 240px 50px 120px 90px; gap:6px 10px; align-items:center;">
-            <small style="opacity:.7;">Reward</small><small style="opacity:.7;">On</small><small style="opacity:.7;">Cost (pts)</small><small style="opacity:.7;">BAs</small>
+          <div style="display:grid; grid-template-columns: 140px 40px minmax(220px, 1fr) 110px 80px; gap:6px 10px; align-items:center;">
+            <small style="opacity:.7;">Reward</small><small style="opacity:.7;">On</small><small style="opacity:.7;">Title on Twitch</small><small style="opacity:.7;">Cost (pts)</small><small style="opacity:.7;">BAs</small>
             <% cpRows.forEach(function (row) { var cfg = data.ba_settings.cp_rewards[row.key]; %>
             <span style="font-size:13px;"><%= row.label %></span>
             <input type="checkbox" id="<%= row.prefix %>Enabled" <%= cfg.enabled ? 'checked' : '' %>>
+            <input type="text" id="<%= row.prefix %>Title" value="<%= cfg.title %>" maxlength="45">
             <input type="number" id="<%= row.prefix %>Cost" value="<%= cfg.cost %>" min="1" step="1" style="width:110px;">
             <% if (row.sized) { %>
             <input type="number" id="<%= row.prefix %>Size" value="<%= cfg.amount %>" min="1" step="1" style="width:80px;">
@@ -330,6 +331,7 @@
             <% } %>
             <% }); %>
           </div>
+          <small style="opacity:.6;">{n} in a title renders as the reward's BA count. Titles must be unique — Twitch rejects duplicates. Max 45 chars.</small>
         </div>
         <button class="pill pill--sm pill--hot" type="button" onclick="baSettingsSave()">Save Rates</button>
         <div style="display:flex; flex-direction:column; gap:2px;">

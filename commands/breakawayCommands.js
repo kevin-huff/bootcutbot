@@ -11,12 +11,23 @@ import { recordBaEvent } from '../lib/baLedger.js';
 // under 'ba_settings'. cp_rewards drives the Twitch channel point rewards managed by
 // channelPointsService.js — one entry per reward; reward_id is written by that
 // service, not the admin. self_* credit the redeemer; abba_* credit the broadcaster.
+// Titles are shown on Twitch (45-char max, unique per channel); {n} renders as the
+// reward's amount so the name stays accurate when the pack size changes.
+const channelDisplay = (() => {
+  const login = String(process.env.twitch_channel || 'the streamer').replace(/^#/, '');
+  return login.charAt(0).toUpperCase() + login.slice(1);
+})();
+
 const CP_REWARD_DEFAULTS = {
-  self_pack:   { enabled: false, cost: 5000, amount: 5, reward_id: null },
-  self_single: { enabled: false, cost: 1200, amount: 1, reward_id: null },
-  abba_pack:   { enabled: false, cost: 5000, amount: 5, reward_id: null },
-  abba_single: { enabled: false, cost: 1200, amount: 1, reward_id: null },
+  self_pack:   { enabled: false, cost: 5000, amount: 5, reward_id: null, title: 'Buy a Pack of {n} Breakaways' },
+  self_single: { enabled: false, cost: 1200, amount: 1, reward_id: null, title: 'Buy a Single Breakaway' },
+  abba_pack:   { enabled: false, cost: 5000, amount: 5, reward_id: null, title: `Gift ${channelDisplay} a Pack of {n} Breakaways` },
+  abba_single: { enabled: false, cost: 1200, amount: 1, reward_id: null, title: `Gift ${channelDisplay} a Single Breakaway` },
 };
+
+function renderRewardTitle(cfg) {
+  return String(cfg.title || '').replace(/\{n\}/g, cfg.amount);
+}
 
 const BA_SETTINGS_DEFAULTS = {
   starting_bas: 5,
@@ -269,5 +280,6 @@ export {
   addToBalance,
   emitUserBaUpdate,
   baSettings,
-  saveBaSettings
+  saveBaSettings,
+  renderRewardTitle
 };

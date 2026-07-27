@@ -1357,6 +1357,13 @@ export const initializeSocketHandlers = (io) => {
             if (!row || typeof row !== 'object') continue;
             const clean = {};
             if (row.enabled !== undefined) clean.enabled = Boolean(row.enabled);
+            if (row.title !== undefined) {
+              const title = String(row.title).trim();
+              if (!title || title.length > 45) {
+                throw new Error(`${key} title must be 1-45 characters (Twitch limit).`);
+              }
+              clean.title = title;
+            }
             if (row.cost !== undefined) {
               const cost = parseInt(row.cost, 10);
               if (!Number.isFinite(cost) || cost < 1 || cost > 10000000) {

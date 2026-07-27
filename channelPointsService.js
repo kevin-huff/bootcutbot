@@ -1,6 +1,6 @@
 import { state } from './constants.js';
 import { profileUrl } from './utils.js';
-import { baSettings, saveBaSettings, addToBalance, emitUserBaUpdate } from './commands/breakawayCommands.js';
+import { baSettings, saveBaSettings, addToBalance, emitUserBaUpdate, renderRewardTitle } from './commands/breakawayCommands.js';
 
 // Manages the breakaway channel point rewards — a registry of four: pack/single
 // credited to the redeemer, and pack/single gifted to the broadcaster's stash.
@@ -26,27 +26,24 @@ function broadcasterDisplay() {
   return login.charAt(0).toUpperCase() + login.slice(1);
 }
 
-// Keys must match CP_REWARD_DEFAULTS in breakawayCommands.js. Titles must stay
-// distinct — Twitch rejects duplicate reward titles per channel.
+// Keys must match CP_REWARD_DEFAULTS in breakawayCommands.js. Titles live in
+// settings (admin-editable, {n} = amount) — Twitch rejects duplicate reward
+// titles per channel, so keep them distinct.
 const REWARD_DEFS = {
   self_pack: {
     target: 'redeemer',
-    title: () => 'Buy Breakaways',
     prompt: (cfg) => `Adds ${cfg.amount} breakaways to your personal stash. Only active while Personal Breakaway Mode is on.`,
   },
   self_single: {
     target: 'redeemer',
-    title: () => 'Buy a Breakaway',
     prompt: () => `Adds 1 breakaway to your personal stash. Only active while Personal Breakaway Mode is on.`,
   },
   abba_pack: {
     target: 'broadcaster',
-    title: () => `Gift ${broadcasterDisplay()} Breakaways`,
     prompt: (cfg) => `Blesses ${broadcasterDisplay()} with ${cfg.amount} breakaways. Only active while Personal Breakaway Mode is on.`,
   },
   abba_single: {
     target: 'broadcaster',
-    title: () => `Gift ${broadcasterDisplay()} a Breakaway`,
     prompt: () => `Blesses ${broadcasterDisplay()} with 1 breakaway. Only active while Personal Breakaway Mode is on.`,
   },
 };
@@ -63,7 +60,7 @@ const HANDLED_CAP = 500;
 
 function rewardBody(def, cfg) {
   return {
-    title: def.title(),
+    title: renderRewardTitle(cfg),
     cost: cfg.cost,
     prompt: def.prompt(cfg),
     // Hidden from viewers unless both the reward and personal-BA mode are on.
@@ -107,7 +104,7 @@ async function syncOneReward(key) {
     if (!cfg.enabled) return;
     const reward = await apiClient.channelPoints.createCustomReward(broadcasterId, rewardBody(def, cfg));
     await saveBaSettings({ cp_rewards: { [key]: { reward_id: reward.id } } });
-    console.log(`[CP] Created "${def.title()}" reward (${reward.id}) at ${cfg.cost} points`);
+    console.log(`[CP] Created "${renderRewardTitle(cfg)}" reward (${reward.id}) at ${cfg.cost} points`);
     return;
   }
   try {

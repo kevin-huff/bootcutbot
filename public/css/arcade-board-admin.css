@@ -1033,3 +1033,7 @@ body.arcade-admin {
 .arcade-admin .ba-note { opacity: 0.6; }
 .arcade-admin .ba-status { opacity: 0.8; }
 .arcade-admin #ba-rates-head { cursor: pointer; user-select: none; }
+
+/* Left column of arcade-main: board + breakaways stacked, so the column
+   fills down to match the side rail instead of leaving dead space. */
+.arcade-admin .arcade-left { display: flex; flex-direction: column; gap: 20px; min-width: 0; }

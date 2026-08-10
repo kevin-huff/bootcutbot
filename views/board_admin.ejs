@@ -139,6 +139,7 @@
     <!-- Main grid: splot board + right rail -->
     <div class="arcade-main">
 
+      <div class="arcade-left">
       <!-- Splot board -->
       <section>
         <div class="arcade-section-head">
@@ -192,99 +193,8 @@
         <% } %>
       </section>
 
-      <!-- Right rail -->
-      <aside class="side-rail">
-        <!-- Dice panel -->
-        <div class="panel">
-          <div class="panel-head">
-            <span class="led" id="dice-led"></span>
-            <small id="dice-panel-label">GODICE &middot; DISCONNECTED</small>
-            <span class="grow"></span>
-            <label class="fake-rolls">
-              <input type="checkbox" id="fakeRollsOnly" autocomplete="off">
-              Fake Rolls
-            </label>
-          </div>
-          <div class="panel-body">
-            <button type="button" class="pill pill--sm" onclick="openConnectionDialog()">Connect GoDice</button>
-            <div id="dice-host" style="margin-top: 12px;"></div>
-            <div class="force-roll" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                <small style="font-family:var(--font-mono);letter-spacing:.14em;color:var(--ink-2);">FORCE D8 ROLL</small>
-              </div>
-              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
-                <% for (var i = 1; i <= 8; i++) { %>
-                  <button type="button" class="pill pill--sm pill--ghost" onclick="triggerFakeD8Roll(<%= i %>)"><%= i %></button>
-                <% } %>
-              </div>
-            </div>
-          </div>
-          <div id="roll-log"></div>
-          <div id="dice-message-container"></div>
-        </div>
-
-        <!-- Queue panel -->
-        <div class="panel">
-          <div class="panel-head">
-            <span class="led <%= data.queue_open ? 'on' : '' %>"></span>
-            <small>QUEUE &middot; <%= (data.queue && data.queue.length) || 0 %> &middot; <%= data.queue_open ? 'OPEN' : 'CLOSED' %></small>
-            <span class="grow"></span>
-            <button type="button"
-                    id="toggle_virgins_first"
-                    class="pill pill--sm <%= data.virgins_first ? '' : 'pill--ghost' %>"
-                    data-active="<%= data.virgins_first ? '1' : '0' %>"
-                    title="Prioritize players who have never played before (Virgin-Virgin-Next auto-pick)"
-                    style="margin-right:6px;">
-              VIRGINS FIRST <%= data.virgins_first ? 'ON' : 'OFF' %>
-            </button>
-            <button type="button"
-                    id="toggle_firsts_first"
-                    class="pill pill--sm <%= data.firsts_first ? '' : 'pill--ghost' %>"
-                    data-active="<%= data.firsts_first ? '1' : '0' %>"
-                    title="Prioritize players with zero turns this session">
-              FIRSTS FIRST <%= data.firsts_first ? 'ON' : 'OFF' %>
-            </button>
-          </div>
-          <div class="queue-list" id="queue-list">
-            <% if (data.queue && data.queue.length > 0) { %>
-              <% data.queue.forEach(function(q, i) {
-                   var name = q['display-name'] || q.username || 'unknown';
-                   var turns = (q.turn_count != null) ? q.turn_count : 0;
-                   var isFirst = turns === 0;
-              %>
-                <div class="queue-row <%= i === 0 ? 'is-next' : '' %>">
-                  <span class="pos"><%= String(i + 1).padStart(2, '0') %></span>
-                  <span class="name">
-                    <%= name %>
-                    <% if (isFirst) { %><span class="first-tag">1ST</span><% } %>
-                  </span>
-                  <span class="turns"><%= turns %> turn<%= turns === 1 ? '' : 's' %></span>
-                </div>
-              <% }); %>
-            <% } else { %>
-              <div class="queue-empty">Queue is empty</div>
-            <% } %>
-          </div>
-        </div>
-
-        <!-- Hot seat chat: the current player's messages, docked so they never
-             cover the board. Replaces the old floating toast stack. -->
-        <div class="panel">
-          <div class="panel-head">
-            <span class="led on"></span>
-            <small id="hotseat-chat-label">HOT SEAT CHAT</small>
-            <span class="grow"></span>
-            <button type="button" class="pill pill--sm pill--ghost" onclick="hotseatChatClear()">Clear</button>
-          </div>
-          <div class="queue-list" id="hotseat-chat-list" style="max-height:240px; overflow-y:auto;">
-            <div class="queue-empty">Waiting for the hot seat to speak&hellip;</div>
-          </div>
-        </div>
-      </aside>
-    </div>
-
-    <!-- Breakaways row -->
-    <section>
+      <!-- Breakaways: under the board so the left column fills to match the rail -->
+      <section>
       <div class="arcade-section-head">
         <span class="title">Breakaways</span>
         <span class="count" id="ba-count"><%= (data.breakaways && data.breakaways.length) || 0 %> tracked</span>
@@ -426,6 +336,98 @@
         </div>
       </div>
     </section>
+      </div>
+
+      <!-- Right rail -->
+      <aside class="side-rail">
+        <!-- Hot seat chat: the current player's messages, docked so they never
+             cover the board. Replaces the old floating toast stack. -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="led on"></span>
+            <small id="hotseat-chat-label">HOT SEAT CHAT</small>
+            <span class="grow"></span>
+            <button type="button" class="pill pill--sm pill--ghost" onclick="hotseatChatClear()">Clear</button>
+          </div>
+          <div class="queue-list" id="hotseat-chat-list" style="max-height:240px; overflow-y:auto;">
+            <div class="queue-empty">Waiting for the hot seat to speak&hellip;</div>
+          </div>
+        </div>
+
+        <!-- Queue panel -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="led <%= data.queue_open ? 'on' : '' %>"></span>
+            <small>QUEUE &middot; <%= (data.queue && data.queue.length) || 0 %> &middot; <%= data.queue_open ? 'OPEN' : 'CLOSED' %></small>
+            <span class="grow"></span>
+            <button type="button"
+                    id="toggle_virgins_first"
+                    class="pill pill--sm <%= data.virgins_first ? '' : 'pill--ghost' %>"
+                    data-active="<%= data.virgins_first ? '1' : '0' %>"
+                    title="Prioritize players who have never played before (Virgin-Virgin-Next auto-pick)"
+                    style="margin-right:6px;">
+              VIRGINS FIRST <%= data.virgins_first ? 'ON' : 'OFF' %>
+            </button>
+            <button type="button"
+                    id="toggle_firsts_first"
+                    class="pill pill--sm <%= data.firsts_first ? '' : 'pill--ghost' %>"
+                    data-active="<%= data.firsts_first ? '1' : '0' %>"
+                    title="Prioritize players with zero turns this session">
+              FIRSTS FIRST <%= data.firsts_first ? 'ON' : 'OFF' %>
+            </button>
+          </div>
+          <div class="queue-list" id="queue-list">
+            <% if (data.queue && data.queue.length > 0) { %>
+              <% data.queue.forEach(function(q, i) {
+                   var name = q['display-name'] || q.username || 'unknown';
+                   var turns = (q.turn_count != null) ? q.turn_count : 0;
+                   var isFirst = turns === 0;
+              %>
+                <div class="queue-row <%= i === 0 ? 'is-next' : '' %>">
+                  <span class="pos"><%= String(i + 1).padStart(2, '0') %></span>
+                  <span class="name">
+                    <%= name %>
+                    <% if (isFirst) { %><span class="first-tag">1ST</span><% } %>
+                  </span>
+                  <span class="turns"><%= turns %> turn<%= turns === 1 ? '' : 's' %></span>
+                </div>
+              <% }); %>
+            <% } else { %>
+              <div class="queue-empty">Queue is empty</div>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- Dice panel -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="led" id="dice-led"></span>
+            <small id="dice-panel-label">GODICE &middot; DISCONNECTED</small>
+            <span class="grow"></span>
+            <label class="fake-rolls">
+              <input type="checkbox" id="fakeRollsOnly" autocomplete="off">
+              Fake Rolls
+            </label>
+          </div>
+          <div class="panel-body">
+            <button type="button" class="pill pill--sm" onclick="openConnectionDialog()">Connect GoDice</button>
+            <div id="dice-host" style="margin-top: 12px;"></div>
+            <div class="force-roll" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <small style="font-family:var(--font-mono);letter-spacing:.14em;color:var(--ink-2);">FORCE D8 ROLL</small>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+                <% for (var i = 1; i <= 8; i++) { %>
+                  <button type="button" class="pill pill--sm pill--ghost" onclick="triggerFakeD8Roll(<%= i %>)"><%= i %></button>
+                <% } %>
+              </div>
+            </div>
+          </div>
+          <div id="roll-log"></div>
+          <div id="dice-message-container"></div>
+        </div>
+      </aside>
+    </div>
 
     <!-- Footer status strip -->
     <div class="arcade-footer">

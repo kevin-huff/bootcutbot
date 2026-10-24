@@ -6,7 +6,8 @@ import { adminAuth } from './lib/socketAuth.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { state } from './constants.js';
-import { getAuthUrl, handleAuthCallback } from './auth.js';
+import { getAuthUrl, getBotAuthUrl, handleAuthCallback } from './auth.js';
+import { chatClient } from './lib/twitchChat.js';
 import { initializeEventSub } from './eventSub.js';
 import { hellfireSpotIds, heavenfireSpotIds } from './utils.js';
 import anniversaryRoutes from './routes/anniversary.js';
@@ -264,8 +265,6 @@ router.get("/board_admin", adminAuth(), async (req, res) => {
       ba_settings: baSettings,
       channel_points: getChannelPointsStatus(),
       current_turn: state.current_turn,
-      username: process.env.bot_account,
-      password: process.env.oauth,
       channels: [process.env.twitch_channel],
     },
   });
@@ -474,18 +473,27 @@ router.get("/auth", adminAuth(), (req, res) => {
   res.render("auth.ejs");
 });
 
-router.get("/auth/twitch", (req, res) => {
+router.get("/auth/twitch", adminAuth(), (req, res) => {
   const authUrl = getAuthUrl();
   res.redirect(authUrl);
 });
 
+router.get("/auth/twitch/bot", adminAuth(), (req, res) => {
+  res.redirect(getBotAuthUrl());
+});
+
 router.get("/auth/status", (req, res) => {
   const eventSubClient = req.app.get('eventSubClient');
-  res.json({ connected: eventSubClient ? true : false });
+  res.json({ connected: typeof eventSubClient?.stop === 'function', chat: chatClient.status() });
 });
 
 router.get("/auth/twitch/callback", async (req, res) => {
-  const { code } = req.query;
+  const { code, state, error: authError, error_description } = req.query;
+
+  if (authError) {
+    res.render("auth.ejs", { error: 'Twitch did not authorize: ' + (error_description || authError) });
+    return;
+  }
 
   if (!code) {
     res.status(400).send('Missing authorization code');
@@ -493,7 +501,12 @@ router.get("/auth/twitch/callback", async (req, res) => {
   }
 
   try {
-    await handleAuthCallback(code);
+    const result = await handleAuthCallback(code, state);
+
+    if (result.flow === 'bot') {
+      res.render("auth.ejs", { botSuccess: true, botLogin: result.login });
+      return;
+    }
 
     // Get the io instance from the app
     const io = req.app.get('io');
@@ -502,7 +515,7 @@ router.get("/auth/twitch/callback", async (req, res) => {
     } else {
       // Get the existing EventSub client if any
       let existingClient = req.app.get('eventSubClient');
-      if (existingClient) {
+      if (typeof existingClient?.stop === 'function') {
         console.log('Stopping existing EventSub client...');
         await existingClient.stop();
       }

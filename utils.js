@@ -113,6 +113,18 @@ const say = (channel, client, tags, message, prefix = "", postfix = "") => {
   });
 };
 
+// The only messages the board admin page can have the bot post. The bot's own
+// message handler runs them, so the page never needs the bot's chat token.
+const BOARD_CHAT_COMMANDS = ['!ap', '!random', '!next'];
+
+const sayBoardCommand = async (client, channel, command) => {
+  if (!BOARD_CHAT_COMMANDS.includes(command)) {
+    throw new Error(`Not a board command: ${command}`);
+  }
+  const sent = await client.say(channel, command);
+  if (sent === false) throw new Error('The bot could not post that command; see the server log.');
+};
+
 const removeURLs = (text) => {
   return text.replace(/(https?:\/\/[^\s]+)/g, "");
 };
@@ -181,6 +193,7 @@ export {
   get_random_splot,
   abbadabbabotSay,
   say,
+  sayBoardCommand,
   removeURLs,
   profileUrl,
   ordinal_suffix_of,

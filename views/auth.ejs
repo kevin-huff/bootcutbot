@@ -69,7 +69,13 @@
         <div class="error-message">
             <h1>Authentication Error</h1>
             <p><%= error %></p>
-            <a href="/auth/twitch" class="auth-button">Try Again</a>
+            <a href="/auth" class="auth-button">Try Again</a>
+        </div>
+    <% } else if (typeof botSuccess !== 'undefined' && botSuccess) { %>
+        <div class="success-message">
+            <h1>Bot Account Authorized</h1>
+            <p>The bot account <%= typeof botLogin !== 'undefined' ? botLogin : '' %> is authorized to send chat messages. No token was kept.</p>
+            <p>Chat also needs the broadcaster sign-in. If you have not done that yet, <a href="/auth" style="color:white">go back to /auth</a>.</p>
         </div>
     <% } else if (typeof success !== 'undefined' && success) { %>
         <div class="success-message">
@@ -121,6 +127,8 @@
         <p>To enable bit events for the subathon timer, you need to authenticate with Twitch.</p>
         
         <a href="/auth/twitch" class="auth-button">Authenticate with Twitch</a>
+        <a href="/auth/twitch/bot" class="auth-button">Authorize the bot account</a>
+        <p>The bot button must be opened in a browser where Twitch is logged in as the bot account (abbadabbabot), for example a private window. Twitch shows which account is signing in.</p>
 
         <div class="instructions">
             <h2>Setup Instructions:</h2>
@@ -137,6 +145,8 @@
                 <li>EVENTSUB_CLIENT_ID - Your Twitch application client ID</li>
                 <li>EVENTSUB_CLIENT_SECRET - Your Twitch application client secret</li>
                 <li>TWITCH_CHANNEL_ID - Your channel's numeric ID</li>
+                <li>TWITCH_BOT_ID - (Optional) The bot account's numeric ID, defaults to abbadabbabot</li>
+                <li>TWITCH_REDIRECT_URI - (Optional) OAuth callback URL, defaults to the production callback</li>
                 <li>TEST_CHANNEL_ID - (Optional) For testing in development mode</li>
             </ul>
         </div>

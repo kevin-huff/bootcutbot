@@ -1,7 +1,7 @@
 import { JsoningPg } from './lib/jsoningPg.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { splotStates, hellfireSpotIds, heavenfireSpotIds, initializeSettings, get_random_splot, abbadabbabotSay, say } from './utils.js';
+import { splotStates, hellfireSpotIds, heavenfireSpotIds, initializeSettings, get_random_splot, abbadabbabotSay, say, sayBoardCommand } from './utils.js';
 import { settings_db as queue_settings_db } from './commands/db.js';
 import { addToBalance, peekBalance, emitUserBaUpdate, baSettings, saveBaSettings, rainBreakaways } from './commands/breakawayCommands.js';
 import { grantManualTurn } from './commands/queueCommands.js';
@@ -1443,6 +1443,19 @@ export const initializeSocketHandlers = (io) => {
         if (typeof callback === 'function') callback(result);
       } catch (error) {
         console.error('user_ba_rain failed:', error);
+        if (typeof callback === 'function') callback({ ok: false, error: error.message });
+      }
+    });
+
+    // Board admin pick buttons (!ap, !random, !next): the bot posts the command and
+    // its own message handler runs it, so the page never holds the bot's chat token.
+    socket.on("board_chat_command", async (arg = {}, callback) => {
+      try {
+        const { client } = await import('./botCommands.js');
+        await sayBoardCommand(client, process.env.twitch_channel, arg.command);
+        if (typeof callback === 'function') callback({ ok: true });
+      } catch (error) {
+        console.error('board_chat_command failed:', error);
         if (typeof callback === 'function') callback({ ok: false, error: error.message });
       }
     });

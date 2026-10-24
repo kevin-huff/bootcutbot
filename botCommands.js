@@ -1,10 +1,10 @@
-import tmi from 'tmi.js';
 import dotenv from 'dotenv';
 import { io as streamLabsIo } from 'socket.io-client';
 import { state } from './constants.js';
 import { Configuration, OpenAIApi } from 'openai';
 import { CensorSensor } from 'censor-sensor';
 import { abbadabbabotSay } from './utils.js';
+import { chatClient } from './lib/twitchChat.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import {
@@ -122,14 +122,7 @@ async function recordTormentSubs({
   }
 }
 
-const client = new tmi.Client({
-  options: { debug: true },
-  identity: {
-    username: process.env.bot_account,
-    password: process.env.oauth,
-  },
-  channels: [process.env.twitch_channel],
-});
+const client = chatClient;
 
 const streamlabsSocket = streamLabsIo(
   `https://sockets.streamlabs.com?token=${process.env.streamlabs_socket_token}`,
@@ -137,8 +130,6 @@ const streamlabsSocket = streamLabsIo(
 );
 
 function initializeBotCommands(io) {
-  client.connect();
-
   // Special bit amounts for effects
   client.on("cheer", async (channel, userstate, message) => {
     console.log('[CHEER] Received:', userstate.bits, 'bits from', userstate['display-name']);
@@ -330,6 +321,10 @@ function initializeBotCommands(io) {
         count: numbOfSubs
       }
     });
+  });
+
+  client.on('message', (channel, tags, message) => {
+    io.emit('chat_message', { username: tags.username, displayName: tags['display-name'], message });
   });
 
   // Message handling

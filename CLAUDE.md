@@ -38,16 +38,19 @@ npm run build:board # Build React board → public/board-assets/
 **Entry point**: `index.js` — sets up Express + Socket.IO server on port 3000, connects Streamlabs socket, initializes EventSub and bot commands.
 
 **Key modules** (all ESM):
-- `botCommands.js` — Twitch chat bot (tmi.js). Handles `!join`, `!leave`, `!next`, `!random`, `!open`, `!close`, etc. Imports command handlers from `commands/`.
+- `botCommands.js` — Twitch chat bot. Exports the chat adapter from `lib/twitchChat.js` as `client`, so handlers keep calling `client.say` and `client.on`. Handles `!join`, `!leave`, `!next`, `!random`, `!open`, `!close`, etc. Imports command handlers from `commands/`.
 - `commands/` — Chat command handlers split by domain: `queueCommands.js`, `queueManagement.js`, `trackerCommands.js`, `miscCommands.js`, `db.js`.
 - `socketHandlers.js` — Socket.IO event handlers for the board, timers, wheel, dice, subathon, and all admin dashboard interactions. This is the largest module and handles most real-time state.
-- `eventSub.js` — Twitch EventSub via Twurple (subs, bits, raids, etc.). Feeds into torment meter and subathon timer.
+- `eventSub.js` — Twitch EventSub via Twurple, authenticated as the broadcaster (redemptions, subs, bits, raids, etc.). Also reads chat (`channel.chat.message` and `channel.chat.notification`) and attaches the chat adapter to the listener and API client. Feeds into torment meter and subathon timer.
+- `lib/twitchChat.js` — Chat adapter with the same `say`/`on` surface the old IRC client had. Reads chat from EventSub events; sends through the Helix Send Chat Message API with an app access token as the bot (`TWITCH_BOT_ID`, falls back to abbadabbabot, 772229635). Splits messages to 500 characters, sends in one queue, never throws, never echoes locally. No database imports.
+- `lib/chatMapping.js` — Pure functions turning EventSub chat events into the argument shapes and tags the handlers expect (display names, bits, mod/subscriber, sub plans), plus message splitting. No imports.
+- `lib/twitchOAuth.js` — Pure OAuth helpers: scopes, redirect URI, single-use `state` values, authorize URLs, authorized-account checks, stored-token normalization. No database imports.
 - `tormentMeterService.js` — Donation/bits tracking toward configurable goals with tier escalation. Contributions decay by 90% every 60 minutes.
 - `routes.js` — Express routes serving EJS views. Public routes (board, timer, overlays) are unauthenticated; admin routes use HTTP basic auth.
 - `routes/anniversary.js` — Anniversary event routes (separate feature).
 - `constants.js` — Shared mutable `state` object (queue_open, current_turn, etc.).
 - `utils.js` — Shared helpers (splot states, board spot IDs, bot say functions).
-- `auth.js` — Twitch OAuth flow for EventSub token management.
+- `auth.js` — Twitch OAuth glue for two flows, each with a `state` check. The broadcaster flow (`/auth/twitch`) stores the EventSub tokens; the one-time bot flow (`/auth/twitch/bot`, user:bot and user:write:chat) stores nothing. The callback refuses any account that is not the expected one. Redirect URI comes from `TWITCH_REDIRECT_URI`.
 
 **Frontend**:
 - `views/` — EJS templates for overlays, admin dashboards, and the main queue page. These are served by Express and connect back via Socket.IO.
@@ -58,7 +61,7 @@ npm run build:board # Build React board → public/board-assets/
 
 ## Environment
 
-Requires a `.env` file with `DATABASE_URL` (Postgres), Twitch credentials (bot account, OAuth, EventSub client ID/secret, channel ID), Streamlabs socket token, web basic auth credentials, and optionally R2/S3 keys for asset storage. See README for R2 setup.
+Requires a `.env` file with `DATABASE_URL` (Postgres), Twitch credentials (bot account login, `TWITCH_BOT_ID`, EventSub client ID/secret, channel ID, `TWITCH_REDIRECT_URI`), Streamlabs socket token, web basic auth credentials, and optionally R2/S3 keys for asset storage. See README for R2 setup.
 
 ## Key Patterns
 
@@ -68,4 +71,5 @@ Requires a `.env` file with `DATABASE_URL` (Postgres), Twitch credentials (bot a
 - Persistence goes through `JsoningPg` from `lib/jsoningPg.js`. Use `new JsoningPg('<namespace>')` (namespace = old filename without `.json`) and the standard `.get/.set/.push/.math/.all/.clear` methods. For any read-modify-write under concurrency (queue-mutation in particular), use `.update(key, fn)` — it wraps the whole cycle in a transaction + SELECT FOR UPDATE.
 - Queue has a "firsts first" mode that prioritizes players who haven't had a turn yet.
 - Subathon timer persists across restarts, supports pause/resume and configurable time multipliers per donation type.
+- The bot's own chat messages come back through EventSub and run commands exactly once, with no local echo, and count as mod (the `!ap` chain and the board pick buttons rely on it). New scopes need a fresh broadcaster `/auth` plus the one-time bot authorization.
 - Crowd sounds (laugh, fart, moan, clap, boo) trigger via regex matching in chat with configurable thresholds in env vars.

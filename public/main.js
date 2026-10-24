@@ -139,26 +139,18 @@ $(document).ready(function() {
       }
     }
   });
-  // Twitch chat connection
-  const client = new tmi.Client({
-      options: { debug: true },
-        identity: {
-          username: templateData.username,
-          password: templateData.password
-        },
-        channels: templateData.channels
-  });
-  client.connect().catch(console.error);
+  // The server relays Twitch chat for the hot-seat feed; pick commands go through board_chat_command.
   // Create an array to store the last 10 messages
   let lastTenMessages = [];
   // Variable to store the desired username
   let desiredUsername = templateData.current_turn;
   // Listen for new messages in the chat
-  client.on("message", (channel, tags, message, self) => {
+  socket.on('chat_message', (data) => {
+    if (!data) { return; }
     // Check if the message is from the desired user
-    if (tags.username.toLowerCase() === desiredUsername.toLowerCase()) {
+    if (String(data.username || '').toLowerCase() === String(desiredUsername || '').toLowerCase()) {
       // Add the message to the array
-      lastTenMessages.push({ username: tags.username, message });
+      lastTenMessages.push({ username: data.username, message: data.message });
       // Remove the first element of the array if it exceeds 10 elements
       if (lastTenMessages.length > 10) {
         lastTenMessages.shift();
@@ -222,32 +214,19 @@ $(document).ready(function() {
     updateTurn(templateData.current_turn);
     CountDown.ResetDisplay();
     timerStatus = 'idle';
-    $('#autoPick').click(function(){
-      client.connect()
-      .then((data) => {
-        client.say(templateData.channels[0],'!ap');
-        client.disconnect();
-      }).catch((err) => {
-          console.log(err);
+    const sendBoardCommand = (command) => {
+      socket.emit('board_chat_command', { command }, (response) => {
+        if (!response || !response.ok) console.log('board_chat_command failed', response);
       });
+    };
+    $('#autoPick').click(function(){
+      sendBoardCommand('!ap');
     });
     $('#randomPick').click(function(){
-      client.connect()
-      .then((data) => {
-        client.say(templateData.channels[0], '!random');
-        client.disconnect();
-      }).catch((err) => {
-          console.log(err);
-      });
+      sendBoardCommand('!random');
     });
     $('#nextPick').click(function(){
-      client.connect()
-      .then((data) => {
-        client.say(templateData.channels[0], '!next');
-        client.disconnect();
-      }).catch((err) => {
-          console.log(err);
-      });
+      sendBoardCommand('!next');
     });
     $('#toggle_ai').click(function(){
       console.log('toggle ai');

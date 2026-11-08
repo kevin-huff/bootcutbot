@@ -7,6 +7,10 @@ dotenv.config();
 // exactly once (read-only) and replaces the local copy atomically, so a
 // mid-sync reader never sees a half-synced store.
 
+// Each environment keeps its own copy of these: the broadcaster's Twitch login
+// and viewers' push subscriptions. They are never copied from prod or cleared.
+const KEEP_LOCAL = ['twitch_tokens', 'push_subscriptions'];
+
 const sourceUrl = process.env.PROD_DATABASE_URL;
 const targetUrl = process.env.DATABASE_URL;
 
@@ -24,6 +28,7 @@ if (host(sourceUrl) === host(targetUrl)) {
 const source = new pg.Client({
   connectionString: sourceUrl,
   ssl: { rejectUnauthorized: false },
+  enableChannelBinding: true,
   application_name: 'bootcut-downsync-read',
   statement_timeout: 30_000,
   connectionTimeoutMillis: 15_000,
@@ -35,14 +40,17 @@ const target = new pg.Client({
 });
 
 await source.connect();
-const { rows } = await source.query('SELECT namespace, key, value FROM kv_store');
+const { rows } = await source.query(
+  'SELECT namespace, key, value FROM kv_store WHERE namespace <> ALL($1::text[])',
+  [KEEP_LOCAL],
+);
 await source.end();
-console.log(`downsync: read ${rows.length} rows from prod`);
+console.log(`downsync: read ${rows.length} rows from prod (left alone: ${KEEP_LOCAL.join(', ')})`);
 
 await target.connect();
 try {
   await target.query('BEGIN');
-  await target.query('DELETE FROM kv_store');
+  await target.query('DELETE FROM kv_store WHERE namespace <> ALL($1::text[])', [KEEP_LOCAL]);
   for (let i = 0; i < rows.length; i += 200) {
     const batch = rows.slice(i, i + 200);
     const params = [];
